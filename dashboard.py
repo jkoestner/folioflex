@@ -3,7 +3,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import pandas as pd
 import dash_table
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from utils import make_dash_table
 
 #set up lists
@@ -52,6 +52,61 @@ formatter_stock = {'day5ChangePercent':'{0:.2%}'.format,
                     'float':'{:,.2f}'.format,
                     'sharesOutstanding':'{:,.2f}'.format,
                     'marketcap':'{:,.2f}'.format,}
+
+quote_col = ['symbol',
+            'companyName',
+            'isUSMarketOpen',
+            'latestPrice',
+            'previousClose',
+            'latestUpdate',
+            'latestSource',
+            'change',
+            'changePercent',
+            'ytdChange',
+            'latestVolume',
+            'avgTotalVolume',
+            'previousVolume',
+            'marketCap',
+            'peRatio',
+            'extendedPrice',
+            'open',
+            'close',
+            'high',
+            'low',
+            'week52High',
+            'week52Low',]
+
+formatter_quote = {'avgTotalVolume':'{:,.2f}'.format,
+                    'change':'{:,.2f}'.format,
+                    'close':'{:,.2f}'.format,
+                    'delayedPrice':'{:,.2f}'.format,
+                    'delayedPriceTime':'{:,.2f}'.format,
+                    'extendedChange':'{:,.2f}'.format,
+                    'extendedChangePercent':'{:,.2f}'.format,
+                    'extendedPrice':'{:,.2f}'.format,
+                    'extendedPriceTime':'{:,.2f}'.format,
+                    'high':'{:,.2f}'.format,
+                    'iexAskPrice':'{:,.2f}'.format,
+                    'iexAskSize':'{:,.2f}'.format,
+                    'iexBidPrice':'{:,.2f}'.format,
+                    'iexBidSize':'{:,.2f}'.format,
+                    'iexRealtimePrice':'{:,.2f}'.format,
+                    'iexRealtimeSize':'{:,.2f}'.format,
+                    'iexVolume':'{:,.2f}'.format,
+                    'latestPrice':'{:,.2f}'.format,
+                    'latestVolume':'{:,.2f}'.format,
+                    'low':'{:,.2f}'.format,
+                    'marketCap':'{:,.2f}'.format,
+                    'open':'{:,.2f}'.format,
+                    'openTime':'{:,.2f}'.format,
+                    'peRatio':'{:,.2f}'.format,
+                    'previousClose':'{:,.2f}'.format,
+                    'previousVolume':'{:,.2f}'.format,
+                    'volume':'{:,.2f}'.format,
+                    'week52High':'{:,.2f}'.format,
+                    'week52Low':'{:,.2f}'.format,
+                    'changePercent':'{0:.2%}'.format,
+                    'ytdChange':'{0:.2%}'.format,}
                 
 
 
@@ -63,54 +118,88 @@ sectors['name']=sectors['name'].str.replace(' ','%20')
 
 #Creating the dash app
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-
-app = dash.Dash(__name__)
+app = dash.Dash(
+    __name__,
+    external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css']
+)
 
 server = app.server
 
-app.layout = html.Div([
-    
-    #creating stock information
-    html.Label('Stock Analysis'),
-    html.P(),  
-    
-    dcc.Input(id='stock-input', placeholder='Enter Stock...', type='text'),
-    
-    dash_table.DataTable(
-    id='stock-table',
-    filter_action="native",
-    sort_action="native",
-    #virtualization=True,
-    page_action="native",
-    ),
-    
-    #creating dropdown menu
-    html.Label('Sector Dropdown'),
+app.layout = html.Div(
+        
+[
+    html.Div([
+        html.Label('Stock Analysis'),
+        html.P(),  
+        
+        dcc.Input(id='stock-input', placeholder='Enter Stock...', type='text'), 
+        
+        html.Button(id='stock-button', children='Stock Submit'),
+               
+        html.Button(id='quote-button', children='Quote Submit'),
+        
+        html.Button(id='peer-button', children='Peer Submit'),
+    ],className="row"),
 
-    dcc.Dropdown(
-    id='sector-dropdown', 
-    options=[
-    {'label': i, 'value': i} for i in sectors.name.unique()
-    ], 
-    multi=False, 
-    placeholder='Select Sector...',
-    ),
-    
-    #creating table that is based on dropdown menu
-    html.P(),    
-    
-    html.Label('Sector Table'),
-    
-    dash_table.DataTable(
-    id='sector-table',
-    filter_action="native",
-    sort_action="native",
-    #virtualization=True,
-    page_action="native",
-    ),
+    html.Div([
             
-    html.Div(id='my-div')
+        html.Div([
+            #creating stock information        
+            dash_table.DataTable(
+            id='stock-table',
+            page_action="native",
+            ),
+                    
+        ], className="three columns"),
+                    
+        html.Div([
+            #creating quote information        
+            dash_table.DataTable(
+            id='quote-table',
+            page_action="native",
+            ),
+                    
+        ], className="three columns"),
+        
+        html.Div([
+            #creating peer information                  
+            html.P(),             
+            dash_table.DataTable(
+            id='peer-table',
+            page_action="native",
+            ),
+        ], className="three columns"),
+                    
+    ],className="row"),
+    
+    html.Div([
+        #creating dropdown menu
+        html.Label('Sector Dropdown'),
+    
+        dcc.Dropdown(
+        id='sector-dropdown', 
+        options=[
+        {'label': i, 'value': i} for i in sectors.name.unique()
+        ], 
+        multi=False, 
+        placeholder='Select Sector...',
+        ),
+        
+        #creating table that is based on dropdown menu
+        html.P(),    
+        
+        html.Label('Sector Table'),
+        
+        dash_table.DataTable(
+        id='sector-table',
+        filter_action="native",
+        sort_action="native",
+        #virtualization=True,
+        page_action="native",
+        ),
+                
+        html.Div(id='my-div')
+    ],className="row"),
 
 ])
     
@@ -139,20 +228,70 @@ def update_table(dropdown_value):
 @app.callback(
     [Output(component_id='stock-table', component_property='columns'),
      Output(component_id='stock-table', component_property='data')],
-    [Input(component_id='stock-input', component_property='value')]
+     [Input(component_id='stock-button', component_property='n_clicks')],
+    [State(component_id='stock-input', component_property='value')]
 )
-def update_stockanalysis(input_value):
+
+def update_stockanalysis(n_clicks,input_value):
     urlstock='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/stats?token=sk_073f76780cf94eb5948b7f5f11bec968'
+    #urlstock='https://sandbox.iexapis.com/stable/stock/AMZN/stats?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
+    
     stock = pd.read_json(urlstock, orient='index', typ='frame')
             
     for f in formatter_stock.items():
             column = f[0]
-            stock.loc[column] = stock.loc[column].apply(f[1])
+            if stock.loc[column].values[0] is not None:
+                stock.loc[column] = stock.loc[column].apply(f[1])              
+
     
     stock = stock.reset_index()
     stock.columns = ['Variable', 'Value']
             
     return [{"name": i, "id": i} for i in stock.columns], stock.to_dict('records')
+
+@app.callback(
+    [Output(component_id='quote-table', component_property='columns'),
+     Output(component_id='quote-table', component_property='data')],
+     [Input(component_id='quote-button', component_property='n_clicks')],
+    [State(component_id='stock-input', component_property='value')]
+)
+
+def update_quoteanalysis(n_clicks,input_value):          
+    urlquote='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/quote?token=sk_073f76780cf94eb5948b7f5f11bec968'
+    #urlquote = 'https://sandbox.iexapis.com/stable/stock/aapl/quote?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
+    quote = pd.read_json(urlquote, orient='index', typ='frame')   
+
+    for f in formatter_quote.items():
+        column = f[0]
+        if quote.loc[column].values[0] is not None:
+            quote.loc[column] = quote.loc[column].apply(f[1])   
+    
+    quote.loc['closeTime'].values[0]=pd.to_datetime(quote.loc['closeTime'].values[0], unit='ms')
+    quote.loc['iexLastUpdated'].values[0]=pd.to_datetime(quote.loc['iexLastUpdated'].values[0], unit='ms')
+    quote.loc['lastTradeTime'].values[0]=pd.to_datetime(quote.loc['lastTradeTime'].values[0], unit='ms')
+    quote.loc['latestUpdate'].values[0]=pd.to_datetime(quote.loc['latestUpdate'].values[0], unit='ms')
+    quote = quote.loc[quote_col]
+    quote = quote.reset_index()
+    quote.columns = ['Variable', 'Value']
+
+            
+    return [{"name": i, "id": i} for i in quote.columns], quote.to_dict('records')
+
+@app.callback(
+    [Output(component_id='peer-table', component_property='columns'),
+     Output(component_id='peer-table', component_property='data')],
+     [Input(component_id='peer-button', component_property='n_clicks')],
+    [State(component_id='stock-input', component_property='value')]
+)
+
+def update_peeranalysis(n_clicks,input_value):          
+    urlpeer='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/peers?token=sk_073f76780cf94eb5948b7f5f11bec968'
+    #urlpeer = 'https://sandbox.iexapis.com/stable/stock/aapl/peers?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
+    peer = pd.read_json(urlpeer, orient='columns', typ='series')
+    peer = peer.reset_index()
+    peer.columns = ['Index','Peer']           
+            
+    return [{"name": i, "id": i} for i in peer.columns], peer.to_dict('records')
 
 
 
