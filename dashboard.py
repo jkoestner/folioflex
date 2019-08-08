@@ -85,7 +85,6 @@ formatter_quote = {'avgTotalVolume':'{:,.2f}'.format,
                     'extendedChange':'{:,.2f}'.format,
                     'extendedChangePercent':'{:,.2f}'.format,
                     'extendedPrice':'{:,.2f}'.format,
-                    'extendedPriceTime':'{:,.2f}'.format,
                     'high':'{:,.2f}'.format,
                     'iexAskPrice':'{:,.2f}'.format,
                     'iexAskSize':'{:,.2f}'.format,
@@ -271,6 +270,8 @@ def update_quoteanalysis(n_clicks,input_value):
     quote.loc['iexLastUpdated'].values[0]=pd.to_datetime(quote.loc['iexLastUpdated'].values[0], unit='ms')
     quote.loc['lastTradeTime'].values[0]=pd.to_datetime(quote.loc['lastTradeTime'].values[0], unit='ms')
     quote.loc['latestUpdate'].values[0]=pd.to_datetime(quote.loc['latestUpdate'].values[0], unit='ms')
+    quote.loc['extendedPriceTime'].values[0]=pd.to_datetime(quote.loc['extendedPriceTime'].values[0], unit='ms')
+    
     quote = quote.loc[quote_col]
     quote = quote.reset_index()
     quote.columns = ['Variable', 'Value']
