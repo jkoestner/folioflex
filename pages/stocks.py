@@ -1,0 +1,78 @@
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+import pandas as pd
+import dash_table
+from dash.dependencies import Input, Output, State
+import app
+from pages import utils
+
+#Creating the dash app
+
+layout = html.Div(
+        
+[
+ 
+    html.Div([
+        utils.get_menu(),
+        
+        html.Label('Stock Analysis'),
+        html.P(),  
+        
+        dcc.Input(id='stock-input', placeholder='Enter Stock...', type='text'),
+        
+        html.Button(id='stock-button', children='Stock Submit'),
+               
+        html.Button(id='quote-button', children='Quote Submit'),
+        
+        html.Button(id='peer-button', children='Peer Submit'),
+        
+        html.Button(id='news-button', children='News Submit'),
+    ],className="row"),
+
+    html.Div([
+            
+        html.Div([
+            #creating stock information        
+            dash_table.DataTable(
+            id='stock-table',
+            page_action="native",
+            ),
+                    
+        ], className="three columns"),
+                    
+        html.Div([
+            #creating quote information        
+            dash_table.DataTable(
+            id='quote-table',
+            page_action="native",
+            ),
+                    
+        ], className="three columns"),
+        
+        html.Div([
+            #creating peer information                  
+            html.P(),             
+            dash_table.DataTable(
+            id='peer-table',
+            page_action="native",
+            ),
+        ], className="three columns"),
+                    
+    ],className="row"),
+                    
+    html.Div([
+            
+        html.Div([
+            #creating news information                  
+            html.P(),             
+            dash_table.DataTable(
+            id='news-table',
+            page_action="native",
+            ),
+        ], className="three columns"),
+                    
+    ],className="row"),
+
+])   
+
