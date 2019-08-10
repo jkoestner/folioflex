@@ -4,7 +4,6 @@ import dash_html_components as html
 import pandas as pd
 import dash_table
 from dash.dependencies import Input, Output, State
-from utils import make_dash_table
 
 #set up lists
 USexchanges=['NASDAQ', 'New York Stock Exchange'] #,'US OTC', 'NYSE American' 'NASDAQ', 'New York Stock Exchange'
@@ -112,7 +111,7 @@ formatter_quote = {'avgTotalVolume':'{:,.2f}'.format,
 
 
 # Sector URL
-urlsec = 'https://cloud.iexapis.com/stable/ref-data/sectors?token=sk_073f76780cf94eb5948b7f5f11bec968'
+urlsec = 'https://cloud.iexapis.com/stable/ref-data/sectors?token=pk_5d82796966de466bb2f966ed65ca70c7'
 sectors = pd.read_json(urlsec, orient='columns')
 sectors['name']=sectors['name'].str.replace(' ','%20')
 
@@ -128,6 +127,7 @@ server = app.server
 app.layout = html.Div(
         
 [
+ 
     html.Div([
         html.Label('Stock Analysis'),
         html.P(),  
@@ -139,6 +139,8 @@ app.layout = html.Div(
         html.Button(id='quote-button', children='Quote Submit'),
         
         html.Button(id='peer-button', children='Peer Submit'),
+        
+        html.Button(id='news-button', children='News Submit'),
     ],className="row"),
 
     html.Div([
@@ -166,6 +168,19 @@ app.layout = html.Div(
             html.P(),             
             dash_table.DataTable(
             id='peer-table',
+            page_action="native",
+            ),
+        ], className="three columns"),
+                    
+    ],className="row"),
+                    
+    html.Div([
+            
+        html.Div([
+            #creating news information                  
+            html.P(),             
+            dash_table.DataTable(
+            id='news-table',
             page_action="native",
             ),
         ], className="three columns"),
@@ -201,7 +216,7 @@ app.layout = html.Div(
         html.Div(id='my-div')
     ],className="row"),
 
-])
+])   
     
     
 @app.callback(
@@ -210,7 +225,7 @@ app.layout = html.Div(
     [Input(component_id='sector-dropdown', component_property='value')]
 )
 def update_table(dropdown_value):
-    urlcol='https://cloud.iexapis.com/stable/stock/market/collection/sector?collectionName=' + format(dropdown_value) + '&token=sk_073f76780cf94eb5948b7f5f11bec968'
+    urlcol='https://cloud.iexapis.com/stable/stock/market/collection/sector?collectionName=' + format(dropdown_value) + '&token=pk_5d82796966de466bb2f966ed65ca70c7'
     #urlcol = 'https://sandbox.iexapis.com/stable/stock/market/collection/sector?collectionName=Technology&token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     collection_all = pd.read_json(urlcol, orient='columns')
     collection = collection_all[collection_all.primaryExchange.isin(USexchanges)]
@@ -233,7 +248,7 @@ def update_table(dropdown_value):
 )
 
 def update_stockanalysis(n_clicks,input_value):
-    urlstock='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/stats?token=sk_073f76780cf94eb5948b7f5f11bec968'
+    urlstock='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/stats?token=pk_5d82796966de466bb2f966ed65ca70c7'
     #urlstock='https://sandbox.iexapis.com/stable/stock/AMZN/stats?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     
     stock = pd.read_json(urlstock, orient='index', typ='frame')
@@ -257,7 +272,7 @@ def update_stockanalysis(n_clicks,input_value):
 )
 
 def update_quoteanalysis(n_clicks,input_value):          
-    urlquote='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/quote?token=sk_073f76780cf94eb5948b7f5f11bec968'
+    urlquote='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/quote?token=pk_5d82796966de466bb2f966ed65ca70c7'
     #urlquote = 'https://sandbox.iexapis.com/stable/stock/aapl/quote?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     quote = pd.read_json(urlquote, orient='index', typ='frame')   
 
@@ -287,13 +302,28 @@ def update_quoteanalysis(n_clicks,input_value):
 )
 
 def update_peeranalysis(n_clicks,input_value):          
-    urlpeer='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/peers?token=sk_073f76780cf94eb5948b7f5f11bec968'
+    urlpeer='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/peers?token=pk_5d82796966de466bb2f966ed65ca70c7'
     #urlpeer = 'https://sandbox.iexapis.com/stable/stock/aapl/peers?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     peer = pd.read_json(urlpeer, orient='columns', typ='series')
     peer = peer.reset_index()
     peer.columns = ['Index','Peer']           
             
     return [{"name": i, "id": i} for i in peer.columns], peer.to_dict('records')
+
+@app.callback(
+    [Output(component_id='news-table', component_property='columns'),
+     Output(component_id='news-table', component_property='data')],
+     [Input(component_id='news-button', component_property='n_clicks')],
+    [State(component_id='stock-input', component_property='value')]
+)
+
+def update_newsanalysis(n_clicks,input_value):          
+    urlnews='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/news/last/5?token=pk_5d82796966de466bb2f966ed65ca70c7'
+    #urlnews = 'https://sandbox.iexapis.com/stable/stock/aapl/peers?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
+    news = pd.read_json(urlnews, orient='columns')
+        
+            
+    return [{"name": i, "id": i} for i in news.columns], news.to_dict('records')
 
 
 
