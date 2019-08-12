@@ -9,6 +9,8 @@ import datetime
 from dateutil.relativedelta import relativedelta
 from pages import stocks, layout, sectors
 
+sector_close=pd.DataFrame([])
+
 app = dash.Dash(
     __name__,
     external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css']
