@@ -1,5 +1,8 @@
 import dash_html_components as html
 import dash_core_components as dcc
+import datetime
+from dateutil.relativedelta import relativedelta
+
 
 
 def Header(app):
@@ -74,3 +77,23 @@ def make_dash_table(df):
             html_row.append(html.Td([row[i]]))
         table.append(html.Tr(html_row))
     return table
+
+epoch = datetime.datetime.utcfromtimestamp(0)
+
+def unix_time_millis(dt):
+    return (dt - epoch).total_seconds()
+
+def unixToDatetime(unix):
+    ''' Convert unix timestamp to datetime. '''
+    return pd.to_datetime(unix,unit='s')
+
+def getMarks(start, end, Nth=365):
+    ''' Returns the marks for labeling. 
+        Every Nth value will be used.
+    '''
+    result = []
+    current = start
+    while current <= end:
+        result.append(current)
+        current += relativedelta(years=1)
+    return {int(unix_time_millis(date)):(str(date.strftime('%Y-%m'))) for date in result}

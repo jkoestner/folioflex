@@ -28,6 +28,8 @@ layout = html.Div(
         html.Button(id='peer-button', children='Peer Submit'),
         
         html.Button(id='news-button', children='News Submit'),
+        
+        html.Button(id='active-button', children='Active Submit'),
     ],className="row"),
 
     html.Div([
@@ -55,6 +57,19 @@ layout = html.Div(
             html.P(),             
             dash_table.DataTable(
             id='peer-table',
+            page_action="native",
+            ),
+        ], className="three columns"),
+                                        
+    ],className="row"),
+                    
+    html.Div([    
+                    
+        html.Div([
+            #creating active information                  
+            html.P(),             
+            dash_table.DataTable(
+            id='active-table',
             page_action="native",
             ),
         ], className="three columns"),

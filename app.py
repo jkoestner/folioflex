@@ -4,6 +4,9 @@ import dash_html_components as html
 import pandas as pd
 import dash_table
 from dash.dependencies import Input, Output, State
+import plotly.graph_objs as go
+import datetime
+from dateutil.relativedelta import relativedelta
 from pages import stocks, layout, sectors
 
 app = dash.Dash(
@@ -117,6 +120,20 @@ def update_newsanalysis(n_clicks,input_value):
             
     return [{"name": i, "id": i} for i in news.columns], news.to_dict('records')
 
+@app.callback(
+    [Output(component_id='active-table', component_property='columns'),
+     Output(component_id='active-table', component_property='data')],
+     [Input(component_id='active-button', component_property='n_clicks')]
+)
+
+def update_activeanalysis(n_clicks):          
+    urlactive='https://cloud.iexapis.com/stable/stock/market/list/mostactive?token=pk_5d82796966de466bb2f966ed65ca70c7'
+    #urlnews = 'https://sandbox.iexapis.com/stable/stock/aapl/peers?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
+    active = pd.read_json(urlactive, orient='columns')
+        
+            
+    return [{"name": i, "id": i} for i in active.columns], active.to_dict('records')
+
 ##########Sector callback##################
 @app.callback(
     [Output(component_id='sector-table', component_property='columns'),
@@ -138,6 +155,36 @@ def update_table(dropdown_value):
         collection[column] = collection[column].map(f[1])
     
     return [{"name": i, "id": i} for i in collection.columns],collection.to_dict('records')
+
+@app.callback(
+    Output('Sector-Graph', 'figure'),
+     [Input('slider', 'value')]
+)
+
+def update_SectorGraph(slide_value):
+    sector_data = sector_close[(unix_time_millis(sector_close.index)>slide_value[0]) & (unix_time_millis(sector_close.index)<slide_value[1])]          
+    
+    res = []
+    for col in sector_data.columns:
+        sector_data['change'] = sector_data[col] / sector_data[col].iat[0] - 1
+        sector_data.drop([col], axis=1, inplace=True) 
+        sector_data = sector_data.rename(columns={'change': col})
+        res.append(
+            go.Scatter(
+                x=sector_data.index,
+                y=sector_data[col].values.tolist(),
+                name=col
+            )
+        )
+    
+                
+    layout = go.Layout(
+        hovermode='closest'
+        )
+        
+    fig = dict(data = res, layout = layout)
+       
+    return fig
 
 if __name__ == '__main__':
     app.run_server(debug=False)
