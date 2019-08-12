@@ -164,7 +164,7 @@ def update_table(dropdown_value):
 )
 
 def update_SectorGraph(slide_value):
-    sector_data = sector_close[(unix_time_millis(sector_close.index)>slide_value[0]) & (unix_time_millis(sector_close.index)<slide_value[1])]          
+    sector_data = sector_close[(utils.unix_time_millis(sector_close.index)>slide_value[0]) & (utils.unix_time_millis(sector_close.index)<slide_value[1])]          
     
     res = []
     for col in sector_data.columns:
