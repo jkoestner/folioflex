@@ -7,9 +7,8 @@ from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 import datetime
 from dateutil.relativedelta import relativedelta
-from pages import stocks, layout, sectors
+from pages import stocks, layout, sectors, utils
 
-sector_close=pd.DataFrame([])
 
 app = dash.Dash(
     __name__,
