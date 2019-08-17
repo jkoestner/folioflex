@@ -15,6 +15,13 @@ urlsec = 'https://cloud.iexapis.com/stable/ref-data/sectors?token=pk_5d82796966d
 sectors = pd.read_json(urlsec, orient='columns')
 sectors['name']=sectors['name'].str.replace(' ','%20')
 
+# Sector Performance
+urlsecmap = 'https://www.alphavantage.co/query?function=SECTOR&apikey=QHR6YAR1880U0KLR '
+secmap = pd.read_json(urlsecmap, orient='columns')
+secmap = secmap.iloc[2:,1:]
+secmap = secmap.reset_index()
+
+
 #Creating the dash app
 
 layout = html.Div(
@@ -45,6 +52,17 @@ layout = html.Div(
     
         html.P(),
         html.P(),
+        
+        #creating table for sector perfomance       
+        html.Label('Sector Performance'),
+        
+        dash_table.DataTable(
+        id='sector-performance',
+        columns=[{"name": i, "id": i} for i in secmap.columns],
+        data=secmap.to_dict('records'),
+        ),
+    
+        html.P(),   
         
         #creating dropdown menu
         html.Label('Sectors Dropdown'),

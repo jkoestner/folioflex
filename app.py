@@ -5,9 +5,10 @@ import pandas as pd
 import dash_table
 from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
-import datetime
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from pages import stocks, layouttab, sectors, utils
+import time
 
 global sector_close
 sector_close=pd.DataFrame([])
@@ -174,16 +175,19 @@ def initialize_SectorGraph(n_clicks):
     global sector_close
     sector_close=pd.DataFrame([])
     for i in layouttab.sector_list:
-        urlsec_data='https://api.worldtradingdata.com/api/v1/history?symbol=' + format(i) + '&sort=newest&api_token=aB0PKnbqXhFuYJtXmOvasDHf2M82BCY3PI9N9o4kb0UHwf5zVckMnD0PL2hc'
-        sector_temp = pd.read_json(urlsec_data, orient='columns')
-        sector_temp = pd.concat([sector_temp.drop(['history'], axis=1), sector_temp['history'].apply(pd.Series)], axis=1)
-        sector_temp["close"] = pd.to_numeric(sector_temp["close"])
-        sector_temp2 = sector_temp[['close']]
-        sector_temp2.columns = sector_temp.name.unique()
+        urlav_data='https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=' + format(i) + '&outputsize=full&apikey=QHR6YAR1880U0KLR'
+        av = pd.read_json(urlav_data, orient='columns')
+        sector_temp = av['Time Series (Daily)'].apply(pd.Series)
+        sector_temp = sector_temp.iloc[5:]
+        sector_temp2 = sector_temp[['4. close']]
+        sector_temp2["4. close"] = pd.to_numeric(sector_temp2["4. close"])
+        sector_temp2.rename(columns={'4. close':av.loc['2. Symbol'][0]}, inplace=True)
+        sector_temp2.index =  pd.to_datetime(sector_temp2.index, format='%Y-%m-%d')
         sector_close = pd.concat([sector_temp2, sector_close], axis=1)
-        daterange = sector_close.index
-        sector_data = sector_close
-        
+        time.sleep(5)
+
+    daterange = sector_close.index
+    sector_data = sector_close
     min = utils.unix_time_millis(daterange.min())
     max = utils.unix_time_millis(daterange.max())
     value = [utils.unix_time_millis(daterange.min()),
@@ -201,7 +205,7 @@ def initialize_SectorGraph(n_clicks):
 def update_SectorGraph(slide_value):
     res = []
     global sector_close
-    sector_data = sector_close[(utils.unix_time_millis(sector_close.index)>slide_value[0]) & (utils.unix_time_millis(sector_close.index)<slide_value[1])]          
+    sector_data = sector_close[(utils.unix_time_millis(sector_close.index)>slide_value[0]) & (utils.unix_time_millis(sector_close.index)<=slide_value[1])]          
     
     for col in sector_data.columns:
         sector_data['change'] = sector_data[col] / sector_data[col].iat[0] - 1
@@ -226,3 +230,33 @@ def update_SectorGraph(slide_value):
 
 if __name__ == '__main__':
     app.run_server(debug=False)
+    
+
+
+
+#def initialize_SectorGraph(n_clicks):
+#
+#    # Sector Data
+#    global sector_close
+#    sector_close=pd.DataFrame([])
+#    for i in layouttab.sector_list:
+#        urlsec_data='https://api.worldtradingdata.com/api/v1/history?symbol=' + format(i) + '&sort=newest&api_token=aB0PKnbqXhFuYJtXmOvasDHf2M82BCY3PI9N9o4kb0UHwf5zVckMnD0PL2hc'
+#        sector_temp = pd.read_json(urlsec_data, orient='columns')
+#        sector_temp = pd.concat([sector_temp.drop(['history'], axis=1), sector_temp['history'].apply(pd.Series)], axis=1)
+#        sector_temp["close"] = pd.to_numeric(sector_temp["close"])
+#        sector_temp2 = sector_temp[['close']]
+#        sector_temp2.columns = sector_temp.name.unique()
+#        sector_close = pd.concat([sector_temp2, sector_close], axis=1)
+#        daterange = sector_close.index
+#        sector_data = sector_close
+#        
+#    min = utils.unix_time_millis(daterange.min())
+#    max = utils.unix_time_millis(daterange.max())
+#    value = [utils.unix_time_millis(daterange.min()),
+#             utils.unix_time_millis(daterange.max())]
+#    marks= utils.getMarks(daterange.min(),
+#                   daterange.max())
+#       
+#    return min, max, value, marks
+        
+
