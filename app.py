@@ -9,6 +9,8 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from pages import stocks, layouttab, sectors, utils
 import time
+import alpha_vantage
+from alpha_vantage.timeseries import TimeSeries
 
 global sector_close
 sector_close=pd.DataFrame([])
@@ -184,6 +186,7 @@ def initialize_SectorGraph(n_clicks):
         sector_temp2.rename(columns={'4. close':av.loc['2. Symbol'][0]}, inplace=True)
         sector_temp2.index =  pd.to_datetime(sector_temp2.index, format='%Y-%m-%d')
         sector_close = pd.concat([sector_temp2, sector_close], axis=1)
+        refresh_value=i
         time.sleep(5)
 
     daterange = sector_close.index
@@ -228,6 +231,16 @@ def update_SectorGraph(slide_value):
        
     return fig
 
+#returning a heartbeat callback
+@app.callback(
+    Output('refresh_text', 'value'),
+     [Input('refresh_value', 'value')]
+)
+def heartbeat(timer):
+    blank=1
+    return blank
+
+
 if __name__ == '__main__':
     app.run_server(debug=False)
     
@@ -258,5 +271,3 @@ if __name__ == '__main__':
 #                   daterange.max())
 #       
 #    return min, max, value, marks
-        
-

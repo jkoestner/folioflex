@@ -64,6 +64,8 @@ layout = html.Div(
     
         html.P(),   
         
+        html.Div(id='refresh_text'),
+        
         #creating dropdown menu
         html.Label('Sectors Dropdown'),
     
