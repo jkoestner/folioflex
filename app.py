@@ -185,7 +185,7 @@ def initialize_SectorGraph(n_clicks):
         sector_temp2.index =  pd.to_datetime(sector_temp2.index, format='%Y-%m-%d')
         sector_close = pd.concat([sector_temp2, sector_close], axis=1)
         refresh_value=i
-        print(refresh_value)
+        heartbeat(refresh_value)
         time.sleep(5)
 
     daterange = sector_close.index
@@ -229,6 +229,10 @@ def update_SectorGraph(slide_value):
     fig = dict(data = res, layout = layout)
        
     return fig
+
+def heartbeat(hb):
+    refresh_value=hb
+    return refresh_value
 
 if __name__ == '__main__':
     app.run_server(debug=False)
