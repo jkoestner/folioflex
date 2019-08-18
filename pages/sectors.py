@@ -33,6 +33,8 @@ layout = html.Div(
         
         html.Button(id='sector-initialize', children='Sector initialize'),
 
+        html.Div(id='refresh_text'),
+
         #graph
         dcc.Graph(
                 id = 'Sector-Graph',
@@ -63,8 +65,6 @@ layout = html.Div(
         ),
     
         html.P(),   
-        
-        html.Div(id='refresh_text'),
         
         #creating dropdown menu
         html.Label('Sectors Dropdown'),
