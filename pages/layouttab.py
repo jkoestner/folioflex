@@ -108,6 +108,6 @@ formatter_quote = {'avgTotalVolume':'{:,.2f}'.format,
                     'changePercent':'{0:.2%}'.format,
                     'ytdChange':'{0:.2%}'.format,}
 
-sector_list = ['XLF', 'XLU']
+sector_list = ['XLF', 'XLU', 'XLV', 'RWR']
                #, 'XLV', 'RWR', 'XLK', 'XLY', 'XLP', 'XLB', 'XLI', 'IYT']
 
