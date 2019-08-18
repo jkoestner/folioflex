@@ -9,8 +9,6 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from pages import stocks, layouttab, sectors, utils
 import time
-import alpha_vantage
-from alpha_vantage.timeseries import TimeSeries
 
 global sector_close
 sector_close=pd.DataFrame([])
