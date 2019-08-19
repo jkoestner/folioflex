@@ -9,6 +9,10 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from pages import stocks, layouttab, sectors, utils
 import time
+#from rq import Queue
+#from worker import conn
+#
+#q = Queue(connection=conn)
 
 global sector_close
 sector_close=pd.DataFrame([])
@@ -184,8 +188,6 @@ def initialize_SectorGraph(n_clicks):
         sector_temp2.rename(columns={'4. close':av.loc['2. Symbol'][0]}, inplace=True)
         sector_temp2.index =  pd.to_datetime(sector_temp2.index, format='%Y-%m-%d')
         sector_close = pd.concat([sector_temp2, sector_close], axis=1)
-        refresh_value=i
-        heartbeat(refresh_value)
         time.sleep(5)
 
     daterange = sector_close.index
@@ -224,15 +226,19 @@ def update_SectorGraph(slide_value):
                 
     layout = go.Layout(
         hovermode='closest'
-        )
+    )
         
     fig = dict(data = res, layout = layout)
        
     return fig
 
-def heartbeat(hb):
-    refresh_value=hb
-    return refresh_value
+@app.callback(
+    Output('refresh_text', 'children'),
+     [Input('interval-component', 'n_intervals')]
+)
+
+def heartbeat(n_intervals):
+    return n_intervals
 
 if __name__ == '__main__':
     app.run_server(debug=False)
