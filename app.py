@@ -205,26 +205,29 @@ def initialize_SectorGraph(n_clicks):
 )
 
 def update_SectorGraph(slide_value):
-    res = []
     global sector_close
-    sector_data = sector_close[(utils.unix_time_millis(sector_close.index)>slide_value[0]) & (utils.unix_time_millis(sector_close.index)<=slide_value[1])]          
-    
-    for col in sector_data.columns:
-        sector_data['change'] = sector_data[col] / sector_data[col].iat[0] - 1
-        sector_data.drop([col], axis=1, inplace=True) 
-        sector_data = sector_data.rename(columns={'change': col})
-        res.append(
-            go.Scatter(
-                x=sector_data.index,
-                y=sector_data[col].values.tolist(),
-                name=col
-            )
-        )
-    
-                
+    res = []                        
     layout = go.Layout(
         hovermode='closest'
     )
+    
+    if sector_close.empty == False:  
+        sector_data = sector_close[(utils.unix_time_millis(sector_close.index)>slide_value[0]) & (utils.unix_time_millis(sector_close.index)<=slide_value[1])]          
+        
+        for col in sector_data.columns:
+            sector_data['change'] = sector_data[col] / sector_data[col].iat[0] - 1
+            sector_data.drop([col], axis=1, inplace=True) 
+            sector_data = sector_data.rename(columns={'change': col})
+            res.append(
+                go.Scatter(
+                    x=sector_data.index,
+                    y=sector_data[col].values.tolist(),
+                    name=col
+                )
+            )
+    else:
+        tbd='delete'
+
         
     fig = dict(data = res, layout = layout)
        
