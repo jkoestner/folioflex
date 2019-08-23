@@ -4,7 +4,7 @@ import dash_html_components as html
 import pandas as pd
 import dash_table
 from dash.dependencies import Input, Output, State
-import app
+
 
 #set up lists
 USexchanges=['NASDAQ', 'New York Stock Exchange'] #,'US OTC', 'NYSE American' 'NASDAQ', 'New York Stock Exchange'

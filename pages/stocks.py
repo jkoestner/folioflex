@@ -4,7 +4,6 @@ import dash_html_components as html
 import pandas as pd
 import dash_table
 from dash.dependencies import Input, Output, State
-import app
 from pages import utils
 
 #Creating the dash app

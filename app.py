@@ -8,11 +8,16 @@ import plotly.graph_objs as go
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from pages import stocks, layouttab, sectors, utils
+from function import Query
 import time
-#from rq import Queue
-#from worker import conn
-#
-#q = Queue(connection=conn)
+from rq import Queue
+from worker import conn
+from redis import Redis
+from rq.job import Job
+
+q = Queue(connection=conn)
+redis = Redis()
+
 
 global sector_close
 sector_close=pd.DataFrame([])
@@ -27,7 +32,23 @@ app.config.suppress_callback_exceptions = True
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
-    html.Div(id='page-content')
+    html.Div(id='page-content'),
+    
+    html.Div(id='task-id', children='none',
+             style={'display': 'show'}),
+
+    html.Div(id='task-status', children='task-status',
+             style={'display': 'show'}),        
+    
+    html.Div(id='sector-status', children='sector-status',
+             style={'display': 'show'}),    
+    
+    dcc.Interval(
+            id ='interval-component',
+            interval=25000,
+            n_intervals=0
+        )
+
 ])
 
 ##########Index Page callback##################
@@ -166,40 +187,17 @@ def update_table(dropdown_value):
     return [{"name": i, "id": i} for i in collection.columns],collection.to_dict('records')
 
 @app.callback(
-    [Output('slider', 'min'),
-     Output('slider', 'max'),
-     Output('slider', 'value'),
-     Output('slider', 'marks')],
-     [Input(component_id='sector-initialize', component_property='n_clicks')]
+    Output('task-id', 'children'),    
+    [Input(component_id='sector-initialize', component_property='n_clicks')]
 )
 
 def initialize_SectorGraph(n_clicks):
 
-    # Sector Data
-    global sector_close
-    sector_close=pd.DataFrame([])
-    for i in layouttab.sector_list:
-        urlav_data='https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=' + format(i) + '&outputsize=full&apikey=QHR6YAR1880U0KLR'
-        av = pd.read_json(urlav_data, orient='columns')
-        sector_temp = av['Time Series (Daily)'].apply(pd.Series)
-        sector_temp = sector_temp.iloc[5:]
-        sector_temp2 = sector_temp[['4. close']]
-        sector_temp2["4. close"] = pd.to_numeric(sector_temp2["4. close"])
-        sector_temp2.rename(columns={'4. close':av.loc['2. Symbol'][0]}, inplace=True)
-        sector_temp2.index =  pd.to_datetime(sector_temp2.index, format='%Y-%m-%d')
-        sector_close = pd.concat([sector_temp2, sector_close], axis=1)
-        time.sleep(5)
+    q.enqueue(Query)
 
-    daterange = sector_close.index
-    sector_data = sector_close
-    min = utils.unix_time_millis(daterange.min())
-    max = utils.unix_time_millis(daterange.max())
-    value = [utils.unix_time_millis(daterange.min()),
-             utils.unix_time_millis(daterange.max())]
-    marks= utils.getMarks(daterange.min(),
-                   daterange.max())
+    job = Job.fetch(q.job_ids[0], connection=Redis())
        
-    return min, max, value, marks
+    return job.id
 
 @app.callback(
     Output('Sector-Graph', 'figure'),
@@ -233,40 +231,67 @@ def update_SectorGraph(slide_value):
     return fig
 
 @app.callback(
-    Output('refresh_text', 'children'),
-     [Input('interval-component', 'n_intervals')]
+     Output('task-status', 'children'),
+     [Input('interval-component', 'n_intervals'),
+      Input('task-id', 'children')]
 )
 
-def heartbeat(n_intervals):
-    return n_intervals
+def status_check(n_intervals, task_id):
+    if task_id != 'none':
+        job = Job.fetch(task_id, connection=Redis())
+        status = job.get_status()
+    else:
+        status = 'waiting'
+    return status
+
+@app.callback(
+     Output('sector-status', 'children'),
+     [Input('task-id', 'children'),
+      Input('task-status', 'children')]
+)
+
+def get_results(task_id, task_status):
+    if task_status == 'finished':
+        global sector_close
+        job = Job.fetch(task_id, connection=Redis())        
+        sector_close = job.result
+        status = 'ready'
+    else:
+        status = 'empty'
+    return status
+
+@app.callback(
+    [Output('slider', 'min'),
+     Output('slider', 'max'),
+     Output('slider', 'value'),
+     Output('slider', 'marks')],
+     [Input('sector-status', 'children')]
+)
+
+def update_SectorData(sector_status):
+    if sector_status == 'ready':
+        global sector_close
+        daterange = sector_close.index
+        sector_data = sector_close
+        min = utils.unix_time_millis(daterange.min())
+        max = utils.unix_time_millis(daterange.max())
+        value = [utils.unix_time_millis(daterange.min()),
+                 utils.unix_time_millis(daterange.max())]
+        marks= utils.getMarks(daterange.min(),
+                       daterange.max())
+    else:
+        min = 0
+        max = 0
+        value = 0
+        marks = 0
+        
+    return min, max, value, marks
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
-    
+    app.run_server(debug=False, host='0.0.0.0')
+
+        
+        
 
 
 
-#def initialize_SectorGraph(n_clicks):
-#
-#    # Sector Data
-#    global sector_close
-#    sector_close=pd.DataFrame([])
-#    for i in layouttab.sector_list:
-#        urlsec_data='https://api.worldtradingdata.com/api/v1/history?symbol=' + format(i) + '&sort=newest&api_token=aB0PKnbqXhFuYJtXmOvasDHf2M82BCY3PI9N9o4kb0UHwf5zVckMnD0PL2hc'
-#        sector_temp = pd.read_json(urlsec_data, orient='columns')
-#        sector_temp = pd.concat([sector_temp.drop(['history'], axis=1), sector_temp['history'].apply(pd.Series)], axis=1)
-#        sector_temp["close"] = pd.to_numeric(sector_temp["close"])
-#        sector_temp2 = sector_temp[['close']]
-#        sector_temp2.columns = sector_temp.name.unique()
-#        sector_close = pd.concat([sector_temp2, sector_close], axis=1)
-#        daterange = sector_close.index
-#        sector_data = sector_close
-#        
-#    min = utils.unix_time_millis(daterange.min())
-#    max = utils.unix_time_millis(daterange.max())
-#    value = [utils.unix_time_millis(daterange.min()),
-#             utils.unix_time_millis(daterange.max())]
-#    marks= utils.getMarks(daterange.min(),
-#                   daterange.max())
-#       
-#    return min, max, value, marks

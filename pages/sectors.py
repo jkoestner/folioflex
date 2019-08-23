@@ -7,7 +7,6 @@ from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 import datetime
 from dateutil.relativedelta import relativedelta
-import app
 from pages import utils, layouttab
 
 # Sector URL
@@ -35,11 +34,6 @@ layout = html.Div(
 
         html.Div(id='refresh_text'),
         
-        dcc.Interval(
-            id ='interval-component',
-            interval=2000,
-            n_intervals=0
-        ),
 
         #graph
         dcc.Graph(
