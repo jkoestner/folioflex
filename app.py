@@ -193,25 +193,25 @@ def update_table(dropdown_value):
 
 def initialize_SectorGraph(n_clicks):
 
-    q.enqueue(Query)
-
-    job = Job.fetch(q.job_ids[0], connection=Redis())
+#    q.enqueue(Query)
+    task_id = q.enqueue(Query).id
        
-    return job.id
+    return task_id
 
 @app.callback(
     Output('Sector-Graph', 'figure'),
-     [Input('slider', 'value')]
+     [Input('slider', 'value'),
+      Input('task-status', 'children')]
 )
 
-def update_SectorGraph(slide_value):
+def update_SectorGraph(slide_value,task_status):
     global sector_close
     res = []                        
     layout = go.Layout(
         hovermode='closest'
     )
     
-    if sector_close.empty == False:  
+    if task_status == 'finished':  
         sector_data = sector_close[(utils.unix_time_millis(sector_close.index)>slide_value[0]) & (utils.unix_time_millis(sector_close.index)<=slide_value[1])]          
         
         for col in sector_data.columns:
@@ -248,7 +248,7 @@ def status_check(n_intervals, task_id):
     return status
 
 @app.callback(
-     Output('sector-status', 'children'),
+      Output('sector-status', 'children'),
      [Input('task-id', 'children'),
       Input('task-status', 'children')]
 )
@@ -258,10 +258,11 @@ def get_results(task_id, task_status):
         global sector_close
         job = Job.fetch(task_id, connection=Redis())        
         sector_close = job.result
-        status = 'ready'
+        job.delete()
+        sector_status = 'ready'
     else:
-        status = 'empty'
-    return status
+        sector_status = 'empty'
+    return sector_status
 
 @app.callback(
     [Output('slider', 'min'),
