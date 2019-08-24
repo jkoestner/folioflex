@@ -8,6 +8,7 @@ import plotly.graph_objs as go
 import datetime
 from dateutil.relativedelta import relativedelta
 from pages import utils, layouttab
+import os
 
 # Sector URL
 urlsec = 'https://cloud.iexapis.com/stable/ref-data/sectors?token=pk_5d82796966de466bb2f966ed65ca70c7'
