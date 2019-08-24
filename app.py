@@ -12,12 +12,9 @@ from function import Query
 import time
 from rq import Queue
 from worker import conn
-from redis import Redis
 from rq.job import Job
 
 q = Queue(connection=conn)
-redis = Redis()
-
 
 global sector_close
 sector_close=pd.DataFrame([])
@@ -241,7 +238,7 @@ def update_SectorGraph(slide_value,task_status):
 
 def status_check(n_intervals, task_id):
     if task_id != 'none':
-        job = Job.fetch(task_id, connection=Redis())
+        job = Job.fetch(task_id, connection=conn)
         status = job.get_status()
     else:
         status = 'waiting'
@@ -256,7 +253,7 @@ def status_check(n_intervals, task_id):
 def get_results(task_id, task_status):
     if task_status == 'finished':
         global sector_close
-        job = Job.fetch(task_id, connection=Redis())        
+        job = Job.fetch(task_id, connection=conn)        
         sector_close = job.result
         job.delete()
         sector_status = 'ready'
