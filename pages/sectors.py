@@ -32,7 +32,7 @@ layout = html.Div(
         
         html.Button(id='sector-initialize', children='Sector initialize'),
 
-        html.Div(id='refresh_text'),
+        html.Div(id='refresh_text', children=os.getenv('REDISTOGO_URL')),
         
 
         #graph
