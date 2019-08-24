@@ -33,8 +33,7 @@ layout = html.Div(
         html.Button(id='sector-initialize', children='Sector initialize'),
 
         html.Div(id='refresh_text'),
-        
-
+            
         #graph
         dcc.Graph(
                 id = 'Sector-Graph',

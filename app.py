@@ -29,20 +29,20 @@ app.config.suppress_callback_exceptions = True
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
-    html.Div(id='page-content'),
-    
-    html.Div(id='task-id', children='none',
-             style={'display': 'show'}),
 
-    html.Div(id='task-status', children='task-status',
-             style={'display': 'show'}),        
+    html.Div(id='task-status', children='task-status'),        
     
+    html.Div(id='page-content'),
+        
+    html.Div(id='task-id', children='none',
+             style={'display': 'none'}), 
+                         
     html.Div(id='sector-status', children='sector-status',
-             style={'display': 'show'}),    
-    
+             style={'display': 'none'}),    
+             
     dcc.Interval(
             id ='interval-component',
-            interval=25000,
+            interval=24*60*60*1000,
             n_intervals=0
         )
 
@@ -229,6 +229,20 @@ def update_SectorGraph(slide_value,task_status):
     fig = dict(data = res, layout = layout)
        
     return fig
+
+@app.callback(Output('interval-component', 'interval'),
+              [Input('task-id', 'children'),
+               Input('task-status', 'children')])
+def toggle_interval_speed(task_id, task_status):
+    """This callback is triggered by changes in task-id and task-status divs.  It switches the 
+    page refresh interval to fast (1 sec) if a task is running, or slow (24 hours) if a task is 
+    pending or complete."""
+    if task_id == 'none':
+        return 24*60*60*1000
+    if task_id != 'none' and (task_status in ['finished']):
+        return 24*60*60*1000
+    else:
+        return 1000
 
 @app.callback(
      Output('task-status', 'children'),
