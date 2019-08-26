@@ -228,11 +228,11 @@ def update_SectorGraph(slide_value,sector_status):
 
 @app.callback(
         Output('interval-component', 'interval'),
-        [Input('task-id', 'children')],
-        [State('task-status', 'children')]
+        [Input('task-status', 'children')],
+        [State('task-id', 'children')]
 )
 
-def toggle_interval_speed(task_id, task_status):
+def toggle_interval_speed(task_status, task_id):
     """This callback is triggered by changes in task-id and task-status divs.  It switches the 
     page refresh interval to fast (1 sec) if a task is running, or slow (24 hours) if a task is 
     pending or complete."""
@@ -251,7 +251,7 @@ def toggle_interval_speed(task_id, task_status):
 )
 
 def status_check(n_intervals, task_id):
-    if task_id != 'none':
+    if task_id != 'none' and task_status != 'finished':
         job = Job.fetch(task_id, connection=conn)
         task_status = job.get_status()
     else:
