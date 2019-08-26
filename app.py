@@ -34,8 +34,8 @@ app.layout = html.Div([
     html.Div(id='task-id', children='none',
              style={'display': 'none'}), 
                          
-    html.Div(id='sector-status', children='none',
-             style={'display': 'none'}),    
+    html.Div(id='sector-status', children='none'),
+             #style={'display': 'none'}),    
              
     dcc.Interval(
             id ='interval-component',
@@ -271,7 +271,8 @@ def get_results(task_status, task_id):
         job = Job.fetch(task_id, connection=conn)        
         sector_close = job.result
         job.delete()
-        sector_status = 'ready'
+        #sector_status = 'ready'
+        sector_status = sector_close.to_json()
     else:
         sector_status = 'none'
     return sector_status
