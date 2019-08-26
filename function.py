@@ -1,5 +1,6 @@
 import pandas as pd
 from pages import stocks, layouttab, sectors, utils
+import time
 
 def Query():
     global sector_close
@@ -12,7 +13,6 @@ def Query():
         sector_temp2 = sector_temp[['close']]
         sector_temp2.columns = sector_temp.name.unique()
         sector_close = pd.concat([sector_temp2, sector_close], axis=1)
-        daterange = sector_close.index
-        sector_data = sector_close
+        time.sleep(12)
               
-    return sector_data
+    return sector_close

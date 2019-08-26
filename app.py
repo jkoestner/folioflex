@@ -9,15 +9,11 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from pages import stocks, layouttab, sectors, utils
 from function import Query
-import time
 from rq import Queue
 from worker import conn
 from rq.job import Job
 
 q = Queue(connection=conn)
-
-global sector_close
-sector_close=pd.DataFrame([])
 
 ###APP###
 app = dash.Dash(
@@ -29,15 +25,16 @@ app.config.suppress_callback_exceptions = True
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
-
-    html.Div(id='task-status', children='task-status'),        
     
     html.Div(id='page-content'),
+    
+    html.Div(id='task-status', children='none',
+             style={'display': 'none'}),
         
     html.Div(id='task-id', children='none',
              style={'display': 'none'}), 
                          
-    html.Div(id='sector-status', children='sector-status',
+    html.Div(id='sector-status', children='none',
              style={'display': 'none'}),    
              
     dcc.Interval(
@@ -197,20 +194,19 @@ def initialize_SectorGraph(n_clicks):
 
 @app.callback(
     Output('Sector-Graph', 'figure'),
-     [Input('slider', 'value'),
-      Input('task-status', 'children')]
+     [Input('slider', 'value')],
+     [State('sector-status', 'children')]
 )
 
-def update_SectorGraph(slide_value,task_status):
-    global sector_close
+def update_SectorGraph(slide_value,sector_status):
     res = []                        
     layout = go.Layout(
         hovermode='closest'
     )
     
-    if task_status == 'finished':  
+    if sector_status == 'ready':  
+        global sector_close
         sector_data = sector_close[(utils.unix_time_millis(sector_close.index)>slide_value[0]) & (utils.unix_time_millis(sector_close.index)<=slide_value[1])]          
-        
         for col in sector_data.columns:
             sector_data['change'] = sector_data[col] / sector_data[col].iat[0] - 1
             sector_data.drop([col], axis=1, inplace=True) 
@@ -230,9 +226,12 @@ def update_SectorGraph(slide_value,task_status):
        
     return fig
 
-@app.callback(Output('interval-component', 'interval'),
-              [Input('task-id', 'children'),
-               Input('task-status', 'children')])
+@app.callback(
+        Output('interval-component', 'interval'),
+        [Input('task-id', 'children')],
+        [State('task-status', 'children')]
+)
+
 def toggle_interval_speed(task_id, task_status):
     """This callback is triggered by changes in task-id and task-status divs.  It switches the 
     page refresh interval to fast (1 sec) if a task is running, or slow (24 hours) if a task is 
@@ -245,26 +244,27 @@ def toggle_interval_speed(task_id, task_status):
         return 1000
 
 @app.callback(
-     Output('task-status', 'children'),
-     [Input('interval-component', 'n_intervals'),
-      Input('task-id', 'children')]
+     [Output('task-status', 'children'),
+      Output('refresh_text', 'children')],
+     [Input('interval-component', 'n_intervals')],
+      [State('task-id', 'children')]
 )
 
 def status_check(n_intervals, task_id):
     if task_id != 'none':
         job = Job.fetch(task_id, connection=conn)
-        status = job.get_status()
+        task_status = job.get_status()
     else:
-        status = 'waiting'
-    return status
+        task_status = 'waiting'
+    return task_status, task_status
 
 @app.callback(
       Output('sector-status', 'children'),
-     [Input('task-id', 'children'),
-      Input('task-status', 'children')]
+      [Input('task-status', 'children')],
+      [State('task-id', 'children')]
 )
 
-def get_results(task_id, task_status):
+def get_results(task_status, task_id):
     if task_status == 'finished':
         global sector_close
         job = Job.fetch(task_id, connection=conn)        
@@ -272,7 +272,7 @@ def get_results(task_id, task_status):
         job.delete()
         sector_status = 'ready'
     else:
-        sector_status = 'empty'
+        sector_status = 'none'
     return sector_status
 
 @app.callback(

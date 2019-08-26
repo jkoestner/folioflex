@@ -8,6 +8,8 @@ import plotly.graph_objs as go
 import datetime
 from dateutil.relativedelta import relativedelta
 from pages import utils, layouttab
+from worker import conn
+from rq.job import Job
 
 # Sector URL
 urlsec = 'https://cloud.iexapis.com/stable/ref-data/sectors?token=pk_5d82796966de466bb2f966ed65ca70c7'
@@ -32,7 +34,7 @@ layout = html.Div(
         
         html.Button(id='sector-initialize', children='Sector initialize'),
 
-        html.Div(id='refresh_text'),
+        html.Div(id='refresh_text', children='none'),
             
         #graph
         dcc.Graph(
