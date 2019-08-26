@@ -13,6 +13,5 @@ def Query():
         sector_temp2 = sector_temp[['close']]
         sector_temp2.columns = sector_temp.name.unique()
         sector_close = pd.concat([sector_temp2, sector_close], axis=1)
-        time.sleep(12)
               
     return sector_close
