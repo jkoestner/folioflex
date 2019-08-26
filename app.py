@@ -228,8 +228,8 @@ def update_SectorGraph(slide_value,sector_status):
 
 @app.callback(
         Output('interval-component', 'interval'),
-        [Input('task-status', 'children')],
-        [State('task-id', 'children')]
+        [Input('task-status', 'children'),
+        Input('task-id', 'children')]
 )
 
 def toggle_interval_speed(task_status, task_id):
