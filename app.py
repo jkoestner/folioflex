@@ -287,6 +287,7 @@ def get_results(task_status, task_id):
 def update_SectorData(sector_status):
     global sector_close
     if sector_status == 'ready':
+        sector_close = job.result
         daterange = sector_close.index
         sector_data = sector_close
         min = utils.unix_time_millis(daterange.min())
