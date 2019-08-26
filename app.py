@@ -247,10 +247,11 @@ def toggle_interval_speed(task_status, task_id):
      [Output('task-status', 'children'),
       Output('refresh_text', 'children')],
      [Input('interval-component', 'n_intervals')],
-      [State('task-id', 'children')]
+      [State('task-id', 'children'),
+       State('task-status', 'children')]
 )
 
-def status_check(n_intervals, task_id):
+def status_check(n_intervals, task_id, task_status):
     if task_id != 'none' and task_status != 'finished':
         job = Job.fetch(task_id, connection=conn)
         task_status = job.get_status()
