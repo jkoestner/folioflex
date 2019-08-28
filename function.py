@@ -1,6 +1,5 @@
 import pandas as pd
-from pages import stocks, layouttab, sectors, utils
-import time
+from pages import layouttab
 
 def Query():
     sector_close=pd.DataFrame([])
