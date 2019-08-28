@@ -34,8 +34,11 @@ app.layout = html.Div([
     html.Div(id='task-id', children='none',
              style={'display': 'none'}), 
                          
-    html.Div(id='sector-status', children='none'),
-             #style={'display': 'none'}),    
+    html.Div(id='sector-status', children='none',
+             style={'display': 'none'}),
+             
+    html.Div(id='av_data', children='none',
+             style={'display': 'none'}),  
              
     dcc.Interval(
             id ='interval-component',
@@ -180,6 +183,7 @@ def update_table(dropdown_value):
     
     return [{"name": i, "id": i} for i in collection.columns],collection.to_dict('records')
 
+#################Sector Graph Callback#####################
 @app.callback(
     Output('task-id', 'children'),    
     [Input(component_id='sector-initialize', component_property='n_clicks')]
@@ -187,7 +191,6 @@ def update_table(dropdown_value):
 
 def initialize_SectorGraph(n_clicks):
 
-#    q.enqueue(Query)
     task_id = q.enqueue(Query).id
        
     return task_id
@@ -195,17 +198,19 @@ def initialize_SectorGraph(n_clicks):
 @app.callback(
     Output('Sector-Graph', 'figure'),
      [Input('slider', 'value')],
-     [State('sector-status', 'children')]
+     [State('av_data', 'children'),
+      State('sector-status', 'children')]
+     
 )
 
-def update_SectorGraph(slide_value,sector_status):
+def update_SectorGraph(slide_value,av_data,sector_status):
     res = []                        
     layout = go.Layout(
         hovermode='closest'
     )
     
-    if sector_status == 'ready':  
-        global sector_close
+    if sector_status == 'ready' and slide_value != 0:  
+        sector_close = pd.read_json(av_data)
         sector_data = sector_close[(utils.unix_time_millis(sector_close.index)>slide_value[0]) & (utils.unix_time_millis(sector_close.index)<=slide_value[1])]          
         for col in sector_data.columns:
             sector_data['change'] = sector_data[col] / sector_data[col].iat[0] - 1
@@ -260,37 +265,36 @@ def status_check(n_intervals, task_id, task_status):
     return task_status, task_status
 
 @app.callback(
-      Output('sector-status', 'children'),
+      [Output('av_data', 'children'),
+       Output('sector-status', 'children')],
       [Input('task-status', 'children')],
       [State('task-id', 'children')]
 )
 
 def get_results(task_status, task_id):
     if task_status == 'finished':
-        global sector_close
         job = Job.fetch(task_id, connection=conn)        
         sector_close = job.result
         job.delete()
-        #sector_status = 'ready'
-        sector_status = sector_close.to_json()
+        sector_status = 'ready'
     else:
         sector_status = 'none'
-    return sector_status
+        sector_close=pd.DataFrame([])
+    return sector_close.to_json(), sector_status
 
 @app.callback(
     [Output('slider', 'min'),
      Output('slider', 'max'),
      Output('slider', 'value'),
      Output('slider', 'marks')],
-     [Input('sector-status', 'children')]
+    [Input('sector-status', 'children')],
+    [State('av_data', 'children')]
 )
 
-def update_SectorData(sector_status):
-    global sector_close
+def update_SectorData(sector_status,av_data):
     if sector_status == 'ready':
-        sector_data = sector_close
+        sector_close = pd.read_json(av_data)
         daterange = sector_close.index
-        
         min = utils.unix_time_millis(daterange.min())
         max = utils.unix_time_millis(daterange.max())
         value = [utils.unix_time_millis(daterange.min()),
@@ -310,6 +314,5 @@ if __name__ == '__main__':
 
         
         
-
 
 

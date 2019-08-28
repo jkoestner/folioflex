@@ -78,9 +78,10 @@ def make_dash_table(df):
         table.append(html.Tr(html_row))
     return table
 
-epoch = datetime.datetime.utcfromtimestamp(0)
+
 
 def unix_time_millis(dt):
+    epoch = datetime.datetime.utcfromtimestamp(0)
     return (dt - epoch).total_seconds()
 
 def unixToDatetime(unix):
