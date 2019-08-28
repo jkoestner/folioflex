@@ -37,7 +37,7 @@ app.layout = html.Div([
     html.Div(id='sector-status', children='none',
              style={'display': 'none'}),
              
-    html.Div(id='av_data', children='none',
+    html.Div(id='av-data', children='none',
              style={'display': 'none'}),  
              
     dcc.Interval(
@@ -75,10 +75,10 @@ def update_stockanalysis(n_clicks,input_value):
     
     stock = pd.read_json(urlstock, orient='index', typ='frame')
             
-    for f in layouttab.formatter_stock.items():
-            column = f[0]
-            if stock.loc[column].values[0] is not None:
-                stock.loc[column] = stock.loc[column].apply(f[1])              
+#    for f in layouttab.formatter_stock.items():
+#            column = f[0]
+#            if stock.loc[column].values[0] is not None:
+#                stock.loc[column] = stock.loc[column].apply(f[1])              
 
     
     stock = stock.reset_index()
@@ -98,10 +98,10 @@ def update_quoteanalysis(n_clicks,input_value):
     #urlquote = 'https://sandbox.iexapis.com/stable/stock/aapl/quote?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     quote = pd.read_json(urlquote, orient='index', typ='frame')   
 
-    for f in layouttab.formatter_quote.items():
-        column = f[0]
-        if quote.loc[column].values[0] is not None:
-            quote.loc[column] = quote.loc[column].apply(f[1])   
+#    for f in layouttab.formatter_quote.items():
+#        column = f[0]
+#        if quote.loc[column].values[0] is not None:
+#            quote.loc[column] = quote.loc[column].apply(f[1])   
     
     quote.loc['closeTime'].values[0]=pd.to_datetime(quote.loc['closeTime'].values[0], unit='ms')
     quote.loc['iexLastUpdated'].values[0]=pd.to_datetime(quote.loc['iexLastUpdated'].values[0], unit='ms')
@@ -177,9 +177,9 @@ def update_table(dropdown_value):
     collection = collection[layouttab.cols_col]
     collection = collection.sort_values(by=['cap*perc'], ascending=False)
     
-    for f in layouttab.formatter_col.items():
-        column = f[0]
-        collection[column] = collection[column].map(f[1])
+#    for f in layouttab.formatter_col.items():
+#        column = f[0]
+#        collection[column] = collection[column].map(f[1])
     
     return [{"name": i, "id": i} for i in collection.columns],collection.to_dict('records')
 
@@ -194,42 +194,6 @@ def initialize_SectorGraph(n_clicks):
     task_id = q.enqueue(Query).id
        
     return task_id
-
-@app.callback(
-    Output('Sector-Graph', 'figure'),
-     [Input('slider', 'value')],
-     [State('av_data', 'children'),
-      State('sector-status', 'children')]
-     
-)
-
-def update_SectorGraph(slide_value,av_data,sector_status):
-    res = []                        
-    layout = go.Layout(
-        hovermode='closest'
-    )
-    
-    if sector_status == 'ready' and slide_value != 0:  
-        sector_close = pd.read_json(av_data)
-        sector_data = sector_close[(utils.unix_time_millis(sector_close.index)>slide_value[0]) & (utils.unix_time_millis(sector_close.index)<=slide_value[1])]          
-        for col in sector_data.columns:
-            sector_data['change'] = sector_data[col] / sector_data[col].iat[0] - 1
-            sector_data.drop([col], axis=1, inplace=True) 
-            sector_data = sector_data.rename(columns={'change': col})
-            res.append(
-                go.Scatter(
-                    x=sector_data.index,
-                    y=sector_data[col].values.tolist(),
-                    name=col
-                )
-            )
-    else:
-        tbd='delete'
-
-        
-    fig = dict(data = res, layout = layout)
-       
-    return fig
 
 @app.callback(
         Output('interval-component', 'interval'),
@@ -265,7 +229,7 @@ def status_check(n_intervals, task_id, task_status):
     return task_status, task_status
 
 @app.callback(
-      [Output('av_data', 'children'),
+      [Output('av-data', 'children'),
        Output('sector-status', 'children')],
       [Input('task-status', 'children')],
       [State('task-id', 'children')]
@@ -288,7 +252,7 @@ def get_results(task_status, task_id):
      Output('slider', 'value'),
      Output('slider', 'marks')],
     [Input('sector-status', 'children')],
-    [State('av_data', 'children')]
+    [State('av-data', 'children')]
 )
 
 def update_SectorData(sector_status,av_data):
@@ -308,6 +272,43 @@ def update_SectorData(sector_status,av_data):
         marks = 0
         
     return min, max, value, marks
+
+@app.callback(
+    Output('Sector-Graph', 'figure'),
+     [Input('slider', 'value')],
+     [State('av-data', 'children'),
+      State('sector-status', 'children')]
+     
+)
+
+def update_SectorGraph(slide_value,av_data,sector_status):
+    res = []                        
+    layout = go.Layout(
+        hovermode='closest'
+    )
+    
+    if sector_status == 'ready' and slide_value != 0:  
+        sector_close = pd.read_json(av_data)
+        sector_data = sector_close[(utils.unix_time_millis(sector_close.index)>slide_value[0]) & (utils.unix_time_millis(sector_close.index)<=slide_value[1])]          
+        for col in sector_data.columns:
+            sector_data['change'] = sector_data[col] / sector_data[col].iat[0] - 1
+            sector_data.drop([col], axis=1, inplace=True) 
+#            sector_data['change'] = sector_data['change'].map('{0:.2%}'.format)
+            sector_data = sector_data.rename(columns={'change': col})
+            res.append(
+                go.Scatter(
+                    x=sector_data.index,
+                    y=sector_data[col].values.tolist(),
+                    name=col
+                )
+            )
+    else:
+        tbd='delete'
+
+        
+    fig = dict(data = res, layout = layout)
+       
+    return fig
 
 if __name__ == '__main__':
     app.run_server(debug=False, host='0.0.0.0')

@@ -61,6 +61,7 @@ layout = html.Div(
         
         dash_table.DataTable(
         id='sector-performance',
+        sort_action="native",
         columns=[{"name": i, "id": i} for i in secmap.columns],
         data=secmap.to_dict('records'),
         ),

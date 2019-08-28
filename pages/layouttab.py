@@ -22,9 +22,16 @@ cols_col = ['symbol',
         'latestSource',
         'latestUpdate']
 
-formatter_col = {'cap*perc':'{:,.2f}'.format,
-                 'changePercent':'{0:.2%}'.format, 
-                 'marketCap':'{:,.2f}'.format}
+formatter_col = {'peRatio':'{:,.2f}'.format,
+                    'cap*perc':'{:,.2f}'.format,
+                    'changePercent':'{0:.2%}'.format,
+                    'marketCap':'{:,.2f}'.format,
+                    'change':'{:,.2f}'.format,
+                    'close':'{:,.2f}'.format,
+                    'open':'{:,.2f}'.format,
+                    'latestPrice':'{:,.2f}'.format,
+                    'latestSource':'{:,.2f}'.format,
+                    'latestUpdate':'{:,.2f}'.format}
 
 formatter_stock = {'day5ChangePercent':'{0:.2%}'.format,
                     'week52change':'{:,.2f}'.format,
@@ -108,7 +115,7 @@ formatter_quote = {'avgTotalVolume':'{:,.2f}'.format,
                     'changePercent':'{0:.2%}'.format,
                     'ytdChange':'{0:.2%}'.format,}
 
-sector_list = ['XLV', 'XLK']
+sector_list = ['XLV', 'XLK', 'XLY', 'XLP', 'XLB', 'XLI', 'IYT',  'RWR', 'XLF', 'XLU', 'SPY']
 #['XLV', 'XLK', 'XLY', 'XLP', 'XLB', 'XLI', 'IYT',  'RWR', 'XLF', 'XLU', 'SPY']
 #['XLV', 'XLK']
 
