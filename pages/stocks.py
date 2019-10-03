@@ -70,6 +70,7 @@ layout = html.Div(
             dash_table.DataTable(
             id='active-table',
             page_action="native",
+            sort_action="native",
             ),
         ], className="three columns"),
                     

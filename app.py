@@ -154,9 +154,11 @@ def update_newsanalysis(n_clicks,input_value):
 )
 
 def update_activeanalysis(n_clicks):          
-    urlactive='https://cloud.iexapis.com/stable/stock/market/list/mostactive?token=pk_5d82796966de466bb2f966ed65ca70c7'
-    #urlnews = 'https://sandbox.iexapis.com/stable/stock/aapl/peers?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
+    urlactive='https://cloud.iexapis.com/stable/stock/market/list/mostactive?listLimit=20&token=pk_5d82796966de466bb2f966ed65ca70c7'
+    #urlactive = 'https://sandbox.iexapis.com/stable/stock/market/list/mostactive?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     active = pd.read_json(urlactive, orient='columns')
+    active['vol_delta']=active['volume']/active['avgTotalVolume']
+    active = active[layouttab.active_col]
         
             
     return [{"name": i, "id": i} for i in active.columns], active.to_dict('records')
