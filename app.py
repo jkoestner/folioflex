@@ -131,6 +131,22 @@ def update_peeranalysis(n_clicks,input_value):
     peer.columns = ['Index','Peer']           
             
     return [{"name": i, "id": i} for i in peer.columns], peer.to_dict('records')
+
+@app.callback(
+    [Output(component_id='sentiment-table', component_property='columns'),
+     Output(component_id='sentiment-table', component_property='data')],
+     [Input(component_id='sentiment-button', component_property='n_clicks')],
+    [State(component_id='stock-input', component_property='value')]
+)
+
+def update_sentiment(n_clicks,input_value):          
+    urlsentiment ='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/sentiment/daily/' + datetime.today().strftime('%Y%m%d') + '?token=pk_5d82796966de466bb2f966ed65ca70c7'
+    #urlsentiment = 'https://sandbox.iexapis.com/stable/stock/aapl/sentiment/daily/20191008?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
+    sentiment = pd.read_json(urlsentiment, orient='columns', typ='series')
+    sentiment = sentiment.reset_index()
+    sentiment.columns = ['Variable','Value']           
+            
+    return [{"name": i, "id": i} for i in sentiment.columns], sentiment.to_dict('records')
     
 @app.callback(
     [Output(component_id='news-table', component_property='columns'),

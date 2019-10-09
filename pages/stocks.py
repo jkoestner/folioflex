@@ -29,6 +29,8 @@ layout = html.Div(
         html.Button(id='news-button', children='News Submit'),
         
         html.Button(id='active-button', children='Active Submit'),
+        
+        html.Button(id='sentiment-button', children='Sentiment Submit'),
     ],className="row"),
 
     html.Div([
@@ -60,6 +62,19 @@ layout = html.Div(
             ),
         ], className="three columns"),
                                         
+    ],className="row"),
+
+    html.Div([    
+                    
+        html.Div([
+            #creating sentiment information                  
+            html.P(),             
+            dash_table.DataTable(
+            id='sentiment-table',
+            sort_action="native",
+            ),
+        ], className="three columns"),
+                    
     ],className="row"),
                     
     html.Div([    
