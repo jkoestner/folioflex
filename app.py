@@ -140,7 +140,7 @@ def update_peeranalysis(n_clicks,input_value):
 )
 
 def update_sentiment(n_clicks,input_value):          
-    urlsentiment ='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/sentiment/daily/' + datetime.today().strftime('%Y%m%d') + '?token=pk_5d82796966de466bb2f966ed65ca70c7'
+    urlsentiment ='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/sentiment/daily/20191008?token=pk_5d82796966de466bb2f966ed65ca70c7'
     #urlsentiment = 'https://sandbox.iexapis.com/stable/stock/aapl/sentiment/daily/20191008?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     sentiment = pd.read_json(urlsentiment, orient='columns', typ='series')
     sentiment = sentiment.reset_index()
