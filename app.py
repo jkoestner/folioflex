@@ -5,7 +5,7 @@ import pandas as pd
 import dash_table
 from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
-from datetime import datetime
+import datetime
 from dateutil.relativedelta import relativedelta
 from pages import stocks, layouttab, sectors, utils
 from function import Query
@@ -136,11 +136,13 @@ def update_peeranalysis(n_clicks,input_value):
     [Output(component_id='sentiment-table', component_property='columns'),
      Output(component_id='sentiment-table', component_property='data')],
      [Input(component_id='sentiment-button', component_property='n_clicks')],
-    [State(component_id='stock-input', component_property='value')]
+    [State(component_id='stock-input', component_property='value'),
+    State(component_id='date-input', component_property='date')]
 )
 
-def update_sentiment(n_clicks,input_value):          
-    urlsentiment ='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/sentiment/daily/20191008?token=pk_5d82796966de466bb2f966ed65ca70c7'
+def update_sentiment(n_clicks,input_value, date_value):     
+    date_obj = datetime.datetime.strptime(date_value, '%Y-%m-%d')
+    urlsentiment ='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/sentiment/daily/' + date_obj.strftime('%Y%m%d') + '?token=pk_5d82796966de466bb2f966ed65ca70c7'
     #urlsentiment = 'https://sandbox.iexapis.com/stable/stock/aapl/sentiment/daily/20191008?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     sentiment = pd.read_json(urlsentiment, orient='columns', typ='series')
     sentiment = sentiment.reset_index()

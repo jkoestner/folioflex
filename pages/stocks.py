@@ -3,6 +3,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import pandas as pd
 import dash_table
+import datetime
 from dash.dependencies import Input, Output, State
 from pages import utils
 
@@ -32,6 +33,13 @@ layout = html.Div(
         
         html.Button(id='sentiment-button', children='Sentiment Submit'),
     ],className="row"),
+
+    html.Div([
+        
+        dcc.DatePickerSingle(id='date-input', initial_visible_month=datetime.date.today(), date=datetime.date.today()),
+
+    ],className="row"),
+
 
     html.Div([
             
