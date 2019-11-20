@@ -7,7 +7,7 @@ from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 import datetime
 from dateutil.relativedelta import relativedelta
-from pages import stocks, layouttab, sectors, utils
+from pages import stocks, layouttab, sectors, utils, ideas, macro
 from function import Query
 from rq import Queue
 from worker import conn
@@ -58,8 +58,13 @@ def display_page(pathname):
         return stocks.layout
     elif pathname == '/sectors':
         return sectors.layout
+    elif pathname == '/ideas':
+        return ideas.layout
+    elif pathname == '/macro':
+        return macro.layout
     else:
         return '404'
+
 
 ##########Stock callback##################
 @app.callback(
@@ -329,6 +334,18 @@ def update_SectorGraph(slide_value,av_data,sector_status):
     fig = dict(data = res, layout = layout)
        
     return fig
+
+##########Ideas callback##################
+@app.callback(
+    [Output(component_id='sma-value', component_property='children')],
+     [Input(component_id='sma-button', component_property='n_clicks')],
+    [State(component_id='idea-input', component_property='value')]
+)
+def sma_value(n_clicks, input_value):
+    urlsma='https://cloud.iexapis.com/stable/stock/' + format(input_value) + '/indicator/sma?range=1y&input1=12&sort=asc&chartCloseOnly=True&chartInterval=21&token=pk_5d82796966de466bb2f966ed65ca70c7'
+    sma = pd.read_json(urlsma,  orient='index', typ='frame')
+    
+    return sma.loc['indicator'].values[0]
 
 if __name__ == '__main__':
     app.run_server(debug=False, host='0.0.0.0')

@@ -64,6 +64,18 @@ def get_menu():
                 href="/sectors",
                 style={'padding': 10},
             ),
+            
+            dcc.Link(
+                "Ideas   ",
+                href="/ideas",
+                style={'padding': 10},
+            ),
+
+            dcc.Link(
+                "Macro   ",
+                href="/macro",
+                style={'padding': 10},
+            ),
         ])
     return menu
 
