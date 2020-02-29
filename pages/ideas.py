@@ -28,15 +28,22 @@ layout = html.Div(
         dcc.Input(id='idea-input', placeholder='Enter Stock...', type='text'),
         
         html.Button(id='sma-button', children='SMA Submit'),
+        
+        html.P(),  
+        
+        #creating fed fund rate    
+        html.A("10-Year Treasury", href='https://fred.stlouisfed.org/series/DGS10', target="_blank"),
                
     ],className="row"),
 
     html.Div([
             
         html.Div([
-            #simple moving average 
-            dcc.Markdown("Simple Moving Average="),
-            html.Div(id='sma-value'),
+            #simple moving average       
+            dash_table.DataTable(
+            id='sma-table',
+            page_action="native",
+            ),
                     
         ], className="three columns"),
                     

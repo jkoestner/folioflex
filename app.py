@@ -339,7 +339,8 @@ def update_SectorGraph(slide_value,av_data,sector_status):
 
 ##########Ideas callback##################
 @app.callback(
-    Output(component_id='sma-value', component_property='children'),
+    [Output(component_id='sma-table', component_property='columns'),
+     Output(component_id='sma-table', component_property='data')],
      [Input(component_id='sma-button', component_property='n_clicks')],
     [State(component_id='idea-input', component_property='value')]
 )
@@ -350,8 +351,19 @@ def sma_value(n_clicks, input_value):
     urlsma='https://cloud.iexapis.com/stable/stock/' + format(input_value) + '/indicator/sma?range=1y&input1=12&sort=asc&chartCloseOnly=True&chartInterval=' + days + '&token=pk_5d82796966de466bb2f966ed65ca70c7'
     sma = pd.read_json(urlsma,  orient='index', typ='frame')
     sma_val = sma.loc['indicator'].values[0][-1]
+    urlquote='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/quote?token=pk_5d82796966de466bb2f966ed65ca70c7'
+    quote = pd.read_json(urlquote, orient='index', typ='frame')  
+    latest_price = quote.loc['latestPrice'].values[0]
+    urlstock='https://cloud.iexapis.com/stable/stock/'  + format(input_value) + '/stats?token=pk_5d82796966de466bb2f966ed65ca70c7'
+    stock = pd.read_json(urlstock, orient='index', typ='frame')
+    return_12mo = stock.loc['year1ChangePercent'].values[0]
     
-    return sma_val
+    # build table
+    stock_data = [[input_value, sma_val, latest_price, return_12mo]]
+    df = pd.DataFrame(stock_data, columns=['Stock', '12mo SMA', 'Latest Price', '12mo Return'])
+
+    
+    return [{"name": i, "id": i} for i in df.columns], df.to_dict('records')
 
 if __name__ == '__main__':
     app.run_server(debug=False, host='0.0.0.0')
