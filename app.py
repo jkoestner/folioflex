@@ -345,7 +345,7 @@ def update_SectorGraph(slide_value,av_data,sector_status):
 )
 def sma_value(n_clicks, input_value):
     nyse = mcal.get_calendar('NYSE')    
-    days = math.floor(len(nyse.valid_days(start_date=(datetime.now() - relativedelta(years=1)), end_date=datetime.now()))/12)
+    days = math.floor(len(nyse.valid_days(start_date=(datetime.datetime.now() - relativedelta(years=1)), end_date=datetime.datetime.now()))/12)
     days = str(days)
     urlsma='https://cloud.iexapis.com/stable/stock/' + format(input_value) + '/indicator/sma?range=1y&input1=12&sort=asc&chartCloseOnly=True&chartInterval=' + days + '&token=pk_5d82796966de466bb2f966ed65ca70c7'
     sma = pd.read_json(urlsma,  orient='index', typ='frame')
