@@ -9,3 +9,4 @@ gunicorn==19.9.0
 pandas==0.25.0
 rq==1.1.0
 redis==3.3.8
+pandas_market_calendars>=1.2
