@@ -21,6 +21,8 @@ layout = html.Div(
         **12 mo Moving Average** - current price of market is greater than the 12 month moving average.
                    
         **12 mo TMOM** - 12 month return is greater than the return of the 10 year treasury bond
+        
+        It's recommended to do 50% of investment in one method and 50% in other
         '''),
                      
         html.P(),  
