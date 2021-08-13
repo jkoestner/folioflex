@@ -7,7 +7,7 @@ from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 import datetime
 from dateutil.relativedelta import relativedelta
-from pages import stocks, layouttab, sectors, utils, ideas, macro
+from pages import stocks, layouttab, sectors, utils, ideas, macro, tracker
 from function import Query
 from rq import Queue
 from worker import conn
@@ -64,6 +64,8 @@ def display_page(pathname):
         return ideas.layout
     elif pathname == '/macro':
         return macro.layout
+    elif pathname == '/tracker':
+        return tracker.layout
     else:
         return '404'
 
