@@ -76,6 +76,12 @@ def get_menu():
                 href="/macro",
                 style={'padding': 10},
             ),
+
+            dcc.Link(
+                "Tracker   ",
+                href="/tracker",
+                style={'padding': 10},
+            ),
         ])
     return menu
 
