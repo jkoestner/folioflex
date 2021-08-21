@@ -8,5 +8,6 @@ Pages includes:
 - sectors
 - ideas
 - macros
+- trackers
 
 WIP: Building a database that is able to store values per day of the stock information to avoid pulling in repeatedly
