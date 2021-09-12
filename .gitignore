@@ -2,3 +2,4 @@ iex
 *.pyc
 .DS_Store
 .env
+/files/output/*
