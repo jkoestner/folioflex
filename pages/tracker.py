@@ -1,20 +1,26 @@
-import numpy as np
 import pandas as pd
 import yfinance as yf
 
 from time import strftime, sleep
 from datetime import datetime
-from pandas_datareader import data as pdr
-from pandas.tseries.offsets import BDay
+
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+import dash_table
+from dash.dependencies import Input, Output, State
+import plotly.graph_objs as go
+from dateutil.relativedelta import relativedelta
+from pages import utils, layouttab
+from worker import conn
+from rq.job import Job
 
 # this is based on work done on medium:
 # https://towardsdatascience.com/create-a-dashboard-to-track-anything-with-plotly-and-dash-f9a5234d548b
 # the github project:
 # https://github.com/fnneves/portfolio_tracker_medium
 
-# yf.pdr_override() not sure what this does
 
-# simple function to make headers nicer
 def clean_header(df):
     df.columns = (
         df.columns.str.strip()
@@ -27,108 +33,91 @@ def clean_header(df):
     )
 
 
+def clean_index(df, lvl):
+    idx = df.columns.levels[lvl]
+    idx = (
+        idx.str.lower()
+        .str.replace(".", "")
+        .str.replace("(", "")
+        .str.replace(")", "")
+        .str.replace(" ", "_")
+        .str.replace("_/_", "/")
+    )
+    df.columns.set_levels(idx, level=lvl, inplace=True)
+
+    return df
+
+
 # timestamp for file names
 def get_now():
     now = datetime.now().strftime("%Y-%m-%d_%Hh%Mm")
     return now
 
 
-# read the transactions
-transaction_path = r"../files/transactions.xlsx"
-print("reading '{}'".format(transaction_path))
-all_transactions = pd.read_excel(transaction_path, engine="openpyxl")
-all_transactions["date"] = pd.to_datetime(all_transactions["date"], format="%d/%m/%Y")
+# transaction history
+tx_path = r"../files/transactions.xlsx"
+print("reading '{}'".format(tx_path))
+tx_col = ["date", "ticker", "units"]
+tx_df = pd.read_excel(tx_path, engine="openpyxl")
+tx_df = tx_df[tx_col]
+tx_df["date"] = pd.to_datetime(tx_df["date"], format="%d/%m/%Y")
 
 # some tickers may have been delisted. need to blacklist them here
 blacklist = ["VSLR", "HTZ"]
-all_transactions = all_transactions[~all_transactions["ticker"].isin(blacklist)]
-all_tickers = list(all_transactions["ticker"].unique())
-print("You traded {} different stocks".format(len(all_tickers)))
+tx_df = tx_df[~tx_df["ticker"].isin(blacklist)]
+tickers = list(tx_df["ticker"].unique())
+print("You traded {} different stocks".format(len(tickers)))
 
-
-# --------------------- next part ------------------
-ly = datetime.today().year - 1
+# price history
 today = datetime.today()
-start_sp = datetime(2019, 1, 1)
-end_sp = today
-start_stocks = datetime(2019, 1, 1)
-end_stocks = today
-start_ytd = datetime(ly, 12, 31) + BDay(1)
+startdate = datetime(2020, 1, 1)
 
+px_df = yf.download(tickers, start=startdate)
+clean_index(df=px_df, lvl=0)
+px_df.index.rename("date", inplace=True)
+px_df.columns.rename("measure", level=0, inplace=True)
+px_df.columns.rename("ticker", level=1, inplace=True)
 
-def get(tickers, startdate, enddate):
-    def data(ticker):
-        return pdr.get_data_yahoo(ticker, start=startdate, end=enddate)
+# stacking px_df
+stack_px_df = px_df.stack(level="ticker")
+stack_px_df.index = stack_px_df.index.swaplevel("date", "ticker")
+stack_px_df.sort_index(axis=0, level="ticker", inplace=True)
+stack_px_df = stack_px_df.reset_index()
+px_col = ["ticker", "date", "adj_close"]
+stack_px_df = stack_px_df[px_col]
 
-    datas = map(data, tickers)
-    return pd.concat(datas, keys=tickers, names=["ticker", "date"])
+# add close price, latest price to transaction data
+tx_df = pd.merge(tx_df, stack_px_df, how="left", on=["date", "ticker"])
+tx_df["cost"] = tx_df["units"] * tx_df["adj_close"]
+px_last = stack_px_df.sort_values("date").groupby("ticker").tail(1)
+px_last.rename(columns={"adj_close": "last"}, inplace=True)
+px_last = px_last[["ticker", "last"]]
+tx_df = pd.merge(tx_df, px_last, how="left", on=["ticker"])
+tx_df = tx_df.sort_values("date")
 
+# adding transaction values columns to px_df
+stack_px_df = pd.merge(
+    stack_px_df,
+    tx_df[["date", "ticker", "units", "cost"]],
+    how="outer",
+    on=["date", "ticker"],
+).fillna(0)
+stack_px_df["cml_units"] = stack_px_df.groupby("ticker")["units"].transform(
+    pd.Series.cumsum
+)
+stack_px_df["cml_cost"] = stack_px_df.groupby("ticker")["cost"].transform(
+    pd.Series.cumsum
+)
+stack_px_df["mkt_value"] = stack_px_df["cml_units"] * stack_px_df["adj_close"]
+stack_px_df["gl"] = stack_px_df["mkt_value"] - stack_px_df["cml_cost"]
 
-all_data = get(filt_tickers, start_stocks, end_stocks)
-clean_header(all_data)
+stack_px_df.to_csv("../files/output/mega/stack_px_df_{}.csv".format(get_now()))
 
-# saving all stock prices individually to the specified folder
-for tick in filt_tickers:
-    all_data.loc[tick].to_csv("../files/output/{}_price_hist.csv".format(tick))
+# portfolio value
 
-# --------------------- next part ------------------
-MEGA_DICT = {}  # you have to create it first
-min_date = "2020-01-01"  # optional
-TX_COLUMNS = ["date", "ticker", "cashflow", "cml_units", "cml_cost", "gain_loss"]
-tx_filt = all_transactions[TX_COLUMNS]  # keeping just the most relevant ones for now
+portfolio_col = ["ticker", "date", "gl"]
+portfolio = stack_px_df[portfolio_col]
+portfolio = portfolio.pivot(index="date", columns="ticker", values="gl").reset_index()
+portfolio["portfolio"] = portfolio.sum(axis=1)
 
-for ticker in filt_tickers:
-    prices_df = all_data[
-        all_data.index.get_level_values("ticker").isin([ticker])
-    ].reset_index()
-    ## Can add more columns like volume!
-    PX_COLS = ["date", "adj_close"]
-    prices_df = prices_df[prices_df.date >= min_date][PX_COLS].set_index(["date"])
-    # Making sure we get sameday transactions
-    tx_df = (
-        tx_filt[tx_filt.ticker == ticker]
-        .groupby("date")
-        .agg(
-            {
-                "cashflow": "sum",
-                "cml_units": "last",
-                "cml_cost": "last",
-                "gain_loss": "sum",
-            }
-        )
-    )
-    # Merging price history and transactions dataframe
-    tx_and_prices = pd.merge(
-        prices_df, tx_df, how="outer", left_index=True, right_index=True
-    ).fillna(0)
-    # This is to fill the days that were not in our transaction dataframe
-    tx_and_prices["cml_units"] = tx_and_prices["cml_units"].replace(
-        to_replace=0, method="ffill"
-    )
-    tx_and_prices["cml_cost"] = tx_and_prices["cml_cost"].replace(
-        to_replace=0, method="ffill"
-    )
-    tx_and_prices["gain_loss"] = tx_and_prices["gain_loss"].replace(
-        to_replace=0, method="ffill"
-    )
-    # Cumulative sum for the cashflow
-    tx_and_prices["cashflow"] = tx_and_prices["cashflow"].cumsum()
-    tx_and_prices["avg_price"] = tx_and_prices["cml_cost"] / tx_and_prices["cml_units"]
-    tx_and_prices["mktvalue"] = tx_and_prices["cml_units"] * tx_and_prices["adj_close"]
-    tx_and_prices = tx_and_prices.add_prefix(ticker + "_")
-    # Once we're happy with the dataframe, add it to the dictionary
-    MEGA_DICT[ticker] = tx_and_prices.round(3)
-
-# check an individual stock
-# MEGA_DICT['RUN'].tail()
-
-# saving it, so we can access it quicker later
-MEGA_DF = pd.concat(MEGA_DICT.values(), axis=1)
-MEGA_DF.to_csv("../files/output/mega/MEGA_DF_{}.csv".format(get_now()))  # optional
-
-# like this:
-# last_file = glob('../outputs/mega/MEGA*.csv')[-1] # path to file in the folder
-# print(last_file[-(len(last_file))+(last_file.rfind('/')+1):])
-# MEGA_DF = pd.read_csv(last_file)
-# MEGA_DF['date'] = pd.to_datetime(MEGA_DF['date'])
-# MEGA_DF.set_index('date', inplace=True)
+# Creating the dash app
