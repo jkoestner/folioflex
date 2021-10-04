@@ -121,3 +121,32 @@ portfolio = portfolio.pivot(index="date", columns="ticker", values="gl").reset_i
 portfolio["portfolio"] = portfolio.sum(axis=1)
 
 # Creating the dash app
+
+layout = html.Div(
+        
+[
+ 
+    html.Div([
+        utils.get_menu(),
+                    
+        #graph
+        dcc.Graph(
+                id = 'Tracker-Graph',
+        ),
+        
+        # range slider
+        html.P([
+            html.Label("Time Period"),
+            dcc.RangeSlider(id = 'track_slider',
+                            tooltip = 'always_visible',
+                            ) 
+        ], style = {'width' : '80%',
+                'fontSize' : '20px',
+                'padding-left' : '100px',
+                'display': 'inline-block'}
+        ),
+    
+        html.P(),
+        html.P(),
+
+])   

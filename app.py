@@ -404,7 +404,7 @@ def update_SectorData(track_data):
 
 @app.callback(
     Output("Tracker-Graph", "figure"),
-    [Input("slider", "value")],
+    [Input("track_slider", "value")],
     [State("track_data", "children")],
 )
 def update_TrackerGraph(slide_value, track_data):
