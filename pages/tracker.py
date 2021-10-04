@@ -1,19 +1,11 @@
 import pandas as pd
 import yfinance as yf
 
-from time import strftime, sleep
 from datetime import datetime
 
-import dash
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table
-from dash.dependencies import Input, Output, State
-import plotly.graph_objs as go
-from dateutil.relativedelta import relativedelta
-from pages import utils, layouttab
-from worker import conn
-from rq.job import Job
+from pages import utils
 
 # this is based on work done on medium:
 # https://towardsdatascience.com/create-a-dashboard-to-track-anything-with-plotly-and-dash-f9a5234d548b
