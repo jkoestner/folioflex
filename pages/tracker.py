@@ -41,12 +41,6 @@ def clean_index(df, lvl):
     return df
 
 
-# timestamp for file names
-def get_now():
-    now = datetime.now().strftime("%Y-%m-%d_%Hh%Mm")
-    return now
-
-
 # transaction history
 tx_path = r"/app/files/transactions.xlsx"
 print("reading '{}'".format(tx_path))
@@ -62,7 +56,6 @@ tickers = list(tx_df["ticker"].unique())
 print("You traded {} different stocks".format(len(tickers)))
 
 # price history
-today = datetime.today()
 startdate = datetime(2020, 1, 1)
 
 px_df = yf.download(tickers, start=startdate)
@@ -104,17 +97,13 @@ stack_px_df["cml_cost"] = stack_px_df.groupby("ticker")["cost"].transform(
 stack_px_df["mkt_value"] = stack_px_df["cml_units"] * stack_px_df["adj_close"]
 stack_px_df["gl"] = stack_px_df["mkt_value"] - stack_px_df["cml_cost"]
 
-stack_px_df.to_csv("../files/output/mega/stack_px_df_{}.csv".format(get_now()))
-
 # portfolio value
-
 portfolio_col = ["ticker", "date", "gl"]
 portfolio = stack_px_df[portfolio_col]
 portfolio = portfolio.pivot(index="date", columns="ticker", values="gl").reset_index()
 portfolio["portfolio"] = portfolio.sum(axis=1)
 
 # Creating the dash app
-
 layout = html.Div(
     [
         html.Div(
