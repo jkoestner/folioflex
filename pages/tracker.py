@@ -48,7 +48,7 @@ def get_now():
 
 
 # transaction history
-tx_path = r"app/files/transactions.xlsx"
+tx_path = r"/app/files/transactions.xlsx"
 print("reading '{}'".format(tx_path))
 tx_col = ["date", "ticker", "units"]
 tx_df = pd.read_excel(tx_path, engine="openpyxl")
