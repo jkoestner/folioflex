@@ -131,6 +131,15 @@ layout = html.Div(
                 ),
                 html.P(),
                 html.P(),
+                # creating table for sector perfomance
+                html.Label("Transactions"),
+                dash_table.DataTable(
+                    id="transaction-table",
+                    sort_action="native",
+                    columns=[{"name": i, "id": i} for i in tx_df.columns],
+                    data=tx_df.to_dict("records"),
+                ),
+                html.P(),
             ],
             className="row",
         ),

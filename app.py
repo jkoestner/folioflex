@@ -410,18 +410,16 @@ def update_TrackerGraph(slide_value, track_data):
     layout = go.Layout(hovermode="closest")
 
     track_json = pd.read_json(track_data)
-    sector_data = track_json[
+    track_grph = track_json[
         (utils.unix_time_millis(track_json.index) > slide_value[0])
         & (utils.unix_time_millis(track_json.index) <= slide_value[1])
     ]
-    for col in sector_data.columns:
-        sector_data["change"] = sector_data[col] / sector_data[col].iat[0] - 1
-        sector_data.drop([col], axis=1, inplace=True)
-        sector_data = sector_data.rename(columns={"change": col})
+    for col in track_grph.columns:
+        track_grph["change"] = track_grph[col] / track_grph[col].iat[0] - 1
+        track_grph.drop([col], axis=1, inplace=True)
+        track_grph = track_grph.rename(columns={"change": col})
         res.append(
-            go.Scatter(
-                x=sector_data.index, y=sector_data[col].values.tolist(), name=col
-            )
+            go.Scatter(x=track_grph.index, y=track_grph[col].values.tolist(), name=col)
         )
 
     fig = dict(data=res, layout=layout)
