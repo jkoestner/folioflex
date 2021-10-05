@@ -4,7 +4,7 @@ import os
 
 from datetime import datetime
 
-import dash_table
+from dash import dash_table
 from dash import dcc
 from dash import html
 from pages import utils
@@ -113,6 +113,7 @@ layout = html.Div(
                 # graph
                 dcc.Graph(
                     id="Tracker-Graph",
+                    track_data=portfolio,
                 ),
                 # range slider
                 html.P(

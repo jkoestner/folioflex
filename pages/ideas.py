@@ -1,8 +1,8 @@
 import dash
+from dash import dash_table
 from dash import dcc
 from dash import html
 import pandas as pd
-import dash_table
 from dash.dependencies import Input, Output, State
 from pages import utils
 
