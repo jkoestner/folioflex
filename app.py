@@ -379,10 +379,10 @@ def update_SectorGraph(slide_value, av_data, sector_status):
 #################Tracker Graph Callback#####################
 @app.callback(
     [
-        Output("slider", "min"),
-        Output("slider", "max"),
-        Output("slider", "value"),
-        Output("slider", "marks"),
+        Output("track_slider", "min"),
+        Output("track_slider", "max"),
+        Output("track_slider", "value"),
+        Output("track_slider", "marks"),
     ],
     [Input("track_data", "children")],
 )
