@@ -1,8 +1,7 @@
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import dcc
+from dash import html
 import datetime
 from dateutil.relativedelta import relativedelta
-
 
 
 def Header(app):
@@ -58,36 +57,33 @@ def get_menu():
                 "Stocks   ",
                 href="/stocks",
             ),
-                
             dcc.Link(
                 "Sectors   ",
                 href="/sectors",
-                style={'padding': 10},
+                style={"padding": 10},
             ),
-            
             dcc.Link(
                 "Ideas   ",
                 href="/ideas",
-                style={'padding': 10},
+                style={"padding": 10},
             ),
-
             dcc.Link(
                 "Macro   ",
                 href="/macro",
-                style={'padding': 10},
+                style={"padding": 10},
             ),
-
             dcc.Link(
                 "Tracker   ",
                 href="/tracker",
-                style={'padding': 10},
+                style={"padding": 10},
             ),
-        ])
+        ]
+    )
     return menu
 
 
 def make_dash_table(df):
-    """ Return a dash definition of an HTML table for a Pandas dataframe """
+    """Return a dash definition of an HTML table for a Pandas dataframe"""
     table = []
     for index, row in df.iterrows():
         html_row = []
@@ -97,22 +93,25 @@ def make_dash_table(df):
     return table
 
 
-
 def unix_time_millis(dt):
     epoch = datetime.datetime.utcfromtimestamp(0)
     return (dt - epoch).total_seconds()
 
+
 def unixToDatetime(unix):
-    ''' Convert unix timestamp to datetime. '''
-    return pd.to_datetime(unix,unit='s')
+    """Convert unix timestamp to datetime."""
+    return pd.to_datetime(unix, unit="s")
+
 
 def getMarks(start, end, Nth=365):
-    ''' Returns the marks for labeling. 
-        Every Nth value will be used.
-    '''
+    """Returns the marks for labeling.
+    Every Nth value will be used.
+    """
     result = []
     current = start
     while current <= end:
         result.append(current)
         current += relativedelta(years=1)
-    return {int(unix_time_millis(date)):(str(date.strftime('%Y-%m'))) for date in result}
+    return {
+        int(unix_time_millis(date)): (str(date.strftime("%Y-%m"))) for date in result
+    }
