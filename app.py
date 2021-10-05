@@ -377,8 +377,6 @@ def update_SectorGraph(slide_value, av_data, sector_status):
 
 
 #################Tracker Graph Callback#####################
-
-
 @app.callback(
     [
         Output("slider", "min"),
@@ -388,7 +386,7 @@ def update_SectorGraph(slide_value, av_data, sector_status):
     ],
     [Input("track_data", "children")],
 )
-def update_SectorData(track_data):
+def update_TrackerData(track_data):
     track_json = pd.read_json(track_data)
     daterange = track_json.index
     min = utils.unix_time_millis(daterange.min())
@@ -419,7 +417,6 @@ def update_TrackerGraph(slide_value, track_data):
     for col in sector_data.columns:
         sector_data["change"] = sector_data[col] / sector_data[col].iat[0] - 1
         sector_data.drop([col], axis=1, inplace=True)
-        #            sector_data['change'] = sector_data['change'].map('{0:.2%}'.format)
         sector_data = sector_data.rename(columns={"change": col})
         res.append(
             go.Scatter(
