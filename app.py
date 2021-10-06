@@ -390,12 +390,8 @@ def update_TrackerGraph(slide_value):
     ]
     for col in track_grph.columns:
         track_grph.loc[track_grph[col] != 0, "change"] = (
-            track_grph[col]
-            / track_grph[col].iat[
-                track_grph.index.get_loc(track_grph[track_grph[col] > 0].iloc[0].name)
-            ]
-            - 1
-        )
+            track_grph[col] + 2000
+        ) / 2000 - 1
         track_grph.drop([col], axis=1, inplace=True)
         track_grph = track_grph.rename(columns={"change": col})
         res.append(
