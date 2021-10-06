@@ -17,7 +17,6 @@ import function
 from pages import stocks, layouttab, sectors, utils, ideas, macro, tracker
 
 q = Queue(connection=conn)
-tx_df, portfolio = function.get_portfolio_and_transaction()
 
 ###APP###
 app = dash.Dash(
@@ -407,6 +406,7 @@ def update_TrackerGraph(slide_value):
     res = []
     layout = go.Layout(hovermode="closest")
 
+    tx_df, portfolio = function.get_portfolio_and_transaction()
     track_data = portfolio
     track_json = pd.read_json(track_data)
     track_grph = track_json[
