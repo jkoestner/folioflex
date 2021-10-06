@@ -6,6 +6,15 @@ import function
 from pages import utils
 
 tx_df, portfolio = function.get_portfolio_and_transaction()
+daterange = portfolio.index
+min = utils.unix_time_millis(daterange.min())
+max = utils.unix_time_millis(daterange.max())
+value = [
+    utils.unix_time_millis(daterange.min()),
+    utils.unix_time_millis(daterange.max()),
+]
+marks = utils.getMarks(daterange.min(), daterange.max())
+
 
 # Creating the dash app
 layout = html.Div(
@@ -24,6 +33,10 @@ layout = html.Div(
                         dcc.RangeSlider(
                             id="track_slider",
                             tooltip="always_visible",
+                            min=min,
+                            max=max,
+                            value=value,
+                            marks=marks,
                         ),
                     ],
                     style={
