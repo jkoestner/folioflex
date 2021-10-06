@@ -407,11 +407,9 @@ def update_TrackerGraph(slide_value):
     layout = go.Layout(hovermode="closest")
 
     tx_df, portfolio = function.get_portfolio_and_transaction()
-    track_data = portfolio
-    track_json = pd.read_json(track_data)
-    track_grph = track_json[
-        (utils.unix_time_millis(track_json.index) > slide_value[0])
-        & (utils.unix_time_millis(track_json.index) <= slide_value[1])
+    track_grph = portfolio[
+        (utils.unix_time_millis(portfolio.index) > slide_value[0])
+        & (utils.unix_time_millis(portfolio.index) <= slide_value[1])
     ]
     for col in track_grph.columns:
         track_grph["change"] = track_grph[col] / track_grph[col].iat[0] - 1

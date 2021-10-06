@@ -109,9 +109,7 @@ def get_portfolio_and_transaction():
     # portfolio value
     portfolio_col = ["ticker", "date", "gl"]
     portfolio = stack_px_df[portfolio_col]
-    portfolio = portfolio.pivot(
-        index="date", columns="ticker", values="gl"
-    ).reset_index()
+    portfolio = portfolio.pivot(index="date", columns="ticker", values="gl")
     portfolio["portfolio"] = portfolio.sum(axis=1)
 
     return tx_df, portfolio
