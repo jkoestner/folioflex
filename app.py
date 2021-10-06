@@ -389,7 +389,7 @@ def update_TrackerGraph(slide_value):
         & (utils.unix_time_millis(portfolio.index) <= slide_value[1])
     ]
     for col in track_grph.columns:
-        track_grph["change"].loc[track_grph[col] != 0] = (
+        track_grph.loc[track_grph[col] != 0, "change"] = (
             track_grph[col]
             / track_grph[col].iat[
                 track_grph.index.get_loc(track_grph[track_grph[col] > 0].iloc[0].name)
