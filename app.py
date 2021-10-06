@@ -379,28 +379,6 @@ def update_SectorGraph(slide_value, av_data, sector_status):
 
 
 #################Tracker Graph Callback#####################
-@app.callback(
-    [
-        Output("track_slider", "min"),
-        Output("track_slider", "max"),
-        Output("track_slider", "value"),
-        Output("track_slider", "marks"),
-    ],
-    [Input("track_data", "children")],
-)
-def update_TrackerData(track_data):
-    daterange = portfolio.index
-    min = utils.unix_time_millis(daterange.min())
-    max = utils.unix_time_millis(daterange.max())
-    value = [
-        utils.unix_time_millis(daterange.min()),
-        utils.unix_time_millis(daterange.max()),
-    ]
-    marks = utils.getMarks(daterange.min(), daterange.max())
-
-    return min, max, value, marks
-
-
 @app.callback(Output("Tracker-Graph", "figure"), [Input("track_slider", "value")])
 def update_TrackerGraph(slide_value):
     res = []
@@ -411,7 +389,13 @@ def update_TrackerGraph(slide_value):
         & (utils.unix_time_millis(portfolio.index) <= slide_value[1])
     ]
     for col in track_grph.columns:
-        track_grph["change"] = track_grph[col] / track_grph[col].iat[0] - 1
+        track_grph["change"].loc[track_grph[col] != 0] = (
+            track_grph[col]
+            / track_grph[col].iat[
+                track_grph.index.get_loc(track_grph[track_grph[col] > 0].iloc[0].name)
+            ]
+            - 1
+        )
         track_grph.drop([col], axis=1, inplace=True)
         track_grph = track_grph.rename(columns={"change": col})
         res.append(
