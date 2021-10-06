@@ -88,6 +88,7 @@ def get_portfolio_and_transaction():
     px_last.rename(columns={"adj_close": "last"}, inplace=True)
     px_last = px_last[["ticker", "last"]]
     tx_df = pd.merge(tx_df, px_last, how="left", on=["ticker"])
+    tx_df.rename(columns={"adj_close": "transaction_price"}, inplace=True)
     tx_df = tx_df.sort_values("date")
 
     # adding transaction values columns to px_df
@@ -111,5 +112,8 @@ def get_portfolio_and_transaction():
     portfolio = stack_px_df[portfolio_col]
     portfolio = portfolio.pivot(index="date", columns="ticker", values="gl")
     portfolio["portfolio"] = portfolio.sum(axis=1)
+
+    # summary WIP
+    # summary = stack_px_df.pivot(index="ticker", columns="ticker", values="gl", "")
 
     return tx_df, portfolio
