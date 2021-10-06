@@ -1,21 +1,23 @@
 import dash
+import datetime
+import math
+import pandas as pd
+import pandas_market_calendars as mcal
+import plotly.graph_objs as go
 from dash import dash_table
 from dash import dcc
 from dash import html
-import pandas as pd
 from dash.dependencies import Input, Output, State
-import plotly.graph_objs as go
-import datetime
 from dateutil.relativedelta import relativedelta
-from pages import stocks, layouttab, sectors, utils, ideas, macro, tracker
-from function import Query
 from rq import Queue
-from worker import conn
 from rq.job import Job
-import math
-import pandas_market_calendars as mcal
+from worker import conn
+
+import function
+from pages import stocks, layouttab, sectors, utils, ideas, macro, tracker
 
 q = Queue(connection=conn)
+tx_df, portfolio = function.get_portfolio_and_transaction()
 
 ###APP###
 app = dash.Dash(
@@ -261,7 +263,7 @@ def update_table(dropdown_value):
 )
 def initialize_SectorGraph(n_clicks):
 
-    task_id = q.enqueue(Query).id
+    task_id = q.enqueue(function.sector_query).id
 
     return task_id
 
@@ -400,15 +402,12 @@ def update_TrackerData(track_data):
     return min, max, value, marks
 
 
-@app.callback(
-    Output("Tracker-Graph", "figure"),
-    [Input("track_slider", "value")],
-    [State("track_data", "children")],
-)
-def update_TrackerGraph(slide_value, track_data):
+@app.callback(Output("Tracker-Graph", "figure"), [Input("track_slider", "value")])
+def update_TrackerGraph(slide_value):
     res = []
     layout = go.Layout(hovermode="closest")
 
+    track_data = portfolio
     track_json = pd.read_json(track_data)
     track_grph = track_json[
         (utils.unix_time_millis(track_json.index) > slide_value[0])
