@@ -17,6 +17,7 @@ import function
 from pages import stocks, layouttab, sectors, utils, ideas, macro, tracker
 
 q = Queue(connection=conn)
+tx_df, portfolio = function.get_portfolio_and_transaction()
 
 ###APP###
 app = dash.Dash(
@@ -388,8 +389,7 @@ def update_SectorGraph(slide_value, av_data, sector_status):
     [Input("track_data", "children")],
 )
 def update_TrackerData(track_data):
-    track_json = pd.read_json(track_data)
-    daterange = track_json.index
+    daterange = portfolio.index
     min = utils.unix_time_millis(daterange.min())
     max = utils.unix_time_millis(daterange.max())
     value = [
@@ -406,7 +406,6 @@ def update_TrackerGraph(slide_value):
     res = []
     layout = go.Layout(hovermode="closest")
 
-    tx_df, portfolio = function.get_portfolio_and_transaction()
     track_grph = portfolio[
         (utils.unix_time_millis(portfolio.index) > slide_value[0])
         & (utils.unix_time_millis(portfolio.index) <= slide_value[1])
