@@ -124,5 +124,6 @@ def get_portfolio_and_transaction():
     performance.loc["portfolio"]["mkt_value"] = performance["mkt_value"].sum()
     performance["return"] = performance["mkt_value"] - performance["cost"]
     performance["return%"] = performance["mkt_value"] / performance["cost"] - 1
+    performance = performance.reset_index()
 
     return tx_df, portfolio, performance
