@@ -17,7 +17,7 @@ import function
 from pages import stocks, layouttab, sectors, utils, ideas, macro, tracker
 
 q = Queue(connection=conn)
-tx_df, portfolio = function.get_portfolio_and_transaction()
+tx_df, portfolio, performance = function.get_portfolio_and_transaction()
 
 ###APP###
 app = dash.Dash(

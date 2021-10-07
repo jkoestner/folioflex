@@ -113,7 +113,16 @@ def get_portfolio_and_transaction():
     portfolio = portfolio.pivot(index="date", columns="ticker", values="gl")
     portfolio["portfolio"] = portfolio.sum(axis=1)
 
-    # summary WIP
-    # summary = stack_px_df.pivot(index="ticker", columns="ticker", values="gl", "")
+    # performance
+    performance = tx_df.groupby("ticker").agg(["sum"])
+    performance = performance.droplevel(1, axis="columns")
+    performance["mkt_value"] = performance["units"] * performance["last"]
+    performance.loc["portfolio"] = 0
+    performance.loc["portfolio"]["cost"] = performance[performance["cost"] > 0][
+        "cost"
+    ].sum()
+    performance.loc["portfolio"]["mkt_value"] = performance["mkt_value"].sum()
+    performance["return"] = performance["mkt_value"] - performance["cost"]
+    performance["return%"] = performance["mkt_value"] / performance["cost"] - 1
 
-    return tx_df, portfolio
+    return tx_df, portfolio, performance
