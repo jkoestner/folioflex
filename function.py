@@ -93,7 +93,6 @@ def get_portfolio_and_transaction():
     tx_df.rename(columns={"adj_close": "transaction_price"}, inplace=True)
     tx_df = tx_df.sort_values("date")
     tx_df = tx_df.round(1)
-    tx_df = tx_df.apply(lambda x: "{:,}".format(x))
 
     # adding transaction values columns to px_df
     stack_px_df = pd.merge(
