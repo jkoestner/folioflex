@@ -117,6 +117,13 @@ def get_portfolio_and_transaction():
     portfolio["portfolio"] = portfolio.sum(axis=1)
     portfolio = portfolio.round(2)
 
+    # cost value
+    cost_col = ["ticker", "date", "cost"]
+    cost = stack_px_df[cost_col]
+    cost = cost.pivot(index="date", columns="ticker", values="cost")
+    cost["portfolio"] = cost.sum(axis=1)
+    cost = cost.round(2)
+
     # performance
     performance = tx_df.groupby("ticker").agg(["sum"])
     performance = performance.droplevel(1, axis="columns")
@@ -132,4 +139,4 @@ def get_portfolio_and_transaction():
     performance["return%"] = performance["return%"].astype(float).map("{:.1%}".format)
     performance = performance.round(1)
 
-    return tx_df, portfolio, performance
+    return tx_df, portfolio, performance, cost

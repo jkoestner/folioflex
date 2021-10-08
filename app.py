@@ -17,7 +17,7 @@ import function
 from pages import stocks, layouttab, sectors, utils, ideas, macro, tracker
 
 q = Queue(connection=conn)
-tx_df, portfolio, performance = function.get_portfolio_and_transaction()
+tx_df, portfolio, performance, cost = function.get_portfolio_and_transaction()
 
 ###APP###
 app = dash.Dash(
@@ -396,8 +396,8 @@ def update_TrackerGraph(slide_value):
     ]
     for col in track_grph.columns:
         track_grph.loc[track_grph[col] != 0, "change"] = (
-            track_grph[col] + 2000
-        ) / 2000 - 1
+            track_grph[col] + cost[col]
+        ) / cost[col] - 1
         track_grph.drop([col], axis=1, inplace=True)
         # track_grph['change'] = track_grph['change'].map('{0:.1%}'.format)
         track_grph = track_grph.rename(columns={"change": col})
