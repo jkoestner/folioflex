@@ -394,10 +394,15 @@ def update_TrackerGraph(slide_value):
         (utils.unix_time_millis(portfolio.index) > slide_value[0])
         & (utils.unix_time_millis(portfolio.index) <= slide_value[1])
     ]
+
+    cost_grph = cost[
+        (utils.unix_time_millis(cost.index) > slide_value[0])
+        & (utils.unix_time_millis(cost.index) <= slide_value[1])
+    ]
     for col in track_grph.columns:
         track_grph.loc[track_grph[col] != 0, "change"] = (
-            track_grph[col] + cost[col]
-        ) / cost[col] - 1
+            track_grph[col] + cost_grph[col]
+        ) / cost_grph[col] - 1
         track_grph.drop([col], axis=1, inplace=True)
         # track_grph['change'] = track_grph['change'].map('{0:.1%}'.format)
         track_grph = track_grph.rename(columns={"change": col})
