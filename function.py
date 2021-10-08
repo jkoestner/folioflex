@@ -92,7 +92,7 @@ def get_portfolio_and_transaction():
     tx_df = pd.merge(tx_df, px_last, how="left", on=["ticker"])
     tx_df.rename(columns={"adj_close": "transaction_price"}, inplace=True)
     tx_df = tx_df.sort_values("date")
-    tx_df = tx_df.round(1)
+    tx_df = tx_df.round(2)
 
     # adding transaction values columns to px_df
     stack_px_df = pd.merge(
@@ -115,12 +115,11 @@ def get_portfolio_and_transaction():
     portfolio = stack_px_df[portfolio_col]
     portfolio = portfolio.pivot(index="date", columns="ticker", values="gl")
     portfolio["portfolio"] = portfolio.sum(axis=1)
-    portfolio = portfolio.round(2)
 
     # cost value
-    cost_col = ["ticker", "date", "cost"]
+    cost_col = ["ticker", "date", "cml_cost"]
     cost = stack_px_df[cost_col]
-    cost = cost.pivot(index="date", columns="ticker", values="cost")
+    cost = cost.pivot(index="date", columns="ticker", values="cml_cost")
     cost["portfolio"] = cost.sum(axis=1)
     cost = cost.round(2)
 
@@ -136,7 +135,12 @@ def get_portfolio_and_transaction():
     performance["return"] = performance["mkt_value"] - performance["cost"]
     performance["return%"] = performance["mkt_value"] / performance["cost"] - 1
     performance = performance.reset_index()
+    performance = performance.round(2)
     performance["return%"] = performance["return%"].astype(float).map("{:.1%}".format)
-    performance = performance.round(1)
+    performance["cost"] = performance["cost"].astype(float).map("{:,.2f}".format)
+    performance["mkt_value"] = (
+        performance["mkt_value"].astype(float).map("{:,.2f}".format)
+    )
+    performance["return"] = performance["return"].astype(float).map("{:,.2f}".format)
 
     return tx_df, portfolio, performance, cost
