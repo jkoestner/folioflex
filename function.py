@@ -5,6 +5,8 @@ import os
 from datetime import datetime
 from pages import layouttab
 
+pd.options.display.float_format = "{:.2f}".format
+
 
 def sector_query():
     """Provides the sector historical stock prices
@@ -112,6 +114,7 @@ def get_portfolio_and_transaction():
     portfolio = stack_px_df[portfolio_col]
     portfolio = portfolio.pivot(index="date", columns="ticker", values="gl")
     portfolio["portfolio"] = portfolio.sum(axis=1)
+    portfolio = portfolio.round(2)
 
     # performance
     performance = tx_df.groupby("ticker").agg(["sum"])
@@ -125,5 +128,7 @@ def get_portfolio_and_transaction():
     performance["return"] = performance["mkt_value"] - performance["cost"]
     performance["return%"] = performance["mkt_value"] / performance["cost"] - 1
     performance = performance.reset_index()
-
+    performance['return%'] = performance['return%'].astype(float).map("{:.1%}".format)
+    performance = performance.round(1)
+    
     return tx_df, portfolio, performance
