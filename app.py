@@ -226,7 +226,6 @@ def update_activeanalysis(n_clicks):
     active["change"] = active["change"].astype(float).map("{:.1%}".format)
     active["ytdChange"] = active["ytdChange"].astype(float).map("{:.1%}".format)
 
-
     return [{"name": i, "id": i} for i in active.columns], active.to_dict("records")
 
 
@@ -370,7 +369,7 @@ def update_SectorGraph(slide_value, av_data, sector_status):
         for col in sector_data.columns:
             sector_data["change"] = sector_data[col] / sector_data[col].iat[0] - 1
             sector_data.drop([col], axis=1, inplace=True)
-            sector_data['change'] = sector_data['change'].map('{0:.1%}'.format)
+            sector_data["change"] = sector_data["change"].map("{0:.1%}".format)
             sector_data = sector_data.rename(columns={"change": col})
             res.append(
                 go.Scatter(
@@ -400,7 +399,7 @@ def update_TrackerGraph(slide_value):
             track_grph[col] + 2000
         ) / 2000 - 1
         track_grph.drop([col], axis=1, inplace=True)
-        track_grph['change'] = track_grph['change'].map('{0:.1%}'.format)
+        # track_grph['change'] = track_grph['change'].map('{0:.1%}'.format)
         track_grph = track_grph.rename(columns={"change": col})
         res.append(
             go.Scatter(x=track_grph.index, y=track_grph[col].values.tolist(), name=col)

@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 from pages import layouttab
 
-pd.options.display.float_format = "{:.2f}".format
+pd.options.display.float_format = "{:,.2f}".format
 
 
 def sector_query():
@@ -92,6 +92,8 @@ def get_portfolio_and_transaction():
     tx_df = pd.merge(tx_df, px_last, how="left", on=["ticker"])
     tx_df.rename(columns={"adj_close": "transaction_price"}, inplace=True)
     tx_df = tx_df.sort_values("date")
+    tx_df = tx_df.round(1)
+    tx_df = tx_df.apply(lambda x: "{:,}".format(x))
 
     # adding transaction values columns to px_df
     stack_px_df = pd.merge(
@@ -128,7 +130,7 @@ def get_portfolio_and_transaction():
     performance["return"] = performance["mkt_value"] - performance["cost"]
     performance["return%"] = performance["mkt_value"] / performance["cost"] - 1
     performance = performance.reset_index()
-    performance['return%'] = performance['return%'].astype(float).map("{:.1%}".format)
+    performance["return%"] = performance["return%"].astype(float).map("{:.1%}".format)
     performance = performance.round(1)
-    
+
     return tx_df, portfolio, performance
