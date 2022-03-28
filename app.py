@@ -17,8 +17,8 @@ from worker import conn
 import function
 from pages import stocks, layouttab, sectors, utils, ideas, macro, tracker
 
-IEX_API_LIVE = os.environ['IEX_API_LIVE']
-IEX_API_SANDBOX = os.environ['IEX_API_SANDBOX']
+IEX_API_LIVE = os.environ["IEX_API_LIVE"]
+IEX_API_SANDBOX = os.environ["IEX_API_SANDBOX"]
 
 q = Queue(connection=conn)
 tx_df, portfolio, performance, cost = function.get_portfolio_and_transaction()
@@ -76,17 +76,11 @@ def update_stockanalysis(n_clicks, input_value):
     urlstock = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
-        + "/stats?token=" + IEX_API_LIVE
+        + "/stats?token="
+        + IEX_API_LIVE
     )
-    # urlstock='https://sandbox.iexapis.com/stable/stock/AMZN/stats?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
 
     stock = pd.read_json(urlstock, orient="index", typ="frame")
-
-    #    for f in layouttab.formatter_stock.items():
-    #            column = f[0]
-    #            if stock.loc[column].values[0] is not None:
-    #                stock.loc[column] = stock.loc[column].apply(f[1])
-
     stock = stock.reset_index()
     stock.columns = ["Variable", "Value"]
     stock = stock.round(2)
@@ -106,15 +100,10 @@ def update_quoteanalysis(n_clicks, input_value):
     urlquote = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
-        + "/quote?token=" + IEX_API_LIVE
+        + "/quote?token="
+        + IEX_API_LIVE
     )
-    # urlquote = 'https://sandbox.iexapis.com/stable/stock/aapl/quote?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     quote = pd.read_json(urlquote, orient="index", typ="frame")
-
-    #    for f in layouttab.formatter_quote.items():
-    #        column = f[0]
-    #        if quote.loc[column].values[0] is not None:
-    #            quote.loc[column] = quote.loc[column].apply(f[1])
 
     quote.loc["closeTime"].values[0] = pd.to_datetime(
         quote.loc["closeTime"].values[0], unit="ms"
@@ -152,9 +141,9 @@ def update_peeranalysis(n_clicks, input_value):
     urlpeer = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
-        + "/peers?token=" + IEX_API_LIVE
+        + "/peers?token="
+        + IEX_API_LIVE
     )
-    # urlpeer = 'https://sandbox.iexapis.com/stable/stock/aapl/peers?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     peer = pd.read_json(urlpeer, orient="columns", typ="series")
     peer = peer.reset_index()
     peer.columns = ["Index", "Peer"]
@@ -180,9 +169,9 @@ def update_sentiment(n_clicks, input_value, date_value):
         + format(input_value)
         + "/sentiment/daily/"
         + date_obj.strftime("%Y%m%d")
-        + "?token=" + IEX_API_LIVE
+        + "?token="
+        + IEX_API_LIVE
     )
-    # urlsentiment = 'https://sandbox.iexapis.com/stable/stock/aapl/sentiment/daily/20191008?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     sentiment = pd.read_json(urlsentiment, orient="columns", typ="series")
     sentiment = sentiment.reset_index()
     sentiment.columns = ["Variable", "Value"]
@@ -204,9 +193,9 @@ def update_newsanalysis(n_clicks, input_value):
     urlnews = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
-        + "/news/last/5?token=" + IEX_API_LIVE
+        + "/news/last/5?token="
+        + IEX_API_LIVE
     )
-    # urlnews = 'https://sandbox.iexapis.com/stable/stock/aapl/peers?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     news = pd.read_json(urlnews, orient="columns")
 
     return [{"name": i, "id": i} for i in news.columns], news.to_dict("records")
@@ -220,8 +209,10 @@ def update_newsanalysis(n_clicks, input_value):
     [Input(component_id="active-button", component_property="n_clicks")],
 )
 def update_activeanalysis(n_clicks):
-    urlactive = "https://cloud.iexapis.com/stable/stock/market/list/mostactive?listLimit=20&token=" + IEX_API_LIVE
-    # urlactive = 'https://sandbox.iexapis.com/stable/stock/market/list/mostactive?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
+    urlactive = (
+        "https://cloud.iexapis.com/stable/stock/market/list/mostactive?listLimit=20&token="
+        + IEX_API_LIVE
+    )
     active = pd.read_json(urlactive, orient="columns")
     active["vol_delta"] = active["volume"] / active["avgTotalVolume"]
     active = active[layouttab.active_col]
@@ -245,9 +236,9 @@ def update_table(dropdown_value):
     urlcol = (
         "https://cloud.iexapis.com/stable/stock/market/collection/sector?collectionName="
         + format(dropdown_value)
-        + "&token=" + IEX_API_LIVE
+        + "&token="
+        + IEX_API_LIVE
     )
-    # urlcol = 'https://sandbox.iexapis.com/stable/stock/market/collection/sector?collectionName=Technology&token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     collection_all = pd.read_json(urlcol, orient="columns")
     collection = collection_all[
         collection_all.primaryExchange.isin(layouttab.USexchanges)
@@ -256,10 +247,6 @@ def update_table(dropdown_value):
     collection["latestUpdate"] = pd.to_datetime(collection["latestUpdate"], unit="ms")
     collection = collection[layouttab.cols_col]
     collection = collection.sort_values(by=["cap*perc"], ascending=False)
-
-    #    for f in layouttab.formatter_col.items():
-    #        column = f[0]
-    #        collection[column] = collection[column].map(f[1])
 
     return [{"name": i, "id": i} for i in collection.columns], collection.to_dict(
         "records"
@@ -408,7 +395,6 @@ def update_TrackerGraph(slide_value):
             track_grph[col] + cost_grph[col]
         ) / cost_grph[col] - 1
         track_grph.drop([col], axis=1, inplace=True)
-        # track_grph['change'] = track_grph['change'].map('{0:.1%}'.format)
         track_grph = track_grph.rename(columns={"change": col})
         res.append(
             go.Scatter(x=track_grph.index, y=track_grph[col].values.tolist(), name=col)
@@ -445,21 +431,24 @@ def sma_value(n_clicks, input_value):
         + format(input_value)
         + "/indicator/sma?range=1y&input1=12&sort=asc&chartCloseOnly=True&chartInterval="
         + days
-        + "&token=" + IEX_API_LIVE
+        + "&token="
+        + IEX_API_LIVE
     )
     sma = pd.read_json(urlsma, orient="index", typ="frame")
     sma_val = sma.loc["indicator"].values[0][-1]
     urlquote = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
-        + "/quote?token=" + IEX_API_LIVE
+        + "/quote?token="
+        + IEX_API_LIVE
     )
     quote = pd.read_json(urlquote, orient="index", typ="frame")
     latest_price = quote.loc["latestPrice"].values[0]
     urlstock = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
-        + "/stats?token=" + IEX_API_LIVE
+        + "/stats?token="
+        + IEX_API_LIVE
     )
     stock = pd.read_json(urlstock, orient="index", typ="frame")
     return_12mo = stock.loc["year1ChangePercent"].values[0]

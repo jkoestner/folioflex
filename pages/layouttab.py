@@ -162,5 +162,3 @@ sector_list = [
     "XLU",
     "SPY",
 ]
-# ['XLV', 'XLK', 'XLY', 'XLP', 'XLB', 'XLI', 'IYT',  'RWR', 'XLF', 'XLU', 'SPY']
-# ['XLV', 'XLK']
