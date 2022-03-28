@@ -2,36 +2,40 @@ import dash
 from dash import dash_table
 from dash import dcc
 from dash import html
+import os
 import pandas as pd
 from urllib import request
 from dash.dependencies import Input, Output, State
 from pages import utils
 
+IEX_API_LIVE = os.environ['IEX_API_LIVE']
+IEX_API_SANDBOX = os.environ['IEX_API_SANDBOX']
+
 # Creating the dash app
 recession = (
     request.urlopen(
-        "https://cloud.iexapis.com/stable/data-points/market/RECPROUSM156N?token=pk_5d82796966de466bb2f966ed65ca70c7"
+        "https://cloud.iexapis.com/stable/data-points/market/RECPROUSM156N?token=" + IEX_API_LIVE
     )
     .read()
     .decode("utf8")
 )
 housing = (
     request.urlopen(
-        "https://cloud.iexapis.com/stable/data-points/market/HOUST?token=pk_5d82796966de466bb2f966ed65ca70c7"
+        "https://cloud.iexapis.com/stable/data-points/market/HOUST?token=" + IEX_API_LIVE
     )
     .read()
     .decode("utf8")
 )
 unemployment = (
     request.urlopen(
-        "https://cloud.iexapis.com/stable/data-points/market/UNRATE?token=pk_5d82796966de466bb2f966ed65ca70c7"
+        "https://cloud.iexapis.com/stable/data-points/market/UNRATE?token=" + IEX_API_LIVE
     )
     .read()
     .decode("utf8")
 )
 fedfunds = (
     request.urlopen(
-        "https://cloud.iexapis.com/stable/data-points/market/FEDFUNDS?token=pk_5d82796966de466bb2f966ed65ca70c7"
+        "https://cloud.iexapis.com/stable/data-points/market/FEDFUNDS?token=" + IEX_API_LIVE
     )
     .read()
     .decode("utf8")

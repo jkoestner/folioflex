@@ -106,7 +106,7 @@ def update_quoteanalysis(n_clicks, input_value):
     urlquote = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
-        + "/quote?token=pk_5d82796966de466bb2f966ed65ca70c7"
+        + "/quote?token=" + IEX_API_LIVE
     )
     # urlquote = 'https://sandbox.iexapis.com/stable/stock/aapl/quote?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     quote = pd.read_json(urlquote, orient="index", typ="frame")
@@ -152,7 +152,7 @@ def update_peeranalysis(n_clicks, input_value):
     urlpeer = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
-        + "/peers?token=pk_5d82796966de466bb2f966ed65ca70c7"
+        + "/peers?token=" + IEX_API_LIVE
     )
     # urlpeer = 'https://sandbox.iexapis.com/stable/stock/aapl/peers?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     peer = pd.read_json(urlpeer, orient="columns", typ="series")
@@ -180,7 +180,7 @@ def update_sentiment(n_clicks, input_value, date_value):
         + format(input_value)
         + "/sentiment/daily/"
         + date_obj.strftime("%Y%m%d")
-        + "?token=pk_5d82796966de466bb2f966ed65ca70c7"
+        + "?token=" + IEX_API_LIVE
     )
     # urlsentiment = 'https://sandbox.iexapis.com/stable/stock/aapl/sentiment/daily/20191008?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     sentiment = pd.read_json(urlsentiment, orient="columns", typ="series")
@@ -204,7 +204,7 @@ def update_newsanalysis(n_clicks, input_value):
     urlnews = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
-        + "/news/last/5?token=pk_5d82796966de466bb2f966ed65ca70c7"
+        + "/news/last/5?token=" + IEX_API_LIVE
     )
     # urlnews = 'https://sandbox.iexapis.com/stable/stock/aapl/peers?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     news = pd.read_json(urlnews, orient="columns")
@@ -220,7 +220,7 @@ def update_newsanalysis(n_clicks, input_value):
     [Input(component_id="active-button", component_property="n_clicks")],
 )
 def update_activeanalysis(n_clicks):
-    urlactive = "https://cloud.iexapis.com/stable/stock/market/list/mostactive?listLimit=20&token=pk_5d82796966de466bb2f966ed65ca70c7"
+    urlactive = "https://cloud.iexapis.com/stable/stock/market/list/mostactive?listLimit=20&token=" + IEX_API_LIVE
     # urlactive = 'https://sandbox.iexapis.com/stable/stock/market/list/mostactive?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     active = pd.read_json(urlactive, orient="columns")
     active["vol_delta"] = active["volume"] / active["avgTotalVolume"]
@@ -245,7 +245,7 @@ def update_table(dropdown_value):
     urlcol = (
         "https://cloud.iexapis.com/stable/stock/market/collection/sector?collectionName="
         + format(dropdown_value)
-        + "&token=pk_5d82796966de466bb2f966ed65ca70c7"
+        + "&token=" + IEX_API_LIVE
     )
     # urlcol = 'https://sandbox.iexapis.com/stable/stock/market/collection/sector?collectionName=Technology&token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
     collection_all = pd.read_json(urlcol, orient="columns")
@@ -445,21 +445,21 @@ def sma_value(n_clicks, input_value):
         + format(input_value)
         + "/indicator/sma?range=1y&input1=12&sort=asc&chartCloseOnly=True&chartInterval="
         + days
-        + "&token=pk_5d82796966de466bb2f966ed65ca70c7"
+        + "&token=" + IEX_API_LIVE
     )
     sma = pd.read_json(urlsma, orient="index", typ="frame")
     sma_val = sma.loc["indicator"].values[0][-1]
     urlquote = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
-        + "/quote?token=pk_5d82796966de466bb2f966ed65ca70c7"
+        + "/quote?token=" + IEX_API_LIVE
     )
     quote = pd.read_json(urlquote, orient="index", typ="frame")
     latest_price = quote.loc["latestPrice"].values[0]
     urlstock = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
-        + "/stats?token=pk_5d82796966de466bb2f966ed65ca70c7"
+        + "/stats?token=" + IEX_API_LIVE
     )
     stock = pd.read_json(urlstock, orient="index", typ="frame")
     return_12mo = stock.loc["year1ChangePercent"].values[0]
