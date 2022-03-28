@@ -17,8 +17,8 @@ from worker import conn
 import function
 from pages import stocks, layouttab, sectors, utils, ideas, macro, tracker
 
-HD_IEX_API_LIVE = os.environ['HD_IEX_API_LIVE']
-HD_IEX_API_SANDBOX = os.environ['HD_IEX_API_SANDBOX']
+IEX_API_LIVE = os.environ['IEX_API_LIVE']
+IEX_API_SANDBOX = os.environ['IEX_API_SANDBOX']
 
 q = Queue(connection=conn)
 tx_df, portfolio, performance, cost = function.get_portfolio_and_transaction()
@@ -76,7 +76,7 @@ def update_stockanalysis(n_clicks, input_value):
     urlstock = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
-        + "/stats?token=" + HD_IEX_API_LIVE
+        + "/stats?token=" + IEX_API_LIVE
     )
     # urlstock='https://sandbox.iexapis.com/stable/stock/AMZN/stats?token=Tsk_2b2286bdd1084f7ea6254e1d240f083a'
 

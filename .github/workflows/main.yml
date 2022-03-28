@@ -16,6 +16,6 @@ jobs:
           heroku_app_name: ${{secrets.HEROKU_APP_NAME}}
           heroku_email: "johnkoestner@outlook.com"
         env:
-          HD_IEX_API_LIVE: ${{secrets.HD_IEX_API_LIVE}}
-          HD_IEX_API_SANDBOX: ${{secrets.HD_IEX_API_SANDBOX}}
+          HD_IEX_API_LIVE: ${{secrets.IEX_API_LIVE}}
+          HD_IEX_API_SANDBOX: ${{secrets.IEX_API_SANDBOX}}
           
