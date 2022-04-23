@@ -487,7 +487,7 @@ def update_cryptoquoteanalysis(n_clicks, input_value):
         quote.loc["latestUpdate"].values[0], unit="ms"
     )
 
-    quote = quote.loc[layouttab.quote_col]
+    quote = quote.loc[layouttab.crypto_quote_col]
     quote = quote.reset_index()
     quote.columns = ["Variable", "Value"]
     quote = quote.round(2)

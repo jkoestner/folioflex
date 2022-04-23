@@ -95,6 +95,23 @@ quote_col = [
     "week52Low",
 ]
 
+crypto_quote_col = [
+    "symbol",
+    "sector",
+    "calculationPrice",
+    "latestPrice",
+    "latestSource",
+    "latestUpdate",
+    "latestVolume",
+    "bidPrice",
+    "bidSize",
+    "askPrice",
+    "askSize",
+    "high",
+    "low",
+    "previousClose",
+]
+
 active_col = [
     "symbol",
     "companyName",
