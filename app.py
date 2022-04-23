@@ -15,7 +15,7 @@ from rq.job import Job
 from worker import conn
 
 import function
-from pages import stocks, layouttab, sectors, utils, ideas, macro, tracker
+from pages import stocks, layouttab, sectors, utils, ideas, macro, tracker, crypto
 
 IEX_API_LIVE = os.environ["IEX_API_LIVE"]
 IEX_API_SANDBOX = os.environ["IEX_API_SANDBOX"]
@@ -59,6 +59,8 @@ def display_page(pathname):
         return macro.layout
     elif pathname == "/tracker":
         return tracker.layout
+    elif pathname == "/crypto":
+        return crypto.layout
     else:
         return "404"
 
@@ -218,7 +220,6 @@ def update_activeanalysis(n_clicks):
     active = active[layouttab.active_col]
     active = active.round(2)
     active["changePercent"] = active["changePercent"].astype(float).map("{:.1%}".format)
-    active["change"] = active["change"].astype(float).map("{:.1%}".format)
     active["ytdChange"] = active["ytdChange"].astype(float).map("{:.1%}".format)
 
     return [{"name": i, "id": i} for i in active.columns], active.to_dict("records")
@@ -460,6 +461,38 @@ def sma_value(n_clicks, input_value):
     )
 
     return [{"name": i, "id": i} for i in df.columns], df.to_dict("records")
+
+
+##########Crypto callback##################
+
+
+@app.callback(
+    [
+        Output(component_id="crypto-quote-table", component_property="columns"),
+        Output(component_id="crypto-quote-table", component_property="data"),
+    ],
+    [Input(component_id="crypto-quote-button", component_property="n_clicks")],
+    [State(component_id="crypto-input", component_property="value")],
+)
+def update_cryptoquoteanalysis(n_clicks, input_value):
+    urlquote = (
+        "https://cloud.iexapis.com/stable/crypto/"
+        + format(input_value)
+        + "/quote?token="
+        + IEX_API_LIVE
+    )
+    quote = pd.read_json(urlquote, orient="index", typ="frame")
+
+    quote.loc["latestUpdate"].values[0] = pd.to_datetime(
+        quote.loc["latestUpdate"].values[0], unit="ms"
+    )
+
+    quote = quote.loc[layouttab.quote_col]
+    quote = quote.reset_index()
+    quote.columns = ["Variable", "Value"]
+    quote = quote.round(2)
+
+    return [{"name": i, "id": i} for i in quote.columns], quote.to_dict("records")
 
 
 if __name__ == "__main__":
