@@ -21,7 +21,7 @@ btc = json.loads(
 
 ape = json.loads(
     request.urlopen(
-        "https://cloud.iexapis.com/stable/crypto/apeusd/price?token=" + IEX_API_LIVE
+        "https://cloud.iexapis.com/stable/crypto/apeusdt/price?token=" + IEX_API_LIVE
     )
     .read()
     .decode("utf8")
