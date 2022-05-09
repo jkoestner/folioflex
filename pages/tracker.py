@@ -1,11 +1,17 @@
 from dash import dash_table
 from dash import dcc
 from dash import html
+import os
 
 import function
 from pages import utils
 
-tx_file = r"/app/files/transactions.xlsx"
+if os.path.isfile(r"/app/files/transactions.xlsx"):
+    tx_file = r"/app/files/transactions.xlsx"
+
+else:
+    tx_file = r"files/transactions.xlsx"
+
 tx_df, portfolio, performance, cost = function.get_portfolio_and_transaction(tx_file)
 daterange = portfolio.index
 min = utils.unix_time_millis(daterange.min())

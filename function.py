@@ -1,3 +1,9 @@
+"""
+Support functions of app.
+
+Provides utility function to app.
+"""
+
 import pandas as pd
 import yfinance as yf
 
@@ -8,14 +14,13 @@ pd.options.display.float_format = "{:,.2f}".format
 
 
 def sector_query():
-    """Provides the sector historical stock prices
+    """Provide the sector historical stock prices.
 
     Returns
     -------
     sector_close : dataframe
        provides the list of prices for historical prices
     """
-
     sector_close = yf.download(layouttab.sector_list, start="2018-01-01")
 
     return sector_close["Adj Close"]
@@ -26,14 +31,23 @@ def sector_query():
 # the github project:
 # https://github.com/fnneves/portfolio_tracker_medium
 def get_portfolio_and_transaction(tx_file):
-    """Provides portfolio and transaction information given file
+    """Provide portfolio and transaction information given file.
+
+    Parameters
+    ----------
+    tx_file : string
+        path of file that has transactions
 
     Returns
     -------
-    tx_df :
-    portfolio,
-    performance,
-    cost
+    tx_df : DataFrame
+        stacked dataframe with transaction costs and last price
+    portfolio : DataFrame
+        unstacked dataframe
+    performance : DataFrame
+        stacked dataframe with cost, market value, and return
+    cost : DataFrame
+        unstacked dataframe with cost information
     """
 
     def clean_header(df):
