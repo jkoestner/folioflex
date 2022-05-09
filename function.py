@@ -26,7 +26,7 @@ def sector_query():
 # https://towardsdatascience.com/create-a-dashboard-to-track-anything-with-plotly-and-dash-f9a5234d548b
 # the github project:
 # https://github.com/fnneves/portfolio_tracker_medium
-def get_portfolio_and_transaction():
+def get_portfolio_and_transaction(tx_file):
     def clean_header(df):
         df.columns = (
             df.columns.str.strip()
@@ -53,10 +53,9 @@ def get_portfolio_and_transaction():
         return df
 
     # transaction history
-    tx_path = r"/app/files/transactions.xlsx"
-    print("reading '{}'".format(tx_path))
+    print("reading '{}'".format(tx_file))
     tx_col = ["date", "ticker", "units"]
-    tx_df = pd.read_excel(tx_path, engine="openpyxl")
+    tx_df = pd.read_excel(tx_file, engine="openpyxl")
     tx_df = tx_df[tx_col]
     tx_df["date"] = pd.to_datetime(tx_df["date"], format="%d/%m/%Y")
 

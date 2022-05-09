@@ -369,7 +369,7 @@ def update_SectorGraph(slide_value, av_data, sector_status):
                 )
             )
     else:
-        tbd = "delete"
+        "could not load"
 
     fig = dict(data=res, layout=layout)
 

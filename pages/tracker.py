@@ -5,7 +5,8 @@ from dash import html
 import function
 from pages import utils
 
-tx_df, portfolio, performance, cost = function.get_portfolio_and_transaction()
+tx_file = r"/app/files/transactions.xlsx"
+tx_df, portfolio, performance, cost = function.get_portfolio_and_transaction(tx_file)
 daterange = portfolio.index
 min = utils.unix_time_millis(daterange.min())
 max = utils.unix_time_millis(daterange.max())
