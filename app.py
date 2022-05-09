@@ -21,7 +21,8 @@ IEX_API_LIVE = os.environ["IEX_API_LIVE"]
 IEX_API_SANDBOX = os.environ["IEX_API_SANDBOX"]
 
 q = Queue(connection=conn)
-tx_df, portfolio, performance, cost = function.get_portfolio_and_transaction()
+tx_file = r"/app/files/transactions.xlsx"
+tx_df, portfolio, performance, cost = function.get_portfolio_and_transaction(tx_file)
 
 ###APP###
 app = dash.Dash(
