@@ -26,6 +26,16 @@ def sector_query():
 # the github project:
 # https://github.com/fnneves/portfolio_tracker_medium
 def get_portfolio_and_transaction(tx_file):
+    """Provides portfolio and transaction information given file
+
+    Returns
+    -------
+    tx_df :
+    portfolio,
+    performance,
+    cost
+    """
+
     def clean_header(df):
         df.columns = (
             df.columns.str.strip()
