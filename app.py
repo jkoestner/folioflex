@@ -1,21 +1,26 @@
+"""
+Building plotly dashboard.
+
+Builds plotly pages with call backs.
+"""
+
 import dash
 import datetime
+import function
 import math
 import os
 import pandas as pd
 import pandas_market_calendars as mcal
 import plotly.graph_objs as go
-from dash import dash_table
+
 from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
 from dateutil.relativedelta import relativedelta
+from pages import stocks, layouttab, sectors, utils, ideas, macro, tracker, crypto
 from rq import Queue
 from rq.job import Job
 from worker import conn
-
-import function
-from pages import stocks, layouttab, sectors, utils, ideas, macro, tracker, crypto
 
 IEX_API_LIVE = os.environ["IEX_API_LIVE"]
 IEX_API_SANDBOX = os.environ["IEX_API_SANDBOX"]
@@ -30,7 +35,12 @@ else:
 
 tx_df, portfolio, performance, cost = function.get_portfolio_and_transaction(tx_file)
 
-###APP###
+#      _    ____  ____
+#     / \  |  _ \|  _ \
+#    / _ \ | |_) | |_) |
+#   / ___ \|  __/|  __/
+#  /_/   \_\_|   |_|
+
 app = dash.Dash(
     __name__, external_stylesheets=["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 )
@@ -51,9 +61,16 @@ app.layout = html.Div(
     ]
 )
 
-##########Index Page callback##################
+#   ___ _   _ ____  _______  __
+#  |_ _| \ | |  _ \| ____\ \/ /
+#   | ||  \| | | | |  _|  \  /
+#   | || |\  | |_| | |___ /  \
+#  |___|_| \_|____/|_____/_/\_\
+
+
 @app.callback(Output("page-content", "children"), [Input("url", "pathname")])
 def display_page(pathname):
+    """TO DO: trying to delete any unnecessary code."""
     if pathname == "/":
         return stocks.layout
     elif pathname == "/stocks":
@@ -72,7 +89,13 @@ def display_page(pathname):
         return "404"
 
 
-##########Stock callback##################
+#   ____ _____ ___   ____ _  __
+#  / ___|_   _/ _ \ / ___| |/ /
+#  \___ \ | || | | | |   | ' /
+#   ___) || || |_| | |___| . \
+#  |____/ |_| \___/ \____|_|\_\
+
+
 @app.callback(
     [
         Output(component_id="stock-table", component_property="columns"),
@@ -82,6 +105,7 @@ def display_page(pathname):
     [State(component_id="stock-input", component_property="value")],
 )
 def update_stockanalysis(n_clicks, input_value):
+    """Provide stock analysis table."""
     urlstock = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
@@ -106,6 +130,7 @@ def update_stockanalysis(n_clicks, input_value):
     [State(component_id="stock-input", component_property="value")],
 )
 def update_quoteanalysis(n_clicks, input_value):
+    """Provide quote analysis table."""
     urlquote = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
@@ -147,6 +172,7 @@ def update_quoteanalysis(n_clicks, input_value):
     [State(component_id="stock-input", component_property="value")],
 )
 def update_peeranalysis(n_clicks, input_value):
+    """Provide peer analysis table."""
     urlpeer = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
@@ -172,6 +198,7 @@ def update_peeranalysis(n_clicks, input_value):
     ],
 )
 def update_sentiment(n_clicks, input_value, date_value):
+    """Provide sentiment analysis table."""
     date_obj = datetime.datetime.strptime(date_value, "%Y-%m-%d")
     urlsentiment = (
         "https://cloud.iexapis.com/stable/stock/"
@@ -199,6 +226,7 @@ def update_sentiment(n_clicks, input_value, date_value):
     [State(component_id="stock-input", component_property="value")],
 )
 def update_newsanalysis(n_clicks, input_value):
+    """Provide news analysis table."""
     urlnews = (
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
@@ -218,6 +246,7 @@ def update_newsanalysis(n_clicks, input_value):
     [Input(component_id="active-button", component_property="n_clicks")],
 )
 def update_activeanalysis(n_clicks):
+    """Provide active analysis table."""
     urlactive = (
         "https://cloud.iexapis.com/stable/stock/market/list/mostactive?listLimit=20&token="
         + IEX_API_LIVE
@@ -232,7 +261,13 @@ def update_activeanalysis(n_clicks):
     return [{"name": i, "id": i} for i in active.columns], active.to_dict("records")
 
 
-##########Sector callback##################
+#   ____  _____ ____ _____ ___  ____
+#  / ___|| ____/ ___|_   _/ _ \|  _ \
+#  \___ \|  _|| |     | || | | | |_) |
+#   ___) | |__| |___  | || |_| |  _ <
+#  |____/|_____\____| |_| \___/|_| \_\
+
+# Table
 @app.callback(
     [
         Output(component_id="sector-table", component_property="columns"),
@@ -241,6 +276,7 @@ def update_activeanalysis(n_clicks):
     [Input(component_id="sector-dropdown", component_property="value")],
 )
 def update_table(dropdown_value):
+    """Provide sector analysis table."""
     urlcol = (
         "https://cloud.iexapis.com/stable/stock/market/collection/sector?collectionName="
         + format(dropdown_value)
@@ -261,13 +297,13 @@ def update_table(dropdown_value):
     )
 
 
-#################Sector Graph Callback#####################
+# Graph
 @app.callback(
     Output("task-id", "children"),
     [Input(component_id="sector-initialize", component_property="n_clicks")],
 )
 def initialize_SectorGraph(n_clicks):
-
+    """Provide sector analysis graph."""
     task_id = q.enqueue(function.sector_query).id
 
     return task_id
@@ -278,9 +314,11 @@ def initialize_SectorGraph(n_clicks):
     [Input("task-status", "children"), Input("task-id", "children")],
 )
 def toggle_interval_speed(task_status, task_id):
-    """This callback is triggered by changes in task-id and task-status divs.  It switches the
-    page refresh interval to fast (1 sec) if a task is running, or slow (24 hours) if a task is
-    pending or complete."""
+    """Triggered by changes in task-id and task-status divs.
+
+    It switches the page refresh interval to fast (1 sec) if a task is running, or slow (24 hours) if a task is
+    pending or complete.
+    """
     if task_id == "none":
         return 24 * 60 * 60 * 1000
     if task_id != "none" and (task_status in ["finished"]):
@@ -295,6 +333,7 @@ def toggle_interval_speed(task_status, task_id):
     [State("task-id", "children"), State("task-status", "children")],
 )
 def status_check(n_intervals, task_id, task_status):
+    """Provide status check."""
     if task_id != "none" and task_status != "finished":
         job = Job.fetch(task_id, connection=conn)
         task_status = job.get_status()
@@ -309,6 +348,7 @@ def status_check(n_intervals, task_id, task_status):
     [State("task-id", "children")],
 )
 def get_results(task_status, task_id):
+    """Provide status results."""
     if task_status == "finished":
         job = Job.fetch(task_id, connection=conn)
         sector_close = job.result
@@ -331,6 +371,7 @@ def get_results(task_status, task_id):
     [State("av-data", "children")],
 )
 def update_SectorData(sector_status, av_data):
+    """Provide sector data table."""
     if sector_status == "ready":
         sector_close = pd.read_json(av_data)
         daterange = sector_close.index
@@ -356,6 +397,7 @@ def update_SectorData(sector_status, av_data):
     [State("av-data", "children"), State("sector-status", "children")],
 )
 def update_SectorGraph(slide_value, av_data, sector_status):
+    """Provide sector graph."""
     res = []
     layout = go.Layout(hovermode="closest")
 
@@ -383,9 +425,16 @@ def update_SectorGraph(slide_value, av_data, sector_status):
     return fig
 
 
-#################Tracker Graph Callback#####################
+#   _____ ____      _    ____ _  _______ ____
+#  |_   _|  _ \    / \  / ___| |/ / ____|  _ \
+#    | | | |_) |  / _ \| |   | ' /|  _| | |_) |
+#    | | |  _ <  / ___ \ |___| . \| |___|  _ <
+#    |_| |_| \_\/_/   \_\____|_|\_\_____|_| \_\
+
+
 @app.callback(Output("Tracker-Graph", "figure"), [Input("track_slider", "value")])
 def update_TrackerGraph(slide_value):
+    """Provide tracker graph."""
     res = []
     layout = go.Layout(hovermode="closest")
 
@@ -413,7 +462,13 @@ def update_TrackerGraph(slide_value):
     return fig
 
 
-##########Ideas callback##################
+#   ___ ____  _____    _    ____
+#  |_ _|  _ \| ____|  / \  / ___|
+#   | || | | |  _|   / _ \ \___ \
+#   | || |_| | |___ / ___ \ ___) |
+#  |___|____/|_____/_/   \_\____/
+
+
 @app.callback(
     [
         Output(component_id="sma-table", component_property="columns"),
@@ -423,6 +478,7 @@ def update_TrackerGraph(slide_value):
     [State(component_id="idea-input", component_property="value")],
 )
 def sma_value(n_clicks, input_value):
+    """Provide simple moving average on ideas."""
     nyse = mcal.get_calendar("NYSE")
     days = math.floor(
         len(
@@ -470,7 +526,11 @@ def sma_value(n_clicks, input_value):
     return [{"name": i, "id": i} for i in df.columns], df.to_dict("records")
 
 
-##########Crypto callback##################
+#    ____ ______   ______ _____ ___
+#   / ___|  _ \ \ / /  _ \_   _/ _ \
+#  | |   | |_) \ V /| |_) || || | | |
+#  | |___|  _ < | | |  __/ | || |_| |
+#   \____|_| \_\|_| |_|    |_| \___/
 
 
 @app.callback(
@@ -482,6 +542,7 @@ def sma_value(n_clicks, input_value):
     [State(component_id="crypto-input", component_property="value")],
 )
 def update_cryptoquoteanalysis(n_clicks, input_value):
+    """Provide crypto analysis table."""
     urlquote = (
         "https://cloud.iexapis.com/stable/crypto/"
         + format(input_value)

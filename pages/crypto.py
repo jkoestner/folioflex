@@ -1,9 +1,11 @@
-import dash
+"""Crypto dashboard."""
+
+import json
+import os
+
 from dash import dash_table
 from dash import dcc
 from dash import html
-import json
-import os
 from urllib import request
 from pages import utils
 

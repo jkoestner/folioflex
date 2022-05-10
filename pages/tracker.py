@@ -1,9 +1,11 @@
+"""Tracker dashboard."""
+
+import function
+import os
+
 from dash import dash_table
 from dash import dcc
 from dash import html
-import os
-
-import function
 from pages import utils
 
 if os.path.isfile(r"/app/files/transactions.xlsx"):

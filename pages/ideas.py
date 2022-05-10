@@ -1,9 +1,8 @@
-import dash
+"""Ideas dashboard."""
+
 from dash import dash_table
 from dash import dcc
 from dash import html
-import pandas as pd
-from dash.dependencies import Input, Output, State
 from pages import utils
 
 # Creating the dash app
@@ -16,11 +15,8 @@ layout = html.Div(
                 dcc.Markdown(
                     """
                     Momentum and Value are 2 metrics that determine the viability of investing in the market.
-                                
                     **12 mo Moving Average** - current price of market is greater than the 12 month moving average.
-                            
                     **12 mo TMOM** - 12 month return is greater than the return of the 10 year treasury bond
-                    
                     It's recommended to do 50% of investment in one method and 50% in other
                     """
                 ),

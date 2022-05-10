@@ -1,56 +1,18 @@
+"""Utilities for app.
+
+Provides functions for common used functions in app.
+"""
+
+import datetime
+import pandas as pd
+
 from dash import dcc
 from dash import html
-import datetime
 from dateutil.relativedelta import relativedelta
 
 
-def Header(app):
-    return html.Div([get_header(app), html.Br([]), get_menu()])
-
-
-def get_header(app):
-    header = html.Div(
-        [
-            html.Div(
-                [
-                    html.Img(
-                        src=app.get_asset_url("dash-financial-logo.png"),
-                        className="logo",
-                    ),
-                    html.A(
-                        html.Button("Learn More", id="learn-more-button"),
-                        href="https://plot.ly/dash/pricing/",
-                    ),
-                ],
-                className="row",
-            ),
-            html.Div(
-                [
-                    html.Div(
-                        [html.H5("Calibre Financial Index Fund Investor Shares")],
-                        className="seven columns main-title",
-                    ),
-                    html.Div(
-                        [
-                            dcc.Link(
-                                "Full View",
-                                href="/dash-financial-report/full-view",
-                                className="full-view-link",
-                            )
-                        ],
-                        className="five columns",
-                    ),
-                ],
-                className="twelve columns",
-                style={"padding-left": "0"},
-            ),
-        ],
-        className="row",
-    )
-    return header
-
-
 def get_menu():
+    """Provide menu for pages."""
     menu = html.Div(
         [
             dcc.Link(
@@ -88,7 +50,7 @@ def get_menu():
 
 
 def make_dash_table(df):
-    """Return a dash definition of an HTML table for a Pandas dataframe"""
+    """Return a dash definition of an HTML table for a Pandas dataframe."""
     table = []
     for index, row in df.iterrows():
         html_row = []
@@ -99,6 +61,7 @@ def make_dash_table(df):
 
 
 def unix_time_millis(dt):
+    """Convert unix timestamp to seconds."""
     epoch = datetime.datetime.utcfromtimestamp(0)
     return (dt - epoch).total_seconds()
 
@@ -109,7 +72,8 @@ def unixToDatetime(unix):
 
 
 def getMarks(start, end, Nth=365):
-    """Returns the marks for labeling.
+    """Return the marks for labeling.
+
     Every Nth value will be used.
     """
     result = []

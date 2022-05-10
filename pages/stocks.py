@@ -1,10 +1,10 @@
-import dash
+"""Stocks dashboard."""
+
+import datetime
+
 from dash import dash_table
 from dash import dcc
 from dash import html
-import pandas as pd
-import datetime
-from dash.dependencies import Input, Output, State
 from pages import utils
 
 # Creating the dash app

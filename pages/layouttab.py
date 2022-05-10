@@ -1,10 +1,7 @@
-import dash
-from dash import dash_table
-from dash import dcc
-from dash import html
-import pandas as pd
-from dash.dependencies import Input, Output, State
+"""Layout lookups.
 
+List of lookups for reference to dashapp
+"""
 
 # set up lists
 USexchanges = [
