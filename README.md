@@ -11,3 +11,10 @@ Pages includes:
 - ideas
 - macros
 - trackers
+- crypto
+
+It also can be run locally by going to the project root folder and running:
+
+```python
+python app.py
+```

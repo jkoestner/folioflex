@@ -6,9 +6,7 @@ Builds plotly pages with call backs.
 
 import dash
 import datetime
-import function
 import math
-import os
 import pandas as pd
 import pandas_market_calendars as mcal
 import plotly.graph_objs as go
@@ -17,23 +15,14 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
 from dateutil.relativedelta import relativedelta
-from pages import stocks, layouttab, sectors, utils, ideas, macro, tracker, crypto
 from rq import Queue
 from rq.job import Job
-from worker import conn
 
-IEX_API_LIVE = os.environ["IEX_API_LIVE"]
-IEX_API_SANDBOX = os.environ["IEX_API_SANDBOX"]
+from iex.pages import stocks, sectors, ideas, macro, tracker, crypto
+from iex.util import constants, layouts, portfolio, utils
+from iex.util.worker import conn
 
 q = Queue(connection=conn)
-
-if os.path.isfile(r"/app/files/transactions.xlsx"):
-    tx_file = r"/app/files/transactions.xlsx"
-
-else:
-    tx_file = r"files/transactions.xlsx"
-
-tx_df, portfolio, performance, cost = function.get_portfolio_and_transaction(tx_file)
 
 #      _    ____  ____
 #     / \  |  _ \|  _ \
@@ -70,7 +59,7 @@ app.layout = html.Div(
 
 @app.callback(Output("page-content", "children"), [Input("url", "pathname")])
 def display_page(pathname):
-    """TO DO: trying to delete any unnecessary code."""
+    """Create navigation for app."""
     if pathname == "/":
         return stocks.layout
     elif pathname == "/stocks":
@@ -110,7 +99,7 @@ def update_stockanalysis(n_clicks, input_value):
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
         + "/stats?token="
-        + IEX_API_LIVE
+        + constants.iex_api_live
     )
 
     stock = pd.read_json(urlstock, orient="index", typ="frame")
@@ -135,7 +124,7 @@ def update_quoteanalysis(n_clicks, input_value):
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
         + "/quote?token="
-        + IEX_API_LIVE
+        + constants.iex_api_live
     )
     quote = pd.read_json(urlquote, orient="index", typ="frame")
 
@@ -155,7 +144,7 @@ def update_quoteanalysis(n_clicks, input_value):
         quote.loc["extendedPriceTime"].values[0], unit="ms"
     )
 
-    quote = quote.loc[layouttab.quote_col]
+    quote = quote.loc[layouts.quote_col]
     quote = quote.reset_index()
     quote.columns = ["Variable", "Value"]
     quote = quote.round(2)
@@ -177,7 +166,7 @@ def update_peeranalysis(n_clicks, input_value):
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
         + "/peers?token="
-        + IEX_API_LIVE
+        + constants.iex_api_live
     )
     peer = pd.read_json(urlpeer, orient="columns", typ="series")
     peer = peer.reset_index()
@@ -206,7 +195,7 @@ def update_sentiment(n_clicks, input_value, date_value):
         + "/sentiment/daily/"
         + date_obj.strftime("%Y%m%d")
         + "?token="
-        + IEX_API_LIVE
+        + constants.iex_api_live
     )
     sentiment = pd.read_json(urlsentiment, orient="columns", typ="series")
     sentiment = sentiment.reset_index()
@@ -231,7 +220,7 @@ def update_newsanalysis(n_clicks, input_value):
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
         + "/news/last/5?token="
-        + IEX_API_LIVE
+        + constants.iex_api_live
     )
     news = pd.read_json(urlnews, orient="columns")
 
@@ -249,11 +238,11 @@ def update_activeanalysis(n_clicks):
     """Provide active analysis table."""
     urlactive = (
         "https://cloud.iexapis.com/stable/stock/market/list/mostactive?listLimit=20&token="
-        + IEX_API_LIVE
+        + constants.iex_api_live
     )
     active = pd.read_json(urlactive, orient="columns")
     active["vol_delta"] = active["volume"] / active["avgTotalVolume"]
-    active = active[layouttab.active_col]
+    active = active[layouts.active_col]
     active = active.round(2)
     active["changePercent"] = active["changePercent"].astype(float).map("{:.1%}".format)
     active["ytdChange"] = active["ytdChange"].astype(float).map("{:.1%}".format)
@@ -281,15 +270,15 @@ def update_table(dropdown_value):
         "https://cloud.iexapis.com/stable/stock/market/collection/sector?collectionName="
         + format(dropdown_value)
         + "&token="
-        + IEX_API_LIVE
+        + constants.iex_api_live
     )
     collection_all = pd.read_json(urlcol, orient="columns")
     collection = collection_all[
-        collection_all.primaryExchange.isin(layouttab.USexchanges)
+        collection_all.primaryExchange.isin(layouts.USexchanges)
     ]
     collection["cap*perc"] = collection["marketCap"] * collection["changePercent"]
     collection["latestUpdate"] = pd.to_datetime(collection["latestUpdate"], unit="ms")
-    collection = collection[layouttab.cols_col]
+    collection = collection[layouts.cols_col]
     collection = collection.sort_values(by=["cap*perc"], ascending=False)
 
     return [{"name": i, "id": i} for i in collection.columns], collection.to_dict(
@@ -304,7 +293,7 @@ def update_table(dropdown_value):
 )
 def initialize_SectorGraph(n_clicks):
     """Provide sector analysis graph."""
-    task_id = q.enqueue(function.sector_query).id
+    task_id = q.enqueue(utils.sector_query).id
 
     return task_id
 
@@ -431,6 +420,10 @@ def update_SectorGraph(slide_value, av_data, sector_status):
 #    | | |  _ <  / ___ \ |___| . \| |___|  _ <
 #    |_| |_| \_\/_/   \_\____|_|\_\_____|_| \_\
 
+tx_df, portfolio, performance, cost = portfolio.get_portfolio_and_transaction(
+    constants.remote_path + r"transactions.xlsx"
+)
+
 
 @app.callback(Output("Tracker-Graph", "figure"), [Input("track_slider", "value")])
 def update_TrackerGraph(slide_value):
@@ -496,7 +489,7 @@ def sma_value(n_clicks, input_value):
         + "/indicator/sma?range=1y&input1=12&sort=asc&chartCloseOnly=True&chartInterval="
         + days
         + "&token="
-        + IEX_API_LIVE
+        + constants.iex_api_live
     )
     sma = pd.read_json(urlsma, orient="index", typ="frame")
     sma_val = sma.loc["indicator"].values[0][-1]
@@ -504,7 +497,7 @@ def sma_value(n_clicks, input_value):
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
         + "/quote?token="
-        + IEX_API_LIVE
+        + constants.iex_api_live
     )
     quote = pd.read_json(urlquote, orient="index", typ="frame")
     latest_price = quote.loc["latestPrice"].values[0]
@@ -512,7 +505,7 @@ def sma_value(n_clicks, input_value):
         "https://cloud.iexapis.com/stable/stock/"
         + format(input_value)
         + "/stats?token="
-        + IEX_API_LIVE
+        + constants.iex_api_live
     )
     stock = pd.read_json(urlstock, orient="index", typ="frame")
     return_12mo = stock.loc["year1ChangePercent"].values[0]
@@ -547,7 +540,7 @@ def update_cryptoquoteanalysis(n_clicks, input_value):
         "https://cloud.iexapis.com/stable/crypto/"
         + format(input_value)
         + "/quote?token="
-        + IEX_API_LIVE
+        + constants.iex_api_live
     )
     quote = pd.read_json(urlquote, orient="index", typ="frame")
 
@@ -555,7 +548,7 @@ def update_cryptoquoteanalysis(n_clicks, input_value):
         quote.loc["latestUpdate"].values[0], unit="ms"
     )
 
-    quote = quote.loc[layouttab.crypto_quote_col]
+    quote = quote.loc[layouts.crypto_quote_col]
     quote = quote.reset_index()
     quote.columns = ["Variable", "Value"]
     quote = quote.round(2)

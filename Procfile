@@ -1,2 +1,2 @@
 web: gunicorn app:server
-worker: python worker.py
+worker: python iex/util/worker.py
