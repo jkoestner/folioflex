@@ -1,7 +1,13 @@
 """
 Building plotly dashboard.
 
-Builds plotly pages with call backs.
+Builds plotly pages with call backs. There are 2 options the user has for running code.
+1. Heroku build set up
+2. Local running
+
+To run locally:
+1. cd into root directory
+2. run plotly dashboard - `python app.py`
 """
 
 import dash
