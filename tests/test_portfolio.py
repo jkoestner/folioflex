@@ -11,7 +11,7 @@ except (ImportError, ModuleNotFoundError):
 
 PROJECT_PATH = pathlib.Path(__file__).resolve().parent.parent
 
-tx_file = PROJECT_PATH / pathlib.Path("tests") / "files" / "transactions.xlsx"
+tx_file = PROJECT_PATH / pathlib.Path("tests") / "files" / "test_transactions.xlsx"
 
 
 def test_portfolio_load():
@@ -66,3 +66,21 @@ def test_perfomance_calculations():
     assert (
         round(performance.loc["portfolio", "realized"], 0) == 149
     ), "Expected realized to be return - unrealized"
+
+
+def test_fund_index():
+    """Checks calculations of fund index."""
+    pf = testing.portfolio(tx_file, filter_type=["Cash", "Dividend"], funds=["BLKRK"])
+    performance = pf.get_performance(date="05-27-2022")
+
+    assert (
+        performance.loc["BLKRK", "cumulative_units"] == 15
+    ), "Expected cumulative_units to be sum of units"
+
+    assert (
+        performance.loc["BLKRK", "average_price"] == 12
+    ), "Expected average price to match the weighted cost basis"
+
+    assert (
+        performance.loc["BLKRK", "market_value"] == 210
+    ), "Expected market_value to be last_price * cumulative_units"
