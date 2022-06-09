@@ -5,9 +5,9 @@ import pathlib
 import pandas as pd
 
 try:
-    import testing
+    import portfolio
 except (ImportError, ModuleNotFoundError):
-    from iex.util import testing
+    from iex.util import portfolio
 
 PROJECT_PATH = pathlib.Path(__file__).resolve().parent.parent
 
@@ -16,14 +16,14 @@ tx_file = PROJECT_PATH / pathlib.Path("tests") / "files" / "test_transactions.xl
 
 def test_portfolio_load():
     """Checks if portfolio class can connect."""
-    pf = testing.portfolio(tx_file, filter_type=["Cash", "Dividend"])
+    pf = portfolio.portfolio(tx_file, filter_type=["Cash", "Dividend"])
 
     assert pf.file is not None, "Expected that portfolio connects."
 
 
 def test_transactions_load():
     """Checks if transactions load correctly."""
-    pf = testing.portfolio(tx_file, filter_type=["Cash", "Dividend"])
+    pf = portfolio.portfolio(tx_file, filter_type=["Cash", "Dividend"])
 
     assert len(pf.transactions) == len(
         pd.read_excel(tx_file)
@@ -32,7 +32,7 @@ def test_transactions_load():
 
 def test_perfomance_calculations():
     """Checks calculations of performance."""
-    pf = testing.portfolio(tx_file, filter_type=["Cash", "Dividend"], funds=["BLKRK"])
+    pf = portfolio.portfolio(tx_file, filter_type=["Cash", "Dividend"], funds=["BLKRK"])
     performance = pf.get_performance(date="05-02-2022")
 
     assert (
@@ -48,7 +48,7 @@ def test_perfomance_calculations():
     ), "Expected return percentage to match dollar weight"
 
     assert (
-        round(performance.loc["portfolio", "market_value"], 0) == 15854
+        round(performance.loc["portfolio", "market_value"], 0) == 15853
     ), "Expected market_value to be last_price * cumulative_units"
 
     assert (
@@ -60,7 +60,7 @@ def test_perfomance_calculations():
     ), "Expected return to be market_value - cumulative_cost"
 
     assert (
-        round(performance.loc["portfolio", "unrealized"], 0) == -5728
+        round(performance.loc["portfolio", "unrealized"], 0) == -5729
     ), "Expected unrealized to be market_value - average_price * cumulative units"
 
     assert (
@@ -70,7 +70,7 @@ def test_perfomance_calculations():
 
 def test_fund_index():
     """Checks calculations of fund index."""
-    pf = testing.portfolio(tx_file, filter_type=["Cash", "Dividend"], funds=["BLKRK"])
+    pf = portfolio.portfolio(tx_file, filter_type=["Cash", "Dividend"], funds=["BLKRK"])
     performance = pf.get_performance(date="05-27-2022")
 
     assert (

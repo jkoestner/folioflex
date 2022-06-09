@@ -426,9 +426,13 @@ def update_SectorGraph(slide_value, av_data, sector_status):
 #    | | |  _ <  / ___ \ |___| . \| |___|  _ <
 #    |_| |_| \_\/_/   \_\____|_|\_\_____|_| \_\
 
-tx_df, portfolio, performance, cost = portfolio.get_portfolio_and_transaction(
-    constants.remote_path + r"transactions.xlsx"
+
+tx_file = constants.remote_path + r"transactions.xlsx"
+the_portfolio = portfolio.portfolio(
+    tx_file, filter_type=["Cash", "Dividend"], funds=["BLKRK"]
 )
+portfolio_view = the_portfolio.portfolio_view
+cost_view = the_portfolio.cost_view
 
 
 @app.callback(Output("Tracker-Graph", "figure"), [Input("track_slider", "value")])
@@ -437,14 +441,14 @@ def update_TrackerGraph(slide_value):
     res = []
     layout = go.Layout(hovermode="closest")
 
-    track_grph = portfolio[
-        (utils.unix_time_millis(portfolio.index) > slide_value[0])
-        & (utils.unix_time_millis(portfolio.index) <= slide_value[1])
+    track_grph = portfolio_view[
+        (utils.unix_time_millis(portfolio_view.index) > slide_value[0])
+        & (utils.unix_time_millis(portfolio_view.index) <= slide_value[1])
     ]
 
-    cost_grph = cost[
-        (utils.unix_time_millis(cost.index) > slide_value[0])
-        & (utils.unix_time_millis(cost.index) <= slide_value[1])
+    cost_grph = cost_view[
+        (utils.unix_time_millis(cost_view.index) > slide_value[0])
+        & (utils.unix_time_millis(cost_view.index) <= slide_value[1])
     ]
     for col in track_grph.columns:
         track_grph.loc[track_grph[col] != 0, "change"] = (
