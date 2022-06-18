@@ -327,10 +327,11 @@ def get_results(task_status, task_id):
         sector_close = job.result
         job.delete()
         sector_status = "ready"
+        sector_close = sector_close.to_json()
     else:
         sector_status = "none"
-        sector_close = pd.DataFrame([])
-    return sector_close.to_json(), sector_status
+        sector_close = None
+    return sector_close, sector_status
 
 
 @app.callback(
@@ -379,7 +380,7 @@ def update_SectorGraph(slide_value, av_data, sector_status):
         sector_data = sector_close[
             (utils.unix_time_millis(sector_close.index) > slide_value[0])
             & (utils.unix_time_millis(sector_close.index) <= slide_value[1])
-        ]
+        ].copy()
         for col in sector_data.columns:
             sector_data["change"] = sector_data[col] / sector_data[col].iat[0] - 1
             sector_data.drop([col], axis=1, inplace=True)
@@ -460,12 +461,13 @@ def update_TrackerGraph(slide_value):
     track_grph = portfolio_view[
         (utils.unix_time_millis(portfolio_view.index) > slide_value[0])
         & (utils.unix_time_millis(portfolio_view.index) <= slide_value[1])
-    ]
+    ].copy()
 
     cost_grph = cost_view[
         (utils.unix_time_millis(cost_view.index) > slide_value[0])
         & (utils.unix_time_millis(cost_view.index) <= slide_value[1])
-    ]
+    ].copy()
+
     for col in track_grph.columns:
         track_grph.loc[track_grph[col] != 0, "change"] = (
             track_grph[col] + cost_grph[col]
@@ -498,51 +500,56 @@ def update_TrackerGraph(slide_value):
 )
 def sma_value(n_clicks, input_value):
     """Provide simple moving average on ideas."""
-    nyse = mcal.get_calendar("NYSE")
-    days = math.floor(
-        len(
-            nyse.valid_days(
-                start_date=(datetime.datetime.now() - relativedelta(years=1)),
-                end_date=datetime.datetime.now(),
+    if n_clicks == 0:
+        sma_table = (None, None)
+    else:
+        nyse = mcal.get_calendar("NYSE")
+        days = math.floor(
+            len(
+                nyse.valid_days(
+                    start_date=(datetime.datetime.now() - relativedelta(years=1)),
+                    end_date=datetime.datetime.now(),
+                )
             )
+            / 12
         )
-        / 12
-    )
-    days = str(days)
-    urlsma = (
-        "https://cloud.iexapis.com/stable/stock/"
-        + format(input_value)
-        + "/indicator/sma?range=1y&input1=12&sort=asc&chartCloseOnly=True&chartInterval="
-        + days
-        + "&token="
-        + constants.iex_api_live
-    )
-    sma = pd.read_json(urlsma, orient="index", typ="frame")
-    sma_val = sma.loc["indicator"].values[0][-1]
-    urlquote = (
-        "https://cloud.iexapis.com/stable/stock/"
-        + format(input_value)
-        + "/quote?token="
-        + constants.iex_api_live
-    )
-    quote = pd.read_json(urlquote, orient="index", typ="frame")
-    latest_price = quote.loc["latestPrice"].values[0]
-    urlstock = (
-        "https://cloud.iexapis.com/stable/stock/"
-        + format(input_value)
-        + "/stats?token="
-        + constants.iex_api_live
-    )
-    stock = pd.read_json(urlstock, orient="index", typ="frame")
-    return_12mo = stock.loc["year1ChangePercent"].values[0]
+        days = str(days)
+        urlsma = (
+            "https://cloud.iexapis.com/stable/stock/"
+            + format(input_value)
+            + "/indicator/sma?range=1y&input1=12&sort=asc&chartCloseOnly=True&chartInterval="
+            + days
+            + "&token="
+            + constants.iex_api_live
+        )
+        sma = pd.read_json(urlsma, orient="index", typ="frame")
+        sma_val = sma.loc["indicator"].values[0][-1]
+        urlquote = (
+            "https://cloud.iexapis.com/stable/stock/"
+            + format(input_value)
+            + "/quote?token="
+            + constants.iex_api_live
+        )
+        quote = pd.read_json(urlquote, orient="index", typ="frame")
+        latest_price = quote.loc["latestPrice"].values[0]
+        urlstock = (
+            "https://cloud.iexapis.com/stable/stock/"
+            + format(input_value)
+            + "/stats?token="
+            + constants.iex_api_live
+        )
+        stock = pd.read_json(urlstock, orient="index", typ="frame")
+        return_12mo = stock.loc["year1ChangePercent"].values[0]
 
-    # build table
-    stock_data = [[input_value, sma_val, latest_price, return_12mo]]
-    df = pd.DataFrame(
-        stock_data, columns=["Stock", "12mo SMA", "Latest Price", "12mo Return"]
-    )
+        # build table
+        stock_data = [[input_value, sma_val, latest_price, return_12mo]]
+        df = pd.DataFrame(
+            stock_data, columns=["Stock", "12mo SMA", "Latest Price", "12mo Return"]
+        )
 
-    return [{"name": i, "id": i} for i in df.columns], df.to_dict("records")
+        sma_table = [{"name": i, "id": i} for i in df.columns], df.to_dict("records")
+
+    return sma_table
 
 
 #    ____ ______   ______ _____ ___
@@ -562,24 +569,31 @@ def sma_value(n_clicks, input_value):
 )
 def update_cryptoquoteanalysis(n_clicks, input_value):
     """Provide crypto analysis table."""
-    urlquote = (
-        "https://cloud.iexapis.com/stable/crypto/"
-        + format(input_value)
-        + "/quote?token="
-        + constants.iex_api_live
-    )
-    quote = pd.read_json(urlquote, orient="index", typ="frame")
+    if n_clicks == 0:
+        crypto_table = (None, None)
+    else:
+        urlquote = (
+            "https://cloud.iexapis.com/stable/crypto/"
+            + format(input_value)
+            + "/quote?token="
+            + constants.iex_api_live
+        )
+        quote = pd.read_json(urlquote, orient="index", typ="frame")
 
-    quote.loc["latestUpdate"].values[0] = pd.to_datetime(
-        quote.loc["latestUpdate"].values[0], unit="ms"
-    )
+        quote.loc["latestUpdate"].values[0] = pd.to_datetime(
+            quote.loc["latestUpdate"].values[0], unit="ms"
+        )
 
-    quote = quote.loc[layouts.crypto_quote_col]
-    quote = quote.reset_index()
-    quote.columns = ["Variable", "Value"]
-    quote = quote.round(2)
+        quote = quote.loc[layouts.crypto_quote_col]
+        quote = quote.reset_index()
+        quote.columns = ["Variable", "Value"]
+        quote = quote.round(2)
 
-    return [{"name": i, "id": i} for i in quote.columns], quote.to_dict("records")
+        crypto_table = [{"name": i, "id": i} for i in quote.columns], quote.to_dict(
+            "records"
+        )
+
+    return crypto_table
 
 
 if __name__ == "__main__":

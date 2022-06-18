@@ -9,18 +9,20 @@ from dash import html
 from iex.util import constants, utils
 
 # Sector URL
-urlsec = "https://cloud.iexapis.com/stable/ref-data/sectors?token=" + constants.iex_api_live
+urlsec = (
+    "https://cloud.iexapis.com/stable/ref-data/sectors?token=" + constants.iex_api_live
+)
 sectors = pd.read_json(urlsec, orient="columns")
 sectors["name"] = sectors["name"].str.replace(" ", "%20")
 
 # Sector Performance
 urlsecmap = (
-    "https://www.alphavantage.co/query?function=SECTOR&apikey=" + constants.alpha_vantage_api
+    "https://www.alphavantage.co/query?function=SECTOR&apikey="
+    + constants.alpha_vantage_api
 )
 secmap = pd.read_json(urlsecmap, orient="columns")
 secmap = secmap.iloc[2:, 1:]
 secmap = secmap.reset_index()
-
 
 # Creating the dash app
 
@@ -29,7 +31,7 @@ layout = html.Div(
         html.Div(
             [
                 utils.get_menu(),
-                html.Button(id="sector-initialize", children="Sector initialize"),
+                html.Button("Sector initialize", id="sector-initialize", n_clicks=0),
                 html.Div(id="refresh_text", children="none"),
                 # graph
                 dcc.Graph(
@@ -42,6 +44,10 @@ layout = html.Div(
                         dcc.RangeSlider(
                             id="slider",
                             tooltip="always_visible",
+                            min=0,
+                            max=10,
+                            value=[0, 10],
+                            marks=1,
                         ),
                     ],
                     style={

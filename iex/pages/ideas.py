@@ -23,7 +23,7 @@ layout = html.Div(
                 ),
                 html.P(),
                 dcc.Input(id="idea-input", placeholder="Enter Stock...", type="text"),
-                html.Button(id="sma-button", children="SMA Submit"),
+                html.Button("SMA Submit", id="sma-button", n_clicks=0),
                 html.P(),
                 # creating fed fund rate
                 html.A(

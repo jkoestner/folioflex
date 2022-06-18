@@ -12,7 +12,8 @@ from iex.util import constants, utils
 # Creating the dash app
 btc = json.loads(
     request.urlopen(
-        "https://cloud.iexapis.com/stable/crypto/btcusd/price?token=" + constants.iex_api_live
+        "https://cloud.iexapis.com/stable/crypto/btcusd/price?token="
+        + constants.iex_api_live
     )
     .read()
     .decode("utf8")
@@ -20,7 +21,8 @@ btc = json.loads(
 
 ape = json.loads(
     request.urlopen(
-        "https://cloud.iexapis.com/stable/crypto/apeusdt/price?token=" + constants.iex_api_live
+        "https://cloud.iexapis.com/stable/crypto/apeusdt/price?token="
+        + constants.iex_api_live
     )
     .read()
     .decode("utf8")
@@ -28,7 +30,8 @@ ape = json.loads(
 
 eth = json.loads(
     request.urlopen(
-        "https://cloud.iexapis.com/stable/crypto/ethusd/price?token=" + constants.iex_api_live
+        "https://cloud.iexapis.com/stable/crypto/ethusd/price?token="
+        + constants.iex_api_live
     )
     .read()
     .decode("utf8")
@@ -42,7 +45,9 @@ layout = html.Div(
                 html.Label("Crypto Analysis"),
                 html.P(),
                 dcc.Input(id="crypto-input", placeholder="Enter Coin...", type="text"),
-                html.Button(id="crypto-quote-button", children="Crypto Quote Submit"),
+                html.Button(
+                    "Crypto Quote Submit", id="crypto-quote-button", n_clicks=0
+                ),
             ],
             className="row",
         ),
