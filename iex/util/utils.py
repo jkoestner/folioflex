@@ -118,6 +118,6 @@ def sector_query():
     sector_close : dataframe
        provides the list of prices for historical prices
     """
-    sector_close = yf.download(layouts.sector_list, start="2018-01-01")
+    sector_close = yf.download(layouts.list_sector, start="2018-01-01")
 
     return sector_close["Adj Close"]

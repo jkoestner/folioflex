@@ -24,48 +24,6 @@ cols_col = [
     "latestUpdate",
 ]
 
-formatter_col = {
-    "peRatio": "{:,.2f}".format,
-    "cap*perc": "{:,.2f}".format,
-    "changePercent": "{0:.2%}".format,
-    "marketCap": "{:,.2f}".format,
-    "change": "{:,.2f}".format,
-    "close": "{:,.2f}".format,
-    "open": "{:,.2f}".format,
-    "latestPrice": "{:,.2f}".format,
-    "latestSource": "{:,.2f}".format,
-    "latestUpdate": "{:,.2f}".format,
-}
-
-formatter_stock = {
-    "day5ChangePercent": "{0:.2%}".format,
-    "week52change": "{:,.2f}".format,
-    "year1ChangePercent": "{0:.2%}".format,
-    "month3ChangePercent": "{0:.2%}".format,
-    "month1ChangePercent": "{0:.2%}".format,
-    "dividendYield": "{0:.2%}".format,
-    "day30ChangePercent": "{0:.2%}".format,
-    "month6ChangePercent": "{0:.2%}".format,
-    "ytdChangePercent": "{0:.2%}".format,
-    "year2ChangePercent": "{0:.2%}".format,
-    "year5ChangePercent": "{0:.2%}".format,
-    "beta": "{:,.2f}".format,
-    "ttmDividendRate": "{:,.2f}".format,
-    "ttmEPS": "{:,.2f}".format,
-    "peRatio": "{:,.2f}".format,
-    "week52low": "{:,.2f}".format,
-    "day200MovingAvg": "{:,.2f}".format,
-    "day50MovingAvg": "{:,.2f}".format,
-    "maxChangePercent": "{0:.2%}".format,
-    "week52high": "{:,.2f}".format,
-    "employees": "{:,.2f}".format,
-    "avg30Volume": "{:,.2f}".format,
-    "avg10Volume": "{:,.2f}".format,
-    "float": "{:,.2f}".format,
-    "sharesOutstanding": "{:,.2f}".format,
-    "marketcap": "{:,.2f}".format,
-}
-
 quote_col = [
     "symbol",
     "companyName",
@@ -130,6 +88,48 @@ active_col = [
     "peRatio",
 ]
 
+formatter_col = {
+    "peRatio": "{:,.2f}".format,
+    "cap*perc": "{:,.2f}".format,
+    "changePercent": "{0:.2%}".format,
+    "marketCap": "{:,.2f}".format,
+    "change": "{:,.2f}".format,
+    "close": "{:,.2f}".format,
+    "open": "{:,.2f}".format,
+    "latestPrice": "{:,.2f}".format,
+    "latestSource": "{:,.2f}".format,
+    "latestUpdate": "{:,.2f}".format,
+}
+
+formatter_stock = {
+    "day5ChangePercent": "{0:.2%}".format,
+    "week52change": "{:,.2f}".format,
+    "year1ChangePercent": "{0:.2%}".format,
+    "month3ChangePercent": "{0:.2%}".format,
+    "month1ChangePercent": "{0:.2%}".format,
+    "dividendYield": "{0:.2%}".format,
+    "day30ChangePercent": "{0:.2%}".format,
+    "month6ChangePercent": "{0:.2%}".format,
+    "ytdChangePercent": "{0:.2%}".format,
+    "year2ChangePercent": "{0:.2%}".format,
+    "year5ChangePercent": "{0:.2%}".format,
+    "beta": "{:,.2f}".format,
+    "ttmDividendRate": "{:,.2f}".format,
+    "ttmEPS": "{:,.2f}".format,
+    "peRatio": "{:,.2f}".format,
+    "week52low": "{:,.2f}".format,
+    "day200MovingAvg": "{:,.2f}".format,
+    "day50MovingAvg": "{:,.2f}".format,
+    "maxChangePercent": "{0:.2%}".format,
+    "week52high": "{:,.2f}".format,
+    "employees": "{:,.2f}".format,
+    "avg30Volume": "{:,.2f}".format,
+    "avg10Volume": "{:,.2f}".format,
+    "float": "{:,.2f}".format,
+    "sharesOutstanding": "{:,.2f}".format,
+    "marketcap": "{:,.2f}".format,
+}
+
 formatter_quote = {
     "avgTotalVolume": "{:,.2f}".format,
     "change": "{:,.2f}".format,
@@ -163,7 +163,7 @@ formatter_quote = {
     "ytdChange": "{0:.2%}".format,
 }
 
-sector_list = [
+list_sector = [
     "XLV",
     "XLK",
     "XLY",

@@ -18,12 +18,11 @@ layout = html.Div(
                 html.Label("Stock Analysis"),
                 html.P(),
                 dcc.Input(id="stock-input", placeholder="Enter Stock...", type="text"),
-                html.Button(id="stock-button", children="Stock Submit"),
-                html.Button(id="quote-button", children="Quote Submit"),
-                html.Button(id="peer-button", children="Peer Submit"),
-                html.Button(id="news-button", children="News Submit"),
-                html.Button(id="active-button", children="Active Submit"),
-                html.Button(id="sentiment-button", children="Sentiment Submit"),
+                html.Button("Active Submit", id="active-button", n_clicks=0),
+                html.Button("Stock Submit", id="stock-button", n_clicks=0),
+                html.Button("Quote Submit", id="quote-button", n_clicks=0),
+                html.Button("Peer Submit", id="peer-button", n_clicks=0),
+                html.Button("News Submit", id="news-button", n_clicks=0),
             ],
             className="row",
         ),
@@ -33,6 +32,23 @@ layout = html.Div(
                     id="date-input",
                     initial_visible_month=datetime.date.today(),
                     date=datetime.date.today(),
+                ),
+            ],
+            className="row",
+        ),
+        html.Div(
+            [
+                html.Div(
+                    [
+                        # creating active information
+                        html.P(),
+                        dash_table.DataTable(
+                            id="active-table",
+                            page_action="native",
+                            sort_action="native",
+                        ),
+                    ],
+                    className="three columns",
                 ),
             ],
             className="row",
@@ -66,39 +82,6 @@ layout = html.Div(
                         dash_table.DataTable(
                             id="peer-table",
                             page_action="native",
-                        ),
-                    ],
-                    className="three columns",
-                ),
-            ],
-            className="row",
-        ),
-        html.Div(
-            [
-                html.Div(
-                    [
-                        # creating sentiment information
-                        html.P(),
-                        dash_table.DataTable(
-                            id="sentiment-table",
-                            sort_action="native",
-                        ),
-                    ],
-                    className="three columns",
-                ),
-            ],
-            className="row",
-        ),
-        html.Div(
-            [
-                html.Div(
-                    [
-                        # creating active information
-                        html.P(),
-                        dash_table.DataTable(
-                            id="active-table",
-                            page_action="native",
-                            sort_action="native",
                         ),
                     ],
                     className="three columns",

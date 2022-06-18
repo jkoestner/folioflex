@@ -93,167 +93,172 @@ def display_page(pathname):
 
 @app.callback(
     [
-        Output(component_id="stock-table", component_property="columns"),
-        Output(component_id="stock-table", component_property="data"),
+        Output("stock-table", "columns"),
+        Output("stock-table", "data"),
     ],
-    [Input(component_id="stock-button", component_property="n_clicks")],
-    [State(component_id="stock-input", component_property="value")],
+    [Input("stock-button", "n_clicks")],
+    [State("stock-input", "value")],
 )
 def update_stockanalysis(n_clicks, input_value):
     """Provide stock analysis table."""
-    urlstock = (
-        "https://cloud.iexapis.com/stable/stock/"
-        + format(input_value)
-        + "/stats?token="
-        + constants.iex_api_live
-    )
+    if n_clicks == 0:
+        stock_table = (None, None)
+    else:
+        urlstock = (
+            "https://cloud.iexapis.com/stable/stock/"
+            + format(input_value)
+            + "/stats?token="
+            + constants.iex_api_live
+        )
 
-    stock = pd.read_json(urlstock, orient="index", typ="frame")
-    stock = stock.reset_index()
-    stock.columns = ["Variable", "Value"]
-    stock = stock.round(2)
+        stock = pd.read_json(urlstock, orient="index", typ="frame")
+        stock = stock.reset_index()
+        stock.columns = ["Variable", "Value"]
+        stock = stock.round(2)
 
-    return [{"name": i, "id": i} for i in stock.columns], stock.to_dict("records")
+        stock_table = [{"name": i, "id": i} for i in stock.columns], stock.to_dict(
+            "records"
+        )
+
+    return stock_table
 
 
 @app.callback(
     [
-        Output(component_id="quote-table", component_property="columns"),
-        Output(component_id="quote-table", component_property="data"),
+        Output("quote-table", "columns"),
+        Output("quote-table", "data"),
     ],
-    [Input(component_id="quote-button", component_property="n_clicks")],
-    [State(component_id="stock-input", component_property="value")],
+    [Input("quote-button", "n_clicks")],
+    [State("stock-input", "value")],
 )
 def update_quoteanalysis(n_clicks, input_value):
     """Provide quote analysis table."""
-    urlquote = (
-        "https://cloud.iexapis.com/stable/stock/"
-        + format(input_value)
-        + "/quote?token="
-        + constants.iex_api_live
-    )
-    quote = pd.read_json(urlquote, orient="index", typ="frame")
+    if n_clicks == 0:
+        quote_table = (None, None)
+    else:
+        urlquote = (
+            "https://cloud.iexapis.com/stable/stock/"
+            + format(input_value)
+            + "/quote?token="
+            + constants.iex_api_live
+        )
+        quote = pd.read_json(urlquote, orient="index", typ="frame")
 
-    quote.loc["closeTime"].values[0] = pd.to_datetime(
-        quote.loc["closeTime"].values[0], unit="ms"
-    )
-    quote.loc["iexLastUpdated"].values[0] = pd.to_datetime(
-        quote.loc["iexLastUpdated"].values[0], unit="ms"
-    )
-    quote.loc["lastTradeTime"].values[0] = pd.to_datetime(
-        quote.loc["lastTradeTime"].values[0], unit="ms"
-    )
-    quote.loc["latestUpdate"].values[0] = pd.to_datetime(
-        quote.loc["latestUpdate"].values[0], unit="ms"
-    )
-    quote.loc["extendedPriceTime"].values[0] = pd.to_datetime(
-        quote.loc["extendedPriceTime"].values[0], unit="ms"
-    )
+        quote.loc["closeTime"].values[0] = pd.to_datetime(
+            quote.loc["closeTime"].values[0], unit="ms"
+        )
+        quote.loc["iexLastUpdated"].values[0] = pd.to_datetime(
+            quote.loc["iexLastUpdated"].values[0], unit="ms"
+        )
+        quote.loc["lastTradeTime"].values[0] = pd.to_datetime(
+            quote.loc["lastTradeTime"].values[0], unit="ms"
+        )
+        quote.loc["latestUpdate"].values[0] = pd.to_datetime(
+            quote.loc["latestUpdate"].values[0], unit="ms"
+        )
+        quote.loc["extendedPriceTime"].values[0] = pd.to_datetime(
+            quote.loc["extendedPriceTime"].values[0], unit="ms"
+        )
 
-    quote = quote.loc[layouts.quote_col]
-    quote = quote.reset_index()
-    quote.columns = ["Variable", "Value"]
-    quote = quote.round(2)
+        quote = quote.loc[layouts.quote_col]
+        quote = quote.reset_index()
+        quote.columns = ["Variable", "Value"]
+        quote = quote.round(2)
 
-    return [{"name": i, "id": i} for i in quote.columns], quote.to_dict("records")
+        quote_table = [{"name": i, "id": i} for i in quote.columns], quote.to_dict(
+            "records"
+        )
+
+    return quote_table
 
 
 @app.callback(
     [
-        Output(component_id="peer-table", component_property="columns"),
-        Output(component_id="peer-table", component_property="data"),
+        Output("peer-table", "columns"),
+        Output("peer-table", "data"),
     ],
-    [Input(component_id="peer-button", component_property="n_clicks")],
-    [State(component_id="stock-input", component_property="value")],
+    [Input("peer-button", "n_clicks")],
+    [State("stock-input", "value")],
 )
 def update_peeranalysis(n_clicks, input_value):
     """Provide peer analysis table."""
-    urlpeer = (
-        "https://cloud.iexapis.com/stable/stock/"
-        + format(input_value)
-        + "/peers?token="
-        + constants.iex_api_live
-    )
-    peer = pd.read_json(urlpeer, orient="columns", typ="series")
-    peer = peer.reset_index()
-    peer.columns = ["Index", "Peer"]
+    if n_clicks == 0:
+        peer_table = (None, None)
+    else:
+        urlpeer = (
+            "https://cloud.iexapis.com/stable/stock/"
+            + format(input_value)
+            + "/peers?token="
+            + constants.iex_api_live
+        )
+        peer = pd.read_json(urlpeer, orient="columns", typ="series")
+        peer = peer.reset_index()
+        peer.columns = ["Index", "Peer"]
+        peer_table = [{"name": i, "id": i} for i in peer.columns], peer.to_dict(
+            "records"
+        )
 
-    return [{"name": i, "id": i} for i in peer.columns], peer.to_dict("records")
-
-
-@app.callback(
-    [
-        Output(component_id="sentiment-table", component_property="columns"),
-        Output(component_id="sentiment-table", component_property="data"),
-    ],
-    [Input(component_id="sentiment-button", component_property="n_clicks")],
-    [
-        State(component_id="stock-input", component_property="value"),
-        State(component_id="date-input", component_property="date"),
-    ],
-)
-def update_sentiment(n_clicks, input_value, date_value):
-    """Provide sentiment analysis table."""
-    date_obj = datetime.datetime.strptime(date_value, "%Y-%m-%d")
-    urlsentiment = (
-        "https://cloud.iexapis.com/stable/stock/"
-        + format(input_value)
-        + "/sentiment/daily/"
-        + date_obj.strftime("%Y%m%d")
-        + "?token="
-        + constants.iex_api_live
-    )
-    sentiment = pd.read_json(urlsentiment, orient="columns", typ="series")
-    sentiment = sentiment.reset_index()
-    sentiment.columns = ["Variable", "Value"]
-
-    return [{"name": i, "id": i} for i in sentiment.columns], sentiment.to_dict(
-        "records"
-    )
+    return peer_table
 
 
 @app.callback(
     [
-        Output(component_id="news-table", component_property="columns"),
-        Output(component_id="news-table", component_property="data"),
+        Output("news-table", "columns"),
+        Output("news-table", "data"),
     ],
-    [Input(component_id="news-button", component_property="n_clicks")],
-    [State(component_id="stock-input", component_property="value")],
+    [Input("news-button", "n_clicks")],
+    [State("stock-input", "value")],
 )
 def update_newsanalysis(n_clicks, input_value):
     """Provide news analysis table."""
-    urlnews = (
-        "https://cloud.iexapis.com/stable/stock/"
-        + format(input_value)
-        + "/news/last/5?token="
-        + constants.iex_api_live
-    )
-    news = pd.read_json(urlnews, orient="columns")
+    if n_clicks == 0:
+        news_table = (None, None)
+    else:
+        urlnews = (
+            "https://cloud.iexapis.com/stable/stock/"
+            + format(input_value)
+            + "/news/last/5?token="
+            + constants.iex_api_live
+        )
+        news = pd.read_json(urlnews, orient="columns")
 
-    return [{"name": i, "id": i} for i in news.columns], news.to_dict("records")
+        news_table = [{"name": i, "id": i} for i in news.columns], news.to_dict(
+            "records"
+        )
+
+    return news_table
 
 
 @app.callback(
     [
-        Output(component_id="active-table", component_property="columns"),
-        Output(component_id="active-table", component_property="data"),
+        Output("active-table", "columns"),
+        Output("active-table", "data"),
     ],
-    [Input(component_id="active-button", component_property="n_clicks")],
+    [Input("active-button", "n_clicks")],
 )
 def update_activeanalysis(n_clicks):
     """Provide active analysis table."""
-    urlactive = (
-        "https://cloud.iexapis.com/stable/stock/market/list/mostactive?listLimit=20&token="
-        + constants.iex_api_live
-    )
-    active = pd.read_json(urlactive, orient="columns")
-    active["vol_delta"] = active["volume"] / active["avgTotalVolume"]
-    active = active[layouts.active_col]
-    active = active.round(2)
-    active["changePercent"] = active["changePercent"].astype(float).map("{:.1%}".format)
-    active["ytdChange"] = active["ytdChange"].astype(float).map("{:.1%}".format)
+    if n_clicks == 0:
+        active_table = (None, None)
+    else:
+        urlactive = (
+            "https://cloud.iexapis.com/stable/stock/market/list/mostactive?listLimit=20&token="
+            + constants.iex_api_live
+        )
+        active = pd.read_json(urlactive, orient="columns")
+        active["vol_delta"] = active["volume"] / active["avgTotalVolume"]
+        active = active[layouts.active_col]
+        active = active.round(2)
+        active["changePercent"] = (
+            active["changePercent"].astype(float).map("{:.1%}".format)
+        )
+        active["ytdChange"] = active["ytdChange"].astype(float).map("{:.1%}".format)
 
-    return [{"name": i, "id": i} for i in active.columns], active.to_dict("records")
+        active_table = [{"name": i, "id": i} for i in active.columns], active.to_dict(
+            "records"
+        )
+
+    return active_table
 
 
 #   ____  _____ ____ _____ ___  ____
@@ -262,40 +267,6 @@ def update_activeanalysis(n_clicks):
 #   ___) | |__| |___  | || |_| |  _ <
 #  |____/|_____\____| |_| \___/|_| \_\
 
-# Table
-@app.callback(
-    [
-        Output(component_id="sector-table", component_property="columns"),
-        Output(component_id="sector-table", component_property="data"),
-    ],
-    [Input(component_id="sector-dropdown", component_property="value")],
-)
-def update_table(dropdown_value):
-    """Provide sector analysis table."""
-    urlcol = (
-        "https://cloud.iexapis.com/stable/stock/market/collection/sector?collectionName="
-        + format(dropdown_value)
-        + "&token="
-        + constants.iex_api_live
-    )
-    collection_all = pd.read_json(urlcol, orient="columns")
-    collection = collection_all[
-        collection_all["primaryExchange"].isin(layouts.USexchanges)
-    ]
-    collection.loc["cap*perc"] = (
-        collection.loc["marketCap"] * collection.loc["changePercent"]
-    )
-    collection.loc["latestUpdate"] = pd.to_datetime(
-        collection.loc["latestUpdate"], unit="ms"
-    )
-    collection = collection[layouts.cols_col]
-    collection = collection.sort_values(by=["cap*perc"], ascending=False)
-
-    return [{"name": i, "id": i} for i in collection.columns], collection.to_dict(
-        "records"
-    )
-
-
 # Graph
 @app.callback(
     Output("task-id", "children"),
@@ -303,7 +274,10 @@ def update_table(dropdown_value):
 )
 def initialize_SectorGraph(n_clicks):
     """Provide sector analysis graph."""
-    task_id = q.enqueue(utils.sector_query).id
+    if n_clicks == 0:
+        task_id = "none"
+    else:
+        task_id = q.enqueue(utils.sector_query).id
 
     return task_id
 
@@ -422,6 +396,44 @@ def update_SectorGraph(slide_value, av_data, sector_status):
     fig = dict(data=res, layout=layout)
 
     return fig
+
+
+# Table
+@app.callback(
+    [
+        Output("sector-table", "columns"),
+        Output("sector-table", "data"),
+    ],
+    [Input("sector-dropdown", "value")],
+)
+def update_table(dropdown_value):
+    """Provide sector analysis table."""
+    if dropdown_value is None:
+        sector_table = (None, None)
+    else:
+        urlcol = (
+            "https://cloud.iexapis.com/stable/stock/market/collection/sector?collectionName="
+            + format(dropdown_value)
+            + "&token="
+            + constants.iex_api_live
+        )
+        collection_all = pd.read_json(urlcol, orient="columns")
+        collection = collection_all[
+            collection_all["primaryExchange"].isin(layouts.USexchanges)
+        ].copy()
+
+        collection["cap*perc"] = collection["marketCap"] * collection["changePercent"]
+        collection["latestUpdate"] = pd.to_datetime(
+            collection["latestUpdate"], unit="ms"
+        )
+        collection = collection[layouts.cols_col]
+        collection = collection.sort_values(by=["cap*perc"], ascending=False)
+
+        sector_table = [
+            {"name": i, "id": i} for i in collection.columns
+        ], collection.to_dict("records")
+
+    return sector_table
 
 
 #   _____ ____      _    ____ _  _______ ____
