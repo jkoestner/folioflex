@@ -280,10 +280,14 @@ def update_table(dropdown_value):
     )
     collection_all = pd.read_json(urlcol, orient="columns")
     collection = collection_all[
-        collection_all.primaryExchange.isin(layouts.USexchanges)
+        collection_all["primaryExchange"].isin(layouts.USexchanges)
     ]
-    collection["cap*perc"] = collection["marketCap"] * collection["changePercent"]
-    collection["latestUpdate"] = pd.to_datetime(collection["latestUpdate"], unit="ms")
+    collection.loc["cap*perc"] = (
+        collection.loc["marketCap"] * collection.loc["changePercent"]
+    )
+    collection.loc["latestUpdate"] = pd.to_datetime(
+        collection.loc["latestUpdate"], unit="ms"
+    )
     collection = collection[layouts.cols_col]
     collection = collection.sort_values(by=["cap*perc"], ascending=False)
 
