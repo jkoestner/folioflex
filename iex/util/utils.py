@@ -12,8 +12,6 @@ from dash import dcc
 from dash import html
 from dateutil.relativedelta import relativedelta
 
-from iex.util import utils
-
 
 def get_menu():
     """Provide menu for pages."""
@@ -179,13 +177,13 @@ def update_graph(slide_value, portfolio, transaction_history=None):
     cost_view = portfolio._get_cost_view(transaction_history)
 
     return_grph = portfolio_view[
-        (utils.unix_time_millis(portfolio_view.index) > slide_value[0])
-        & (utils.unix_time_millis(portfolio_view.index) <= slide_value[1])
+        (unix_time_millis(portfolio_view.index) > slide_value[0])
+        & (unix_time_millis(portfolio_view.index) <= slide_value[1])
     ].copy()
 
     cost_grph = cost_view[
-        (utils.unix_time_millis(cost_view.index) > slide_value[0])
-        & (utils.unix_time_millis(cost_view.index) <= slide_value[1])
+        (unix_time_millis(cost_view.index) > slide_value[0])
+        & (unix_time_millis(cost_view.index) <= slide_value[1])
     ].copy()
 
     for col in return_grph.columns:

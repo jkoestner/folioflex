@@ -20,4 +20,4 @@ tracker_portfolio = portfolio.portfolio(
 # personal vars
 q = Queue(connection=worker.conn)
 personal_tx_file = aws_tx_file
-personal_portfolio = q.enqueue(worker.portfolio_query, personal_tx_file)
+# personal_portfolio = q.enqueue(worker.portfolio_query, personal_tx_file)
