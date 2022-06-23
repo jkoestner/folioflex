@@ -6,11 +6,11 @@ import yfinance as yf
 
 from rq import Worker, Queue, Connection
 
-from iex.util import constants, layouts, portfolio
+from iex.util import layouts, portfolio
 
 listen = ["high", "default", "low"]
 
-if constants.remote_path == r"/app/files/":
+if os.path.isfile(r"/app/files/transactions.xlsx"):
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
 else:
     # if debugging locally will need a redis
@@ -52,8 +52,8 @@ def portfolio_query(tx_file):
 
     Returns
     -------
-    sector_close : series
-       provides the list of prices for historical prices
+    personal_portfolio : portfolio object
+       provides the portfolio class
     """
     personal_portfolio = portfolio.portfolio(
         tx_file,
