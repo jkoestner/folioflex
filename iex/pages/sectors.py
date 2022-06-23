@@ -23,6 +23,8 @@ urlsecmap = (
 secmap = pd.read_json(urlsecmap, orient="columns")
 secmap = secmap.iloc[2:, 1:]
 secmap = secmap.reset_index()
+cols = secmap.columns.drop("index")
+secmap[cols] = secmap[cols].replace("%", "", regex=True).astype(float)
 
 # Creating the dash app
 

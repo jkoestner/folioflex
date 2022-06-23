@@ -6,13 +6,14 @@ Provides functions for common used functions in app.
 import datetime
 import os
 import pandas as pd
+import plotly.graph_objs as go
 import yfinance as yf
 
 from dash import dcc
 from dash import html
 from dateutil.relativedelta import relativedelta
 
-from iex.util import layouts
+from iex.util import layouts, utils
 
 
 def get_menu():
@@ -75,19 +76,64 @@ def unixToDatetime(unix):
     return pd.to_datetime(unix, unit="s")
 
 
-def getMarks(start, end, Nth=365):
-    """Return the marks for labeling.
+def getMarks(start, end, nth=365):
+    """Return Nth marks for labeling.
 
-    Every Nth value will be used.
+    Parameters
+    ----------
+    start : date
+        the minimum date of series
+    end : date
+        the maximum date of series
+    nth : int
+        the range to create a new mark
+
+    Returns
+    ----------
+    marks : series
+        the values that will have marks
     """
     result = []
-    current = start
-    while current <= end:
-        result.append(current)
-        current += relativedelta(years=1)
-    return {
+    while start <= end:
+        result.append(start)
+        start += relativedelta(years=1)
+
+    marks = {
         int(unix_time_millis(date)): (str(date.strftime("%Y-%m"))) for date in result
     }
+
+    return marks
+
+
+def get_slider_values(daterange):
+    """Return slider values.
+
+    Parameters
+    ----------
+    daterange : series
+        series of dates to calculate values on
+
+    Returns
+    ----------
+    min : date
+        minimum date
+    max : date
+        maximum date
+    value : series
+        values to use
+    marks : series
+        marks on slider
+    """
+    # due to range step granularity, range needs to be extended to be inclusive of ends
+    min = unix_time_millis(daterange.min()) - 1000000
+    max = unix_time_millis(daterange.max()) + 1000000
+    value = [
+        unix_time_millis(daterange.min()),
+        unix_time_millis(daterange.max()),
+    ]
+    marks = getMarks(daterange.min(), daterange.max())
+
+    return min, max, value, marks
 
 
 def get_remote_path():
@@ -110,14 +156,70 @@ def get_remote_path():
     return remote_path
 
 
-def sector_query():
+def sector_query(start="2018-01-01"):
     """Provide the sector historical stock prices.
+
+    Parameters
+    ----------
+    start : date
+       start date of series
 
     Returns
     -------
-    sector_close : dataframe
+    sector_close : series
        provides the list of prices for historical prices
     """
-    sector_close = yf.download(layouts.list_sector, start="2018-01-01")
+    sector_close = yf.download(layouts.list_sector, start=start)
 
     return sector_close["Adj Close"]
+
+
+def update_graph(slide_value, portfolio, transaction_history=None):
+    """Create a performance return graph.
+
+    Parameters
+    ----------
+    slide_value : rangeslider objet
+       Dash rangeslider object
+    portfolio : portfolio object
+       the portfolio DataFrame to create figure on
+    transaction_history : portfolio object (optional)
+       the transaction history portfolio DataFrame to create figure on
+
+    Returns
+    -------
+    fig : Dash figure
+       dash figure
+    """
+    res = []
+    layout = go.Layout(hovermode="closest")
+
+    portfolio_view = portfolio._get_portfolio_view(transaction_history)
+    cost_view = portfolio._get_cost_view(transaction_history)
+
+    return_grph = portfolio_view[
+        (utils.unix_time_millis(portfolio_view.index) > slide_value[0])
+        & (utils.unix_time_millis(portfolio_view.index) <= slide_value[1])
+    ].copy()
+
+    cost_grph = cost_view[
+        (utils.unix_time_millis(cost_view.index) > slide_value[0])
+        & (utils.unix_time_millis(cost_view.index) <= slide_value[1])
+    ].copy()
+
+    for col in return_grph.columns:
+        # calculates return % over time
+        return_grph.loc[return_grph[col] != 0, "change"] = (
+            return_grph[col] + cost_grph[col]
+        ) / cost_grph[col] - 1
+        return_grph.drop([col], axis=1, inplace=True)
+        return_grph = return_grph.rename(columns={"change": col})
+        res.append(
+            go.Scatter(
+                x=return_grph.index, y=return_grph[col].values.tolist(), name=col
+            )
+        )
+
+    fig = dict(data=res, layout=layout)
+
+    return fig

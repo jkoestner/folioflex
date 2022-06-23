@@ -1,7 +1,7 @@
 # IEX
 IEX cloud finance
 
-This is an app built with https://iexcloud.io/ api as well as https://dashboard.heroku.com/ as the host
+This is an app built with https://dashboard.heroku.com/ as the host
 
 The app can be seen at https://koestner.herokuapp.com/
 
@@ -18,3 +18,8 @@ It also can be run locally by going to the project root folder and running:
 ```python
 python app.py
 ```
+
+Data sources:
+- https://cloud.iexapis.com
+- https://www.alphavantage.co
+- https://pypi.org/project/yahoo-finance/

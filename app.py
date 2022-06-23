@@ -8,6 +8,8 @@ Builds plotly pages with call backs. There are 2 options the user has for runnin
 To run locally:
 1. cd into root directory
 2. run plotly dashboard - `python app.py`
+
+The ascii text is generated using https://patorjk.com/software/taag/ with "standard font"
 """
 
 import dash
@@ -24,8 +26,8 @@ from dateutil.relativedelta import relativedelta
 from rq import Queue
 from rq.job import Job
 
-from iex.pages import stocks, sectors, ideas, macro, tracker, crypto
-from iex.util import constants, layouts, portfolio, utils
+from iex.pages import stocks, sectors, ideas, macro, tracker, crypto, personal
+from iex.util import constants, layouts, utils
 from iex.util.worker import conn
 
 q = Queue(connection=conn)
@@ -80,6 +82,8 @@ def display_page(pathname):
         return tracker.layout
     elif pathname == "/crypto":
         return crypto.layout
+    elif pathname == "/personal":
+        return personal.layout
     else:
         return "404"
 
@@ -348,17 +352,10 @@ def update_SectorData(sector_status, av_data):
     """Provide sector data table."""
     if sector_status == "ready":
         sector_close = pd.read_json(av_data)
-        daterange = sector_close.index
-        min = utils.unix_time_millis(daterange.min())
-        max = utils.unix_time_millis(daterange.max())
-        value = [
-            utils.unix_time_millis(daterange.min()),
-            utils.unix_time_millis(daterange.max()),
-        ]
-        marks = utils.getMarks(daterange.min(), daterange.max())
+        min, max, value, marks = utils.get_slider_values(sector_close.index)
     else:
         min = 0
-        max = 0
+        max = 10
         value = 0
         marks = 0
 
@@ -437,52 +434,6 @@ def update_table(dropdown_value):
     return sector_table
 
 
-#   _____ ____      _    ____ _  _______ ____
-#  |_   _|  _ \    / \  / ___| |/ / ____|  _ \
-#    | | | |_) |  / _ \| |   | ' /|  _| | |_) |
-#    | | |  _ <  / ___ \ |___| . \| |___|  _ <
-#    |_| |_| \_\/_/   \_\____|_|\_\_____|_| \_\
-
-
-tx_file = constants.remote_path + r"transactions.xlsx"
-the_portfolio = portfolio.portfolio(
-    tx_file, filter_type=["Cash", "Dividend"], funds=["BLKRK"]
-)
-portfolio_view = the_portfolio.portfolio_view
-cost_view = the_portfolio.cost_view
-
-
-@app.callback(Output("Tracker-Graph", "figure"), [Input("track_slider", "value")])
-def update_TrackerGraph(slide_value):
-    """Provide tracker graph."""
-    res = []
-    layout = go.Layout(hovermode="closest")
-
-    track_grph = portfolio_view[
-        (utils.unix_time_millis(portfolio_view.index) > slide_value[0])
-        & (utils.unix_time_millis(portfolio_view.index) <= slide_value[1])
-    ].copy()
-
-    cost_grph = cost_view[
-        (utils.unix_time_millis(cost_view.index) > slide_value[0])
-        & (utils.unix_time_millis(cost_view.index) <= slide_value[1])
-    ].copy()
-
-    for col in track_grph.columns:
-        track_grph.loc[track_grph[col] != 0, "change"] = (
-            track_grph[col] + cost_grph[col]
-        ) / cost_grph[col] - 1
-        track_grph.drop([col], axis=1, inplace=True)
-        track_grph = track_grph.rename(columns={"change": col})
-        res.append(
-            go.Scatter(x=track_grph.index, y=track_grph[col].values.tolist(), name=col)
-        )
-
-    fig = dict(data=res, layout=layout)
-
-    return fig
-
-
 #   ___ ____  _____    _    ____
 #  |_ _|  _ \| ____|  / \  / ___|
 #   | || | | |  _|   / _ \ \___ \
@@ -552,6 +503,31 @@ def sma_value(n_clicks, input_value):
     return sma_table
 
 
+#   __  __    _    ____ ____   ___
+#  |  \/  |  / \  / ___|  _ \ / _ \
+#  | |\/| | / _ \| |   | |_) | | | |
+#  | |  | |/ ___ \ |___|  _ <| |_| |
+#  |_|  |_/_/   \_\____|_| \_\\___/
+
+
+#   _____ ____      _    ____ _  _______ ____
+#  |_   _|  _ \    / \  / ___| |/ / ____|  _ \
+#    | | | |_) |  / _ \| |   | ' /|  _| | |_) |
+#    | | |  _ <  / ___ \ |___| . \| |___|  _ <
+#    |_| |_| \_\/_/   \_\____|_|\_\_____|_| \_\
+
+tracker_portfolio = constants.tracker_portfolio
+tracker_portfolio_tx = constants.tracker_portfolio.transactions_history
+
+
+@app.callback(Output("Tracker-Graph", "figure"), [Input("track_slider", "value")])
+def update_TrackerGraph(slide_value):
+    """Provide tracker graph."""
+    fig = utils.update_graph(slide_value, tracker_portfolio, tracker_portfolio_tx)
+
+    return fig
+
+
 #    ____ ______   ______ _____ ___
 #   / ___|  _ \ \ / /  _ \_   _/ _ \
 #  | |   | |_) \ V /| |_) || || | | |
@@ -594,6 +570,80 @@ def update_cryptoquoteanalysis(n_clicks, input_value):
         )
 
     return crypto_table
+
+
+#   ____  _____ ____  ____   ___  _   _    _    _
+#  |  _ \| ____|  _ \/ ___| / _ \| \ | |  / \  | |
+#  | |_) |  _| | |_) \___ \| | | |  \| | / _ \ | |
+#  |  __/| |___|  _ < ___) | |_| | |\  |/ ___ \| |___
+#  |_|   |_____|_| \_\____/ \___/|_| \_/_/   \_\_____|
+
+personal_portfolio = constants.personal_portfolio
+personal_portfolio_tx = constants.personal_portfolio.transactions_history
+
+
+# graph
+@app.callback(
+    Output("personal_graph", "figure"),
+    [Input("personal_slider", "value")],
+    [State("personal_dropdown", "value")],
+)
+def update_PersonalGraph(slide_value, dropdown):
+    """Provide personal graph."""
+    if dropdown != "Total":
+        tx_df = personal_portfolio_tx[personal_portfolio_tx["Broker"] == dropdown]
+        tx_df = personal_portfolio.calc_transaction_metrics(tx_df)
+    else:
+        tx_df = personal_portfolio_tx
+
+    fig = utils.update_graph(slide_value, personal_portfolio, tx_df)
+
+    return fig
+
+
+# performance table
+@app.callback(
+    Output("personal_perfomance_table", "columns"),
+    Output("personal_perfomance_table", "data"),
+    [Input("personal_dropdown", "value")],
+)
+def update_PersonalPerformance(dropdown):
+    """Provide personal performance table."""
+    if dropdown != "Total":
+        tx_df = personal_portfolio_tx[personal_portfolio_tx["Broker"] == dropdown]
+        tx_df = personal_portfolio.calc_transaction_metrics(tx_df)
+        performance = personal_portfolio.get_performance(tx_df=tx_df).reset_index()
+    else:
+        performance = personal_portfolio.get_performance().reset_index()
+
+    performance_table = [
+        {"name": i, "id": i} for i in performance.columns
+    ], performance.to_dict("records")
+
+    return performance_table
+
+
+# transactions table
+@app.callback(
+    Output("personal_transaction_table", "columns"),
+    Output("personal_transaction_table", "data"),
+    [Input("personal_dropdown", "value")],
+)
+def update_PersonalTransaction(dropdown):
+    """Provide personal transaction table."""
+    if dropdown != "Total":
+        tx_df = personal_portfolio_tx[personal_portfolio_tx["Broker"] == dropdown]
+        tx_df = personal_portfolio.calc_transaction_metrics(tx_df)
+        tx_df = tx_df[tx_df["units"] != 0]
+    else:
+        tx_df = personal_portfolio_tx
+        tx_df = tx_df[tx_df["units"] != 0]
+
+    transaction_table = [{"name": i, "id": i} for i in tx_df.columns], tx_df.to_dict(
+        "records"
+    )
+
+    return transaction_table
 
 
 if __name__ == "__main__":
