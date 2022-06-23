@@ -27,10 +27,9 @@ from rq import Queue
 from rq.job import Job
 
 from iex.pages import stocks, sectors, ideas, macro, tracker, crypto, personal
-from iex.util import constants, layouts, utils
-from iex.util.worker import conn
+from iex.util import constants, layouts, utils, worker
 
-q = Queue(connection=conn)
+q = Queue(connection=worker.conn)
 
 #      _    ____  ____
 #     / \  |  _ \|  _ \
@@ -281,7 +280,7 @@ def initialize_SectorGraph(n_clicks):
     if n_clicks == 0:
         task_id = "none"
     else:
-        task_id = q.enqueue(utils.sector_query).id
+        task_id = q.enqueue(worker.sector_query).id
 
     return task_id
 
@@ -312,7 +311,7 @@ def toggle_interval_speed(task_status, task_id):
 def status_check(n_intervals, task_id, task_status):
     """Provide status check."""
     if task_id != "none" and task_status != "finished":
-        job = Job.fetch(task_id, connection=conn)
+        job = Job.fetch(task_id, connection=worker.conn)
         task_status = job.get_status()
     else:
         task_status = "waiting"
@@ -327,7 +326,7 @@ def status_check(n_intervals, task_id, task_status):
 def get_results(task_status, task_id):
     """Provide status results."""
     if task_status == "finished":
-        job = Job.fetch(task_id, connection=conn)
+        job = Job.fetch(task_id, connection=worker.conn)
         sector_close = job.result
         job.delete()
         sector_status = "ready"

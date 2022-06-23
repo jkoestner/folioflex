@@ -7,13 +7,12 @@ import datetime
 import os
 import pandas as pd
 import plotly.graph_objs as go
-import yfinance as yf
 
 from dash import dcc
 from dash import html
 from dateutil.relativedelta import relativedelta
 
-from iex.util import layouts, utils
+from iex.util import utils
 
 
 def get_menu():
@@ -154,24 +153,6 @@ def get_remote_path():
         remote_path = "No files found"
 
     return remote_path
-
-
-def sector_query(start="2018-01-01"):
-    """Provide the sector historical stock prices.
-
-    Parameters
-    ----------
-    start : date
-       start date of series
-
-    Returns
-    -------
-    sector_close : series
-       provides the list of prices for historical prices
-    """
-    sector_close = yf.download(layouts.list_sector, start=start)
-
-    return sector_close["Adj Close"]
 
 
 def update_graph(slide_value, portfolio, transaction_history=None):

@@ -1,8 +1,9 @@
 """Stores constants."""
 
 import os
+from rq import Queue
 
-from iex.util import utils, portfolio
+from iex.util import utils, portfolio, worker
 
 alpha_vantage_api = os.environ["ALPHAVANTAGE_API"]
 iex_api_live = os.environ["IEX_API_LIVE"]
@@ -17,10 +18,6 @@ tracker_portfolio = portfolio.portfolio(
 )
 
 # personal vars
+q = Queue(connection=worker.conn)
 personal_tx_file = aws_tx_file
-personal_portfolio = portfolio.portfolio(
-    personal_tx_file,
-    filter_type=["Cash", "Dividend"],
-    funds=["BLKEQIX", "TRPILCG", "TRPSV", "LIPIX", "BLKRVIX", "BLKRGIX", "HLIEIX"],
-    other_fields=["Broker", "Account"],
-)
+personal_portfolio = q.enqueue(worker.portfolio_query, personal_tx_file)
