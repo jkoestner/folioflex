@@ -263,7 +263,8 @@ class portfolio:
         transactions = pd.read_excel(self.file, engine="openpyxl")
         transactions = transactions[cols]
         transactions = transactions[~transactions["type"].isin(filter_type)]
-        transactions = transactions[transactions["broker"].isin(filter_broker)]
+        if filter_broker:
+            transactions = transactions[transactions["Broker"].isin(filter_broker)]
 
         # handle multiple transactions on same day by grouping
         transactions = (

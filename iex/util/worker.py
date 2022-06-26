@@ -46,13 +46,15 @@ def sector_query(start="2018-01-01"):
     return sector_close["Adj Close"]
 
 
-def portfolio_query(tx_file):
+def portfolio_query(tx_file, filter_broker=None):
     """Query for worker to generate portfolio.
 
     Parameters
     ----------
     tx_file : str
        file to create
+    filter_broker : list (optional)
+        the brokers to include in analysis
 
     Returns
     -------
@@ -62,6 +64,7 @@ def portfolio_query(tx_file):
     personal_portfolio = portfolio.portfolio(
         tx_file,
         filter_type=["Cash", "Dividend"],
+        filter_broker=filter_broker,
         funds=["BLKEQIX", "TRPILCG", "TRPSV", "LIPIX", "BLKRVIX", "BLKRGIX", "HLIEIX"],
         other_fields=["Broker", "Account"],
     )

@@ -745,9 +745,7 @@ def update_PersonalPerformance(personal_status, dropdown, personal_portfolio_tx)
         State("personal-portfolio-tx", "children"),
     ],
 )
-def update_PersonalTransaction(
-    personal_status, dropdown, personal_portfolio_tx, price_history
-):
+def update_PersonalTransaction(personal_status, dropdown, personal_portfolio_tx):
     """Provide personal transaction table."""
     if personal_status == "ready":
         tx_df = pd.read_json(personal_portfolio_tx)
