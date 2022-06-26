@@ -585,15 +585,11 @@ def initialize_PersonalGraph(n_clicks):
 # text
 @app.callback(
     Output("personal_refresh_text", "children"),
-    [
-        Input("personal-task-status", "children"),
-        Input("personal-status", "children"),
-    ],
-    State("personal-task-id", "children"),
+    Input("personal-task-status", "children"),
 )
-def refresh_test(status, status2, task):
-    """Provide sector analysis graph."""
-    return status + task + status2
+def personal_refresh_text(personal_task_status):
+    """Provide text for personal graph."""
+    return personal_task_status
 
 
 @app.callback(
@@ -625,11 +621,11 @@ def personal_status_check(n_intervals, personal_task_id, personal_task_status):
 def personal_get_results(personal_task_status, personal_task_id):
     """Provide status results."""
     if personal_task_status == "finished":
-        personal_status = "ready"
         job = Job.fetch(personal_task_id, connection=worker.conn)
         personal_portfolio_tx = job.result
         job.delete()
         personal_portfolio_tx = personal_portfolio_tx.to_json()
+        personal_status = "ready"
     else:
         personal_status = "none"
         personal_portfolio_tx = None
@@ -637,86 +633,92 @@ def personal_get_results(personal_task_status, personal_task_id):
     return personal_portfolio_tx, personal_status
 
 
-# # graph
-# @app.callback(
-#     Output("personal_graph", "figure"),
-#     [Input("personal_slider", "value")],
-#     [
-#         State("personal_dropdown", "value"),
-#         State("personal-status", "children"),
-#         State("personal-portfolio-tx", "children"),
-#     ],
-# )
-# def update_PersonalGraph(slide_value, dropdown, personal_status, personal_portfolio_tx):
-#     """Provide personal graph."""
-#     if personal_status == "ready":
-#         tx_df = pd.read_json(personal_portfolio_tx)
-#         if dropdown != "Total":
-#             tx_df = tx_df[tx_df["Broker"] == dropdown]
-#             tx_df = tracker_portfolio.calc_transaction_metrics(tx_df)
+# graph
+@app.callback(
+    Output("personal_graph", "figure"),
+    [
+        Input("personal_slider", "value"),
+        Input("personal-dropdown", "value"),
+    ],
+    [
+        State("personal-status", "children"),
+        State("personal-portfolio-tx", "children"),
+    ],
+)
+def update_PersonalGraph(slide_value, dropdown, personal_status, personal_portfolio_tx):
+    """Provide personal graph."""
+    if personal_status == "ready":
+        tx_df = pd.read_json(personal_portfolio_tx)
+        if dropdown != "Total":
+            tx_df = tx_df[tx_df["Broker"] == dropdown]
+            tx_df = tracker_portfolio.calc_transaction_metrics(tx_df)
 
-#         fig = utils.update_graph(slide_value, tracker_portfolio, tx_df)
-#     else:
-#         "could not load"
-#         fig = dict(data=[], layout=go.Layout(hovermode="closest"))
+        fig = utils.update_graph(slide_value, tracker_portfolio, tx_df)
+    else:
+        "could not load"
+        fig = dict(data=[], layout=go.Layout(hovermode="closest"))
 
-#     return fig
-
-
-# @app.callback(
-#     [
-#         Output("personal_slider", "min"),
-#         Output("personal_slider", "max"),
-#         Output("personal_slider", "value"),
-#         Output("personal_slider", "marks"),
-#     ],
-#     [Input("personal-status", "children")],
-#     [State("personal-portfolio-tx", "children")],
-# )
-# def update_PersonalSlider(personal_status, personal_portfolio_tx):
-#     """Provide sector data table."""
-#     if personal_status == "ready":
-#         tx_df = pd.read_json(personal_portfolio_tx)
-#         portfolio_view = tracker_portfolio.portfolio_view(tx_df=tx_df)
-#         min, max, value, marks = utils.get_slider_values(portfolio_view.index)
-#     else:
-#         min = 0
-#         max = 10
-#         value = 0
-#         marks = 0
-
-#     return min, max, value, marks
+    return fig
 
 
-# # performance table
-# @app.callback(
-#     [
-#         Output("personal_perfomance_table", "columns"),
-#         Output("personal_perfomance_table", "data"),
-#     ],
-#     [Input("personal-status", "children")],
-#     [
-#         State("personal_dropdown", "children"),
-#         State("personal-portfolio-tx", "children"),
-#     ],
-# )
-# def update_PersonalPerformance(personal_status, dropdown, personal_portfolio_tx):
-#     """Provide personal performance table."""
-#     if personal_status == "ready":
-#         tx_df = pd.read_json(personal_portfolio_tx)
-#         if dropdown != "Total":
-#             tx_df = tx_df[tx_df["Broker"] == dropdown]
-#             tx_df = tracker_portfolio.calc_transaction_metrics(tx_df)
+@app.callback(
+    [
+        Output("personal_slider", "min"),
+        Output("personal_slider", "max"),
+        Output("personal_slider", "value"),
+        Output("personal_slider", "marks"),
+    ],
+    [Input("personal-status", "children")],
+    [State("personal-portfolio-tx", "children")],
+)
+def update_PersonalSlider(personal_status, personal_portfolio_tx):
+    """Provide sector data table."""
+    if personal_status == "ready":
+        tx_df = pd.read_json(personal_portfolio_tx)
+        portfolio_view = tracker_portfolio._get_portfolio_view(tx_df=tx_df)
+        min, max, value, marks = utils.get_slider_values(portfolio_view.index)
+    else:
+        min = 0
+        max = 10
+        value = 0
+        marks = 0
 
-#         performance = tracker_portfolio.get_performance(tx_df=tx_df).reset_index()
+    return min, max, value, marks
 
-#         performance_table = [
-#             {"name": i, "id": i} for i in performance.columns
-#         ], performance.to_dict("records")
-#     else:
-#         performance_table = (None, None)
 
-#     return performance_table
+# performance table
+@app.callback(
+    [
+        Output("personal_perfomance_table", "columns"),
+        Output("personal_perfomance_table", "data"),
+    ],
+    [
+        Input("personal-status", "children"),
+        Input("personal-dropdown", "value"),
+    ],
+    State("personal-portfolio-tx", "children"),
+)
+def update_PersonalPerformance(personal_status, dropdown, personal_portfolio_tx):
+    """Provide personal performance table."""
+    if personal_status == "ready":
+        tx_df = pd.read_json(personal_portfolio_tx)
+        if dropdown != "Total":
+            tx_df = tx_df[tx_df["Broker"] == dropdown]
+            tx_df = tracker_portfolio.calc_transaction_metrics(
+                tx_df=tx_df, tx_hist_df=tx_df
+            )
+
+        performance = tracker_portfolio.get_performance(
+            date=tx_df["date"].max(), tx_df=tx_df
+        ).reset_index()
+
+        performance_table = [
+            {"name": i, "id": i} for i in performance.columns
+        ], performance.to_dict("records")
+    else:
+        performance_table = (None, None)
+
+    return performance_table
 
 
 # transactions table
@@ -725,11 +727,11 @@ def personal_get_results(personal_task_status, personal_task_id):
         Output("personal_transaction_table", "columns"),
         Output("personal_transaction_table", "data"),
     ],
-    [Input("personal-status", "value")],
     [
-        State("personal_dropdown", "children"),
-        State("personal-portfolio-tx", "children"),
+        Input("personal-status", "children"),
+        Input("personal-dropdown", "value"),
     ],
+    State("personal-portfolio-tx", "children"),
 )
 def update_PersonalTransaction(personal_status, dropdown, personal_portfolio_tx):
     """Provide personal transaction table."""
@@ -737,7 +739,9 @@ def update_PersonalTransaction(personal_status, dropdown, personal_portfolio_tx)
         tx_df = pd.read_json(personal_portfolio_tx)
         if dropdown != "Total":
             tx_df = tx_df[tx_df["Broker"] == dropdown]
-            tx_df = tracker_portfolio.calc_transaction_metrics(tx_df)
+            tx_df = tracker_portfolio.calc_transaction_metrics(
+                tx_df=tx_df, tx_hist_df=tx_df
+            )
             tx_df = tx_df[tx_df["units"] != 0]
         else:
             tx_df = tx_df[tx_df["units"] != 0]
@@ -773,45 +777,12 @@ def toggle_interval_speed(task_status, task_id, personal_task_status, personal_t
     It switches the page refresh interval to fast (1 sec) if a task is running, or slow (24 hours) if a task is
     pending or complete.
     """
-    if personal_task_id == "none":
-        return 24 * 60 * 60 * 1000
-    if personal_task_id != "none" and personal_task_status in ["finished"]:
-        return 24 * 60 * 60 * 1000
-    else:
+    if (task_id != "none" and task_status in ["started", "waiting"]) or (
+        personal_task_id != "none" and personal_task_status in ["started", "waiting"]
+    ):
         return 1000
-
-
-# @app.callback(
-#     Output("interval-component", "interval"),
-#     [
-#         Input("task-status", "children"),
-#         Input("task-id", "children"),
-#         Input("personal-task-status", "children"),
-#         Input("personal-task-id", "children"),
-#     ],
-# )
-# def toggle_interval_speed(task_status, task_id, personal_task_status, personal_task_id):
-#     """Triggered by changes in task-id and task-status divs.
-
-#     It switches the page refresh interval to fast (1 sec) if a task is running, or slow (24 hours) if a task is
-#     pending or complete.
-#     """
-#     if task_id == "none" and personal_task_id == "none":
-#         return 24 * 60 * 60 * 1000
-#     if (task_id != "none" and task_status in ["finished"]) and (
-#         personal_task_id != "none" and personal_task_status in ["finished"]
-#     ):
-#         return 24 * 60 * 60 * 1000
-#     if (
-#         task_id != "none" and task_status in ["finished"]
-#     ) and personal_task_id == "none":
-#         return 24 * 60 * 60 * 1000
-#     if task_id == "none" and (
-#         personal_task_id != "none" and personal_task_status in ["finished"]
-#     ):
-#         return 24 * 60 * 60 * 1000
-#     else:
-#         return 1000
+    else:
+        return 24 * 60 * 60 * 1000
 
 
 if __name__ == "__main__":

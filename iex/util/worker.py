@@ -1,4 +1,8 @@
-"""Worker connections."""
+"""Worker connections.
+
+note: these worker queries need to be pushed to be pushed to remote to be used
+in local set up.
+"""
 
 import os
 import redis

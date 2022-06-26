@@ -15,7 +15,6 @@ layout = html.Div(
                 html.Button(
                     "Personal initialize", id="personal-initialize", n_clicks=0
                 ),
-                html.Div(id="personal_refresh_text", children="n_clicks"),
                 # dropdown
                 dcc.Dropdown(
                     [
@@ -27,8 +26,9 @@ layout = html.Div(
                         "Ally_Roth",
                     ],
                     "Total",
-                    id="personal_dropdown",
+                    id="personal-dropdown",
                 ),
+                html.Div(id="personal_refresh_text", children=""),
                 # graph
                 dcc.Graph(
                     id="personal_graph",
