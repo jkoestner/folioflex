@@ -31,6 +31,9 @@ class portfolio:
     filter_type : list (optional)
         the transaction types to exclude from analysis
         e.g. dividends, cash
+    filter_broker : list (optional)
+        the brokers to include in analysis
+        e.g. company_a, company_b
     blacklist : list (optional)
         the stock symbols to exclude from analysis
     funds : list (optional)
@@ -44,6 +47,7 @@ class portfolio:
         self,
         tx_file,
         filter_type=None,
+        filter_broker=None,
         blacklist=["VSLR", "HTZ"],
         funds=None,
         other_fields=None,
@@ -51,6 +55,8 @@ class portfolio:
 
         if filter_type is None:
             filter_type = []
+        if filter_broker is None:
+            filter_broker = []
         if funds is None:
             funds = []
         if other_fields is None:
@@ -61,7 +67,9 @@ class portfolio:
         self.blacklist = blacklist
         self.funds = funds
         self.transactions = self._get_transactions(
-            filter_type=filter_type, other_fields=other_fields
+            filter_type=filter_type,
+            filter_broker=filter_broker,
+            other_fields=other_fields,
         )
         self._min_year = self.transactions["date"].min().year
         self.tickers = list(self.transactions["ticker"].unique())
@@ -219,7 +227,9 @@ class portfolio:
 
         return enhance_transactions
 
-    def _get_transactions(self, only_tickers=None, filter_type=None, other_fields=None):
+    def _get_transactions(
+        self, only_tickers=None, filter_type=None, filter_broker=None, other_fields=None
+    ):
         """Get the transactions made.
 
         Parameters
@@ -229,6 +239,8 @@ class portfolio:
         filter_type : list (optional)
             list of strings to exclude out of `type` field.
             e.g. a dividend type may not want to be included in total
+        filter_broker : list (optional)
+            list of strings to include out of `broker` field.
         other_fields : list (optional)
             additional fields to include
 
@@ -242,6 +254,8 @@ class portfolio:
             only_tickers = []
         if filter_type is None:
             filter_type = []
+        if filter_broker is None:
+            filter_broker = []
         if other_fields is None:
             other_fields = []
 
@@ -249,6 +263,7 @@ class portfolio:
         transactions = pd.read_excel(self.file, engine="openpyxl")
         transactions = transactions[cols]
         transactions = transactions[~transactions["type"].isin(filter_type)]
+        transactions = transactions[transactions["broker"].isin(filter_broker)]
 
         # handle multiple transactions on same day by grouping
         transactions = (

@@ -65,7 +65,6 @@ def portfolio_query(tx_file):
         funds=["BLKEQIX", "TRPILCG", "TRPSV", "LIPIX", "BLKRVIX", "BLKRGIX", "HLIEIX"],
         other_fields=["Broker", "Account"],
     )
-    personal_portfolio_tx = personal_portfolio.transactions_history.to_json()
-    personal_price = personal_portfolio.price_history.reset_index().to_json()
+    personal_portfolio_tx = personal_portfolio.transactions_history
 
-    return [personal_portfolio_tx, personal_price]
+    return personal_portfolio_tx
