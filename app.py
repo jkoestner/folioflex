@@ -569,10 +569,8 @@ def update_cryptoquoteanalysis(n_clicks, input_value):
 # initializing workers
 @app.callback(
     Output("personal-task-id", "children"),
-    [
-        Input("personal-initialize", "n_clicks"),
-        Input("personal-dropdown", "value"),
-    ],
+    Input("personal-initialize", "n_clicks"),
+    State("personal-dropdown", "value"),
 )
 def initialize_PersonalGraph(n_clicks, dropdown):
     """Provide sector analysis graph."""
@@ -612,9 +610,13 @@ def personal_refresh_text(personal_task_status):
 )
 def personal_status_check(n_intervals, personal_task_id, personal_task_status):
     """Provide status check."""
-    if personal_task_id != "none" and personal_task_status != "finished":
-        job = Job.fetch(personal_task_id, connection=worker.conn)
-        personal_task_status = job.get_status()
+    if personal_task_id != "none":
+        try:
+            job = Job.fetch(personal_task_id, connection=worker.conn)
+            personal_task_status = job.get_status()
+        except:
+            personal_task_status = "waiting"
+
     else:
         personal_task_status = "waiting"
     return personal_task_status
@@ -636,6 +638,7 @@ def personal_get_results(personal_task_status, personal_task_id):
         job.delete()
         personal_portfolio_tx = personal_portfolio_tx.to_json()
         personal_status = "ready"
+        personal_task_id = "none"
     else:
         personal_status = "none"
         personal_portfolio_tx = None
@@ -648,21 +651,16 @@ def personal_get_results(personal_task_status, personal_task_id):
     Output("personal_graph", "figure"),
     [
         Input("personal_slider", "value"),
-        Input("personal-dropdown", "value"),
     ],
     [
         State("personal-status", "children"),
         State("personal-portfolio-tx", "children"),
     ],
 )
-def update_PersonalGraph(slide_value, dropdown, personal_status, personal_portfolio_tx):
+def update_PersonalGraph(slide_value, personal_status, personal_portfolio_tx):
     """Provide personal graph."""
     if personal_status == "ready":
         tx_df = pd.read_json(personal_portfolio_tx)
-        if dropdown != "Total":
-            tx_df = tx_df[tx_df["Broker"] == dropdown]
-            tx_df = tracker_portfolio.calc_transaction_metrics(tx_df)
-
         fig = utils.update_graph(slide_value, tracker_portfolio, tx_df)
     else:
         "could not load"
@@ -704,20 +702,15 @@ def update_PersonalSlider(personal_status, personal_portfolio_tx):
     ],
     [
         Input("personal-status", "children"),
-        Input("personal-dropdown", "value"),
     ],
     [
         State("personal-portfolio-tx", "children"),
     ],
 )
-def update_PersonalPerformance(personal_status, dropdown, personal_portfolio_tx):
+def update_PersonalPerformance(personal_status, personal_portfolio_tx):
     """Provide personal performance table."""
     if personal_status == "ready":
         tx_df = pd.read_json(personal_portfolio_tx)
-        if dropdown != "Total":
-            tx_df = tx_df[tx_df["Broker"] == dropdown]
-            tx_df = tracker_portfolio.calc_transaction_metrics(tx_df=tx_df)
-
         performance = tracker_portfolio.get_performance(
             date=tx_df["date"].max(), tx_df=tx_df
         ).reset_index()
@@ -739,22 +732,16 @@ def update_PersonalPerformance(personal_status, dropdown, personal_portfolio_tx)
     ],
     [
         Input("personal-status", "children"),
-        Input("personal-dropdown", "value"),
     ],
     [
         State("personal-portfolio-tx", "children"),
     ],
 )
-def update_PersonalTransaction(personal_status, dropdown, personal_portfolio_tx):
+def update_PersonalTransaction(personal_status, personal_portfolio_tx):
     """Provide personal transaction table."""
     if personal_status == "ready":
         tx_df = pd.read_json(personal_portfolio_tx)
-        if dropdown != "Total":
-            tx_df = tx_df[tx_df["Broker"] == dropdown]
-            tx_df = tracker_portfolio.calc_transaction_metrics(tx_df=tx_df)
-            tx_df = tx_df[tx_df["units"] != 0]
-        else:
-            tx_df = tx_df[tx_df["units"] != 0]
+        tx_df = tx_df[tx_df["units"] != 0]
 
         transaction_table = [
             {"name": i, "id": i} for i in tx_df.columns
