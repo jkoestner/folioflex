@@ -298,9 +298,12 @@ def initialize_SectorGraph(n_clicks):
 )
 def status_check(n_intervals, task_id, task_status):
     """Provide status check."""
-    if task_id != "none" and task_status != "finished":
-        job = Job.fetch(task_id, connection=worker.conn)
-        task_status = job.get_status()
+    if task_id != "none":
+        try:
+            job = Job.fetch(task_id, connection=worker.conn)
+            task_status = job.get_status()
+        except:
+            task_status = "waiting"
     else:
         task_status = "waiting"
     return task_status, task_status
@@ -774,6 +777,17 @@ def toggle_interval_speed(task_status, task_id, personal_task_status, personal_t
     It switches the page refresh interval to fast (1 sec) if a task is running, or slow (24 hours) if a task is
     pending or complete.
     """
+    try:
+        job = Job.fetch(task_id, connection=worker.conn)
+        task_id = job.get_status()
+    except:
+        task_id = "stand by"
+    try:
+        job = Job.fetch(personal_task_id, connection=worker.conn)
+        personal_task_status = job.get_status()
+    except:
+        personal_task_status = "stand by"
+
     if (task_id != "none" and task_status in ["started", "waiting"]) or (
         personal_task_id != "none" and personal_task_status in ["started", "waiting"]
     ):
