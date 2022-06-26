@@ -582,7 +582,7 @@ def initialize_PersonalGraph(n_clicks, dropdown):
         if dropdown == "Total":
             broker = None
         else:
-            broker = dropdown
+            broker = [dropdown]
 
         personal_tx_file = constants.aws_tx_file
         personal_task_id = q.enqueue(
