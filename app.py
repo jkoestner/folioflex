@@ -626,8 +626,8 @@ def personal_get_results(personal_task_status, personal_task_id):
         job = Job.fetch(personal_task_id, connection=worker.conn)
         personal_portfolio_tx = job.result
         job.delete()
-        personal_portfolio_tx = personal_portfolio_tx[0].to_json()
-        personal_price = personal_portfolio_tx[1].to_json()
+        personal_portfolio_tx = personal_portfolio_tx[0]
+        personal_price = personal_portfolio_tx[1]
         personal_status = "ready"
     else:
         personal_status = "none"
