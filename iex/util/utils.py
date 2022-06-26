@@ -153,7 +153,7 @@ def get_remote_path():
     return remote_path
 
 
-def update_graph(slide_value, portfolio, transaction_history=None):
+def update_graph(slide_value, portfolio, tx_df=None):
     """Create a performance return graph.
 
     Parameters
@@ -162,7 +162,7 @@ def update_graph(slide_value, portfolio, transaction_history=None):
        Dash rangeslider object
     portfolio : portfolio object
        the portfolio DataFrame to create figure on
-    transaction_history : portfolio object (optional)
+    tx_df : portfolio object (optional)
        the transaction history portfolio DataFrame to create figure on
 
     Returns
@@ -173,8 +173,8 @@ def update_graph(slide_value, portfolio, transaction_history=None):
     res = []
     layout = go.Layout(hovermode="closest")
 
-    portfolio_view = portfolio._get_portfolio_view(transaction_history)
-    cost_view = portfolio._get_cost_view(transaction_history)
+    portfolio_view = portfolio._get_portfolio_view(tx_df)
+    cost_view = portfolio._get_cost_view(tx_df)
 
     return_grph = portfolio_view[
         (unix_time_millis(portfolio_view.index) > slide_value[0])

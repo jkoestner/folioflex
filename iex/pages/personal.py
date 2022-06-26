@@ -4,11 +4,7 @@ from dash import dash_table
 from dash import dcc
 from dash import html
 
-from iex.util import constants, utils
-
-personal_portfolio = constants.personal_portfolio
-portfolio_view = personal_portfolio.portfolio_view
-min, max, value, marks = utils.get_slider_values(portfolio_view.index)
+from iex.util import utils
 
 # Creating the dash app
 layout = html.Div(
@@ -16,6 +12,10 @@ layout = html.Div(
         html.Div(
             [
                 utils.get_menu(),
+                html.Button(
+                    "Personal initialize", id="personal-initialize", n_clicks=0
+                ),
+                html.Div(id="personal_refresh_text", children="n_clicks"),
                 # dropdown
                 dcc.Dropdown(
                     [
@@ -40,10 +40,10 @@ layout = html.Div(
                         dcc.RangeSlider(
                             id="personal_slider",
                             tooltip="always_visible",
-                            min=min,
-                            max=max,
-                            value=value,
-                            marks=marks,
+                            min=0,
+                            max=10,
+                            value=[0, 10],
+                            marks=0,
                         ),
                     ],
                     style={
