@@ -57,6 +57,7 @@ app.layout = html.Div(
         html.Div(
             id="personal-portfolio-tx", children="none", style={"display": "none"}
         ),
+        html.Div(id="personal-price", children="none", style={"display": "none"}),
         dcc.Interval(
             id="interval-component", interval=24 * 60 * 60 * 1000, n_intervals=0
         ),
@@ -613,6 +614,7 @@ def personal_status_check(n_intervals, personal_task_id, personal_task_status):
 @app.callback(
     [
         Output("personal-portfolio-tx", "children"),
+        Output("personal-price", "children"),
         Output("personal-status", "children"),
     ],
     Input("personal-task-status", "children"),
@@ -624,13 +626,15 @@ def personal_get_results(personal_task_status, personal_task_id):
         job = Job.fetch(personal_task_id, connection=worker.conn)
         personal_portfolio_tx = job.result
         job.delete()
-        personal_portfolio_tx = personal_portfolio_tx.to_json()
+        personal_portfolio_tx = personal_portfolio_tx[0].to_json()
+        personal_price = personal_portfolio_tx[1].to_json()
         personal_status = "ready"
     else:
         personal_status = "none"
         personal_portfolio_tx = None
+        personal_price = None
 
-    return personal_portfolio_tx, personal_status
+    return personal_portfolio_tx, personal_price, personal_status
 
 
 # graph
@@ -696,16 +700,22 @@ def update_PersonalSlider(personal_status, personal_portfolio_tx):
         Input("personal-status", "children"),
         Input("personal-dropdown", "value"),
     ],
-    State("personal-portfolio-tx", "children"),
+    [
+        State("personal-portfolio-tx", "children"),
+        State("personal-price", "children"),
+    ],
 )
-def update_PersonalPerformance(personal_status, dropdown, personal_portfolio_tx):
+def update_PersonalPerformance(
+    personal_status, dropdown, personal_portfolio_tx, price_history
+):
     """Provide personal performance table."""
     if personal_status == "ready":
         tx_df = pd.read_json(personal_portfolio_tx)
+        price_history = pd.read_json(price_history)
         if dropdown != "Total":
             tx_df = tx_df[tx_df["Broker"] == dropdown]
             tx_df = tracker_portfolio.calc_transaction_metrics(
-                tx_df=tx_df, tx_hist_df=tx_df
+                tx_df=tx_df, price_history=price_history
             )
 
         performance = tracker_portfolio.get_performance(
@@ -731,16 +741,22 @@ def update_PersonalPerformance(personal_status, dropdown, personal_portfolio_tx)
         Input("personal-status", "children"),
         Input("personal-dropdown", "value"),
     ],
-    State("personal-portfolio-tx", "children"),
+    [
+        State("personal-portfolio-tx", "children"),
+        State("personal-price", "children"),
+    ],
 )
-def update_PersonalTransaction(personal_status, dropdown, personal_portfolio_tx):
+def update_PersonalTransaction(
+    personal_status, dropdown, personal_portfolio_tx, price_history
+):
     """Provide personal transaction table."""
     if personal_status == "ready":
         tx_df = pd.read_json(personal_portfolio_tx)
+        price_history = pd.read_json(price_history)
         if dropdown != "Total":
             tx_df = tx_df[tx_df["Broker"] == dropdown]
             tx_df = tracker_portfolio.calc_transaction_metrics(
-                tx_df=tx_df, tx_hist_df=tx_df
+                tx_df=tx_df, price_history=price_history
             )
             tx_df = tx_df[tx_df["units"] != 0]
         else:

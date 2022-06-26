@@ -66,5 +66,6 @@ def portfolio_query(tx_file):
         other_fields=["Broker", "Account"],
     )
     personal_portfolio_tx = personal_portfolio.transactions_history
+    personal_price = personal_portfolio.price_history
 
-    return personal_portfolio_tx
+    return [personal_portfolio_tx, personal_price]

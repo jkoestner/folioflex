@@ -140,15 +140,15 @@ class portfolio:
 
         return performance
 
-    def calc_transaction_metrics(self, tx_df, tx_hist_df=None, other_fields=None):
+    def calc_transaction_metrics(self, tx_df, price_history=None, other_fields=None):
         """Calculate metrics on transactions DataFrame.
 
         Parameters
         ----------
         tx_df : DataFrame
             Transactions to calculate metrics on
-        tx_hist_df : DataFrame (optional)
-            Transactions history to calculate metrics on
+        price_history : DataFrame
+            Price history DataFrame
         other_fields : list (optional)
             additional fields to include
 
@@ -160,27 +160,27 @@ class portfolio:
         if other_fields is None:
             other_fields = []
 
-        if tx_hist_df is None:
-            tx_df = tx_df.copy()
-            transactions = tx_df[tx_df["units"] != 0]
-            tickers = list(transactions["ticker"].unique())
-            price_history = self.price_history
-            price_history = price_history[price_history["ticker"].isin(tickers)]
+        tx_df = tx_df.copy()
+        transactions = tx_df[tx_df["units"] != 0]
+        tickers = list(transactions["ticker"].unique())
 
-            tx_df = (
-                pd.merge(
-                    price_history,
-                    transactions[
-                        ["date", "ticker", "sale_price", "units", "cost"] + other_fields
-                    ],
-                    how="outer",
-                    on=["date", "ticker"],
-                )
-                .fillna(0)
-                .sort_values(by=["ticker", "date"], ignore_index=True)
+        if price_history is None:
+            price_history = self.price_history
+
+        price_history = price_history[price_history["ticker"].isin(tickers)]
+
+        tx_df = (
+            pd.merge(
+                price_history,
+                transactions[
+                    ["date", "ticker", "sale_price", "units", "cost"] + other_fields
+                ],
+                how="outer",
+                on=["date", "ticker"],
             )
-        else:
-            tx_df = tx_hist_df
+            .fillna(0)
+            .sort_values(by=["ticker", "date"], ignore_index=True)
+        )
 
         # cumulative amounts
         tx_df["cumulative_units"] = tx_df.groupby("ticker")["units"].transform(
@@ -341,7 +341,7 @@ class portfolio:
         transactions = self.transactions
 
         transactions_history = self.calc_transaction_metrics(
-            transactions, tx_hist_df=None, other_fields=other_fields
+            transactions, other_fields=other_fields
         )
 
         # filter tickers
