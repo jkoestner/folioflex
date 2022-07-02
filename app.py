@@ -25,9 +25,10 @@ from dash.dependencies import Input, Output, State
 from dateutil.relativedelta import relativedelta
 from rq import Queue
 from rq.job import Job
+from rq.exceptions import NoSuchJobError
 
 from iex.pages import stocks, sectors, ideas, macro, tracker, crypto, personal
-from iex.util import constants, layouts, utils, worker
+from iex.util import constants, layouts, heatmap, utils, worker
 
 q = Queue(connection=worker.conn)
 
@@ -251,17 +252,19 @@ def update_activeanalysis(n_clicks):
         active_table = (None, None)
     else:
         urlactive = (
-            "https://cloud.iexapis.com/stable/stock/market/list/mostactive?listLimit=20&token="
+            "https://cloud.iexapis.com/stable/stock/market/list/mostactive?listLimit=60&token="
             + constants.iex_api_live
         )
         active = pd.read_json(urlactive, orient="columns")
         active["vol_delta"] = active["volume"] / active["avgTotalVolume"]
+        active["vol_price"] = active["volume"] * active["latestPrice"]
+        active = active.sort_values("vol_price", ascending=False)
+        active = active.head(20)
         active = active[layouts.active_col]
         active = active.round(2)
-        active["changePercent"] = (
-            active["changePercent"].astype(float).map("{:.1%}".format)
-        )
-        active["ytdChange"] = active["ytdChange"].astype(float).map("{:.1%}".format)
+
+        active["changePercent"] = active["changePercent"].astype(float)
+        active["ytdChange"] = active["ytdChange"].astype(float)
 
         active_table = [{"name": i, "id": i} for i in active.columns], active.to_dict(
             "records"
@@ -276,7 +279,7 @@ def update_activeanalysis(n_clicks):
 #   ___) | |__| |___  | || |_| |  _ <
 #  |____/|_____\____| |_| \___/|_| \_\
 
-# Graph
+# Sector Graph
 @app.callback(
     Output("task-id", "children"),
     [Input(component_id="sector-initialize", component_property="n_clicks")],
@@ -302,8 +305,8 @@ def status_check(n_intervals, task_id, task_status):
         try:
             job = Job.fetch(task_id, connection=worker.conn)
             task_status = job.get_status()
-        except:
-            task_status = "waiting"
+        except NoSuchJobError:
+            task_status = "standby"
     else:
         task_status = "waiting"
     return task_status, task_status
@@ -382,6 +385,21 @@ def update_SectorGraph(slide_value, av_data, sector_status):
         "could not load"
 
     fig = dict(data=res, layout=layout)
+
+    return fig
+
+
+# Heatmap Graph
+@app.callback(
+    Output("Heatmap-Graph", "figure"),
+    [Input(component_id="heatmap-initialize", component_property="n_clicks")],
+)
+def initialize_HeatmapGraph(n_clicks):
+    """Provide heatmap graph."""
+    if n_clicks == 0:
+        fig = dict(data=[], layout=go.Layout(hovermode="closest"))
+    else:
+        fig = heatmap.get_heatmap()
 
     return fig
 
@@ -617,8 +635,8 @@ def personal_status_check(n_intervals, personal_task_id, personal_task_status):
         try:
             job = Job.fetch(personal_task_id, connection=worker.conn)
             personal_task_status = job.get_status()
-        except:
-            personal_task_status = "waiting"
+        except NoSuchJobError:
+            personal_task_status = "standby"
 
     else:
         personal_task_status = "waiting"
@@ -777,17 +795,6 @@ def toggle_interval_speed(task_status, task_id, personal_task_status, personal_t
     It switches the page refresh interval to fast (1 sec) if a task is running, or slow (24 hours) if a task is
     pending or complete.
     """
-    try:
-        job = Job.fetch(task_id, connection=worker.conn)
-        task_id = job.get_status()
-    except:
-        task_id = "stand by"
-    try:
-        job = Job.fetch(personal_task_id, connection=worker.conn)
-        personal_task_status = job.get_status()
-    except:
-        personal_task_status = "stand by"
-
     if (task_id != "none" and task_status in ["started", "waiting"]) or (
         personal_task_id != "none" and personal_task_status in ["started", "waiting"]
     ):

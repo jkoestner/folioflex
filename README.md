@@ -20,7 +20,9 @@ There are a number of environment variables listed in constants to be able to ru
 python app.py
 ```
 
+The code also contains a portfolio class to help build the returns from stock transactions.
+
 Data sources:
-- https://cloud.iexapis.com
+- https://iexcloud.io/
 - https://www.alphavantage.co
 - https://pypi.org/project/yahoo-finance/

@@ -19,4 +19,5 @@ jobs:
           HD_IEX_API_LIVE: ${{secrets.IEX_API_LIVE}}
           HD_IEX_API_SANDBOX: ${{secrets.IEX_API_SANDBOX}}
           HD_ALPHAVANTAGE_API: ${{secrets.ALPHAVANTAGE_API}}
+          HD_AWS_TX_FILE: ${{secrets.AWS_TX_FILE}}
           

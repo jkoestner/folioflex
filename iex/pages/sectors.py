@@ -70,6 +70,12 @@ layout = html.Div(
                     data=secmap.to_dict("records"),
                 ),
                 html.P(),
+                # heatmap graph
+                html.Button("Heatmap initialize", id="heatmap-initialize", n_clicks=0),
+                dcc.Graph(
+                    id="Heatmap-Graph",
+                ),
+                html.P(),
                 # creating dropdown menu
                 html.Label("Sectors Dropdown"),
                 dcc.Dropdown(
@@ -85,7 +91,6 @@ layout = html.Div(
                     id="sector-table",
                     filter_action="native",
                     sort_action="native",
-                    # virtualization=True,
                     page_action="native",
                 ),
             ],
