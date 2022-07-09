@@ -48,7 +48,7 @@ def test_perfomance_calculations():
     ), "Expected return percentage to match dollar weight"
 
     assert (
-        round(performance.loc["portfolio", "market_value"], 0) == 15853
+        round(performance.loc["portfolio", "market_value"], 0) == 15850
     ), "Expected market_value to be last_price * cumulative_units"
 
     assert (
