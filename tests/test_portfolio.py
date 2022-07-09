@@ -56,11 +56,11 @@ def test_perfomance_calculations():
     ), "Expected cumulative_cost to be sum of cost"
 
     assert (
-        round(performance.loc["portfolio", "return"], 0) == -5580
+        round(performance.loc["portfolio", "return"], 0) == -5584
     ), "Expected return to be market_value - cumulative_cost"
 
     assert (
-        round(performance.loc["portfolio", "unrealized"], 0) == -5729
+        round(performance.loc["portfolio", "unrealized"], 0) == -5732
     ), "Expected unrealized to be market_value - average_price * cumulative units"
 
     assert (
