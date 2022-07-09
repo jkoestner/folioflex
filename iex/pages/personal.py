@@ -23,6 +23,7 @@ layout = html.Div(
                         "Company",
                         "Fidelity",
                         "IB",
+                        "IB-eiten",
                         "Ally_Roth",
                     ],
                     "Total",

@@ -20,36 +20,37 @@ def get_heatmap():
     fig : Figure
        heatmap figure
     """
-    sp500 = get_sp500()
+    sp500_tickers = get_sp500_tickers()
 
-    sp500_df = pd.DataFrame()
+    # iterate through ticker list. iex restricts results to 100
+    sp500_returns = pd.DataFrame()
     temp_df = pd.DataFrame()
     for i in [100, 200, 300, 400, 500, 600]:
         start = i - 100
-        sp500_i = sp500.iloc[start:i]
         iex_query = (
             "https://cloud.iexapis.com/stable/stock/market/batch?symbols="
-            + ",".join(sp500_i["symbol"])
+            + ",".join(sp500_tickers.iloc[start:i]["symbol"])
             + "&types=quote&token="
             + constants.iex_api_live
         )
         temp_df = pd.read_json(iex_query, orient="index")
         temp_df = pd.json_normalize(temp_df["quote"])
-        sp500_df = pd.concat([sp500_df, temp_df])
+        sp500_returns = pd.concat([sp500_returns, temp_df])
 
-    df = pd.merge(
-        sp500_df[["changePercent", "marketCap", "symbol"]],
-        sp500,
+    sp500 = pd.merge(
+        sp500_returns[["changePercent", "marketCap", "symbol"]],
+        sp500_tickers,
         how="outer",
         on=["symbol"],
     )
-    df["changePercent"] = (
-        df["changePercent"].replace("[\\$,]", "", regex=True).astype(float)
+    sp500["changePercent"] = (
+        sp500["changePercent"].replace("[\\$,]", "", regex=True).astype(float)
     )
-    df["marketCap"] = df["marketCap"].fillna(1)
+    # nulls in market cap will not allow aggregation, replacing with 1
+    sp500["marketCap"] = sp500["marketCap"].fillna(1)
 
     fig = px.treemap(
-        df,
+        sp500,
         path=[px.Constant("all"), "sector", "symbol"],
         values="marketCap",
         color="changePercent",
@@ -61,12 +62,12 @@ def get_heatmap():
     return fig
 
 
-def get_sp500():
+def get_sp500_tickers():
     """Provide sp500 tickers with sectors.
 
     Returns
     -------
-    sp500 : DataFrame
+    sp500_tickers : DataFrame
        sp500 tickers and sectors
     """
     url = r"https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
@@ -74,9 +75,9 @@ def get_sp500():
     response = request.urlopen(url, context=context)
     html = response.read()
 
-    sp500 = pd.read_html(html)[0][["Symbol", "GICS Sector"]]
+    sp500_tickers = pd.read_html(html)[0][["Symbol", "GICS Sector"]]
 
-    sp500.rename(
+    sp500_tickers.rename(
         columns={
             "GICS Sector": "sector",
             "Symbol": "symbol",
@@ -84,4 +85,4 @@ def get_sp500():
         inplace=True,
     )
 
-    return sp500
+    return sp500_tickers

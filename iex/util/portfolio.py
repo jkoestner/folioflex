@@ -120,7 +120,10 @@ class portfolio:
         performance = performance.reset_index().set_index("ticker")
         performance.drop(["index", "units", "cost"], axis=1, inplace=True)
 
-        performance.loc["portfolio"] = 0
+        performance.loc["portfolio"] = np.nan
+        performance.loc["portfolio", "date"] = pd.to_datetime(
+            date, infer_datetime_format=True
+        )
         performance.loc["portfolio", "cumulative_cost"] = performance[
             performance["cumulative_cost"] > 0
         ]["cumulative_cost"].sum()
@@ -148,84 +151,51 @@ class portfolio:
 
         return performance
 
-    def calc_transaction_metrics(self, tx_df, price_history=None, other_fields=None):
-        """Calculate metrics on transactions DataFrame.
+    def get_all_performance(self, step=5, tx_df=None):
+        """Get performance of portfolio and stocks traded for duration of portfolio.
 
         Parameters
         ----------
-        tx_df : DataFrame
-            Transactions to calculate metrics on
-        price_history : DataFrame
-            Price history DataFrame
-        other_fields : list (optional)
-            additional fields to include
+        step : int (default is 5)
+            the interval of dates to pull in perfomance from
+        tx_df : DataFrame (default is all transactions)
+            dataframe to get return percent from
 
         Returns
         ----------
-        enhance_transactions : DataFrame
-            DataFrame containing updated metrics
+        performance : DataFrame
+            the performance of individual assets as well as portfolio
+                - date
+                - average price
+                - last price
+                - cumulative units
+                - cumulative cost
+                - market value
+                - return
+                - return percentage
+                - realized
+                - unrealized
+
         """
-        if other_fields is None:
-            other_fields = []
+        if tx_df is None:
+            tx_df = self.transactions_history
 
-        tx_df = tx_df.copy()
-        transactions = tx_df[tx_df["units"] != 0]
-        tickers = list(transactions["ticker"].unique())
+        # filter dataframe after first transaction
+        min_date = tx_df[tx_df["units"] != 0]["date"].min()
+        tx_df = tx_df[tx_df["date"] >= min_date]
 
-        if price_history is None:
-            price_history = self.price_history
+        # get dates to loop through
+        dates = pd.to_datetime(tx_df["date"].unique()).sort_values(ascending=False)
 
-        price_history = price_history[price_history["ticker"].isin(tickers)]
-
-        tx_df = (
-            pd.merge(
-                price_history,
-                transactions[
-                    ["date", "ticker", "sale_price", "units", "cost"] + other_fields
-                ],
-                how="outer",
-                on=["date", "ticker"],
-            )
-            .fillna(0)
-            .sort_values(by=["ticker", "date"], ignore_index=True)
-        )
-
-        # cumulative amounts
-        tx_df["cumulative_units"] = tx_df.groupby("ticker")["units"].transform(
-            pd.Series.cumsum
-        )
-        tx_df["cumulative_cost"] = tx_df.groupby("ticker")["cost"].transform(
-            pd.Series.cumsum
-        )
-
-        # average price
-        tx_df = tx_df.groupby("ticker").apply(self._calc_average_price)
-
-        # market value
-        tx_df["market_value"] = tx_df["cumulative_units"] * tx_df["last_price"]
-
-        # return
-        tx_df["return"] = tx_df["market_value"] - tx_df["cumulative_cost"]
-
-        tx_df["unrealized"] = tx_df["market_value"] - (
-            tx_df["average_price"] * tx_df["cumulative_units"]
-        )
-
-        tx_df["realized"] = tx_df["return"] - tx_df["unrealized"]
-
-        # fill in other_fields null values
-        for field in other_fields:
-            tx_df[field] = tx_df[field].replace(0, np.nan)
-            tx_df[field] = tx_df.groupby(["ticker"])[field].apply(
-                lambda x: x.ffill().bfill()
+        all_performance = pd.DataFrame()
+        for date in dates[::step]:
+            all_performance = pd.concat(
+                [all_performance, self.get_performance(date=date, tx_df=tx_df)]
             )
 
-        # sort values
-        tx_df = tx_df.sort_values(by=["ticker", "date"], ignore_index=True)
+        all_performance = all_performance.sort_values("date")
 
-        enhance_transactions = tx_df
-
-        return enhance_transactions
+        return all_performance
 
     def _get_transactions(
         self, only_tickers=None, filter_type=None, filter_broker=None, other_fields=None
@@ -334,6 +304,104 @@ class portfolio:
 
         return price_history
 
+    def calc_transaction_metrics(self, tx_df, price_history=None, other_fields=None):
+        """Calculate summation metrics on transactions DataFrame.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            Transactions to calculate metrics on
+        price_history : DataFrame
+            Price history DataFrame
+        other_fields : list (optional)
+            additional fields to include
+
+        Returns
+        ----------
+        transaction_metrics : DataFrame
+            DataFrame containing updated metrics
+        """
+        if other_fields is None:
+            other_fields = []
+
+        tx_df = tx_df.copy()
+        transactions = tx_df[tx_df["units"] != 0]
+        tickers = list(transactions["ticker"].unique())
+
+        transactions = (
+            transactions.groupby(by=["date", "ticker"] + other_fields)
+            .sum()
+            .reset_index()
+        )
+
+        if price_history is None:
+            price_history = self.price_history
+
+        price_history = price_history[price_history["ticker"].isin(tickers)]
+
+        tx_df = (
+            pd.merge(
+                price_history,
+                transactions[
+                    ["date", "ticker", "sale_price", "units", "cost"] + other_fields
+                ],
+                how="outer",
+                on=["date", "ticker"],
+            )
+            .fillna(0)
+            .sort_values(by=["ticker", "date"], ignore_index=True)
+        )
+
+        # cumulative amounts
+        tx_df["cumulative_units"] = tx_df.groupby("ticker")["units"].transform(
+            pd.Series.cumsum
+        )
+        tx_df["cumulative_cost"] = tx_df.groupby("ticker")["cost"].transform(
+            pd.Series.cumsum
+        )
+
+        # average price
+        tx_df = tx_df.groupby("ticker").apply(self._calc_average_price)
+
+        # market value
+        tx_df["market_value"] = tx_df["cumulative_units"] * tx_df["last_price"]
+
+        # return
+        tx_df["return"] = tx_df["market_value"] - tx_df["cumulative_cost"]
+
+        tx_df["unrealized"] = tx_df["market_value"] - (
+            tx_df["average_price"] * tx_df["cumulative_units"]
+        )
+
+        tx_df["realized"] = tx_df["return"] - tx_df["unrealized"]
+
+        # fill in other_fields null values
+        for field in other_fields:
+            tx_df[field] = tx_df[field].replace(0, np.nan)
+            tx_df[field] = tx_df.groupby(["ticker"])[field].apply(
+                lambda x: x.ffill().bfill()
+            )
+
+        # sort values
+        tx_df = tx_df.sort_values(by=["ticker", "date"], ignore_index=True)
+
+        # fill in zeroes
+        for field in [
+            "average_price",
+            "market_value",
+            "return",
+            "unrealized",
+            "realized",
+            "cumulative_units",
+        ]:
+            condition = tx_df["cumulative_cost"] == 0
+            tx_df.loc[condition, field] = tx_df.loc[condition, field].replace(0, np.nan)
+        tx_df["cumulative_cost"] = tx_df["cumulative_cost"].replace(0, np.nan)
+
+        transaction_metrics = tx_df
+
+        return transaction_metrics
+
     def _get_transactions_history(self, only_tickers=None, other_fields=None):
         """Get the history of transcations by merging transaction and price history.
 
@@ -421,7 +489,7 @@ class portfolio:
         # get the current price and transactions
         if ticker == "portfolio":
             current_price = tx_df[tx_df["date"] == date]
-            ticker_transactions = transactions.copy()
+            ticker_transactions = transactions[transactions["date"] <= date].copy()
 
         else:
             current_price = tx_df[(tx_df["ticker"] == ticker) & (tx_df["date"] == date)]
@@ -435,10 +503,16 @@ class portfolio:
         ticker_transactions = pd.concat(
             [ticker_transactions, current_price], ignore_index=True
         )
+        ticker_transactions["market_value"] = ticker_transactions[
+            "market_value"
+        ].replace(np.nan, 0)
 
         # makes sure that ticker had transactions both negative
         # and positive to calculate IRR
-        if (
+        if ticker_transactions.empty:
+            return_pct = np.NaN
+
+        elif (
             not min(ticker_transactions["market_value"])
             < 0
             < max(ticker_transactions["market_value"])
@@ -451,11 +525,11 @@ class portfolio:
                 ticker_transactions["date"], ticker_transactions["market_value"]
             )
 
-            # times where IRR can't be calculated
+            # where IRR can't be calculated
             if return_pct is None:
                 return_pct = np.NaN
-
-            return_pct = min(return_pct, 1000)
+            elif return_pct > 1000:
+                return_pct = np.NaN
 
         return return_pct
 
