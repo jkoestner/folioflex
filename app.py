@@ -17,6 +17,7 @@ import datetime
 import math
 import pandas as pd
 import pandas_market_calendars as mcal
+import plotly.express as px
 import plotly.graph_objs as go
 
 from dash import dcc
@@ -528,12 +529,36 @@ tracker_portfolio = constants.tracker_portfolio
 tracker_portfolio_tx = constants.tracker_portfolio.transactions_history
 
 
-@app.callback(Output("Tracker-Graph", "figure"), [Input("track_slider", "value")])
-def update_TrackerGraph(slide_value):
+@app.callback(Output("Tracker-Graph", "figure"), [Input("Tracker-Dropdown", "value")])
+def update_TrackerGraph(dropdown):
     """Provide tracker graph."""
-    fig = utils.update_graph(slide_value, tracker_portfolio, tracker_portfolio_tx)
+    px_df = tracker_portfolio_tx.pivot_table(
+        index="date", columns="ticker", values=dropdown, aggfunc="min"
+    )
+    px_line = px.line(px_df, title="tracker")
+    px_line.update_xaxes(
+        title_text="Date",
+        rangeslider_visible=True,
+        rangeselector=dict(
+            buttons=list(
+                [
+                    dict(count=5, label="5D", step="day", stepmode="backward"),
+                    dict(count=1, label="1M", step="month", stepmode="backward"),
+                    dict(count=6, label="6M", step="month", stepmode="backward"),
+                    dict(count=1, label="YTD", step="year", stepmode="todate"),
+                    dict(count=1, label="1Y", step="year", stepmode="backward"),
+                    dict(step="all"),
+                ]
+            )
+        ),
+    )
 
-    return fig
+    px_line.update_yaxes(title_text=dropdown)
+    px_line.update_traces(
+        visible="legendonly", selector=lambda t: t.name not in ["portfolio"]
+    )
+
+    return px_line
 
 
 #    ____ ______   ______ _____ ___

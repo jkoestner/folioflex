@@ -3,7 +3,6 @@ Creates a portfolio tracker.
 
 This initiates a class with a number of objects, such as:
    - file : the transaction file locations
-   - blacklist : the symbols to avoid
    - funds : symbols that are considered funds
    - transactions : the transactions the occured
    - transaction_history : provides the symbol price history
@@ -34,8 +33,6 @@ class portfolio:
     filter_broker : list (optional)
         the brokers to include in analysis
         e.g. company_a, company_b
-    blacklist : list (optional)
-        the stock symbols to exclude from analysis
     funds : list (optional)
         the symbols that should be analyzed as funds. These symbols won't have any
         yahoo finance reference, so we use transaction prices to fill in blank values
@@ -48,7 +45,6 @@ class portfolio:
         tx_file,
         filter_type=None,
         filter_broker=None,
-        blacklist=["VSLR", "HTZ"],
         funds=None,
         other_fields=None,
     ):
@@ -64,7 +60,6 @@ class portfolio:
 
         print("read '{}'".format(tx_file))
         self.file = tx_file
-        self.blacklist = blacklist
         self.funds = funds
         self.transactions = self._get_transactions(
             filter_type=filter_type,
@@ -73,7 +68,8 @@ class portfolio:
         )
         self._min_year = self.transactions["date"].min().year
         self.tickers = list(self.transactions["ticker"].unique())
-        print("You had {} transactions".format(len(self.transactions)))
+        self.tickers = [tick for tick in self.tickers if pd.isnull(tick) is False]
+        print(f"You had {len(self.transactions)} transactions")
         self.price_history = self._get_price_history()
         self.transactions_history = self._get_transactions_history(
             other_fields=other_fields
@@ -238,15 +234,15 @@ class portfolio:
 
         # handle multiple transactions on same day by grouping
         transactions = (
-            transactions.groupby(by=["date", "ticker", "type"] + other_fields)
+            transactions.groupby(
+                by=["date", "ticker", "type"] + other_fields, dropna=False
+            )
             .sum()
             .reset_index()
         )
 
         transactions["date"] = pd.to_datetime(transactions["date"], format="%d/%m/%Y")
         transactions["sale_price"] = transactions["cost"] / transactions["units"]
-
-        transactions = transactions[~transactions["ticker"].isin(self.blacklist)]
 
         if only_tickers:
             transactions = transactions[transactions["ticker"].isin(only_tickers)]
@@ -325,8 +321,9 @@ class portfolio:
             other_fields = []
 
         tx_df = tx_df.copy()
-        transactions = tx_df[tx_df["units"] != 0]
+        transactions = tx_df[tx_df["cost"] != 0]
         tickers = list(transactions["ticker"].unique())
+        tickers = [tick for tick in tickers if pd.isnull(tick) is False]
 
         transactions = (
             transactions.groupby(by=["date", "ticker"] + other_fields)
@@ -484,7 +481,7 @@ class portfolio:
         """
         if tx_df is None:
             tx_df = self.transactions_history
-        transactions = tx_df[tx_df["units"] != 0]
+        transactions = tx_df[tx_df["cost"] != 0]
 
         # get the current price and transactions
         if ticker == "portfolio":
@@ -554,6 +551,7 @@ class portfolio:
             tx_df = self.transactions_history
 
         tickers = list(tx_df["ticker"].unique())
+        tickers = [tick for tick in tickers if pd.isnull(tick) is False]
 
         return_pcts = pd.DataFrame()
 

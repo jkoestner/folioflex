@@ -23,7 +23,7 @@ def test_portfolio_load():
 
 def test_transactions_load():
     """Checks if transactions load correctly."""
-    pf = portfolio.portfolio(tx_file, filter_type=["Cash", "Dividend"])
+    pf = portfolio.portfolio(tx_file, filter_type=["Dividend"])
 
     assert len(pf.transactions) == len(
         pd.read_excel(tx_file)
