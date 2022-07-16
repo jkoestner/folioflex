@@ -71,14 +71,14 @@ class Portfolio:
         self.tickers = [tick for tick in self.tickers if pd.isnull(tick) is False]
         print(f"You had {len(self.transactions)} transactions")
         self.price_history = self._get_price_history()
-        self.transactions_history = self._get_transactions_history(
+        self.stock_transactions_history = self._get_stock_transactions_history(
             other_fields=other_fields
         )
-        self._max_date = self.transactions_history["date"].max()
+        self._max_date = self.stock_transactions_history["date"].max()
         self.portfolio_view = self._get_portfolio_view()
         self.cost_view = self._get_cost_view()
 
-    def get_performance(self, date=None, tx_df=None):
+    def get_performance(self, date=None, stk_tx_df=None):
         """Get performance of portfolio and stocks traded at certain point of time.
 
         Parameters
@@ -86,7 +86,7 @@ class Portfolio:
         date : date (default is max date)
             the date the portfolio performance should be as of.
             If none we use the max date.
-        tx_df : DataFrame (default is all transactions)
+        stk_tx_df : DataFrame (default is all transactions)
             dataframe to get return percent from
 
         Returns
@@ -107,11 +107,11 @@ class Portfolio:
         """
         if date is None:
             date = self._max_date
-        if tx_df is None:
-            tx_df = self.transactions_history
+        if stk_tx_df is None:
+            stk_tx_df = self.stock_transactions_history
 
-        return_pcts = self._get_return_pcts(date, tx_df)
-        performance = tx_df.copy()
+        return_pcts = self._get_return_pcts(date, stk_tx_df)
+        performance = stk_tx_df.copy()
         performance = performance[performance["date"] == date]
         performance = performance.reset_index().set_index("ticker")
         performance.drop(["index", "units", "cost"], axis=1, inplace=True)
@@ -147,14 +147,14 @@ class Portfolio:
 
         return performance
 
-    def get_all_performance(self, step=5, tx_df=None):
+    def get_all_performance(self, step=5, stk_tx_df=None):
         """Get performance of portfolio and stocks traded for duration of portfolio.
 
         Parameters
         ----------
         step : int (default is 5)
             the interval of dates to pull in perfomance from
-        tx_df : DataFrame (default is all transactions)
+        stk_tx_df : DataFrame (default is all transactions)
             dataframe to get return percent from
 
         Returns
@@ -173,20 +173,20 @@ class Portfolio:
                 - unrealized
 
         """
-        if tx_df is None:
-            tx_df = self.transactions_history
+        if stk_tx_df is None:
+            stk_tx_df = self.stock_transactions_history
 
         # filter dataframe after first transaction
-        min_date = tx_df[tx_df["units"] != 0]["date"].min()
-        tx_df = tx_df[tx_df["date"] >= min_date]
+        min_date = stk_tx_df[stk_tx_df["units"] != 0]["date"].min()
+        stk_tx_df = stk_tx_df[stk_tx_df["date"] >= min_date]
 
         # get dates to loop through func(get_performace)
-        dates = pd.to_datetime(tx_df["date"].unique()).sort_values(ascending=False)
+        dates = pd.to_datetime(stk_tx_df["date"].unique()).sort_values(ascending=False)
 
         all_performance = pd.DataFrame()
         for date in dates[::step]:
             all_performance = pd.concat(
-                [all_performance, self.get_performance(date=date, tx_df=tx_df)]
+                [all_performance, self.get_performance(date=date, stk_tx_df=stk_tx_df)]
             )
 
         all_performance = all_performance.sort_values("date")
@@ -409,7 +409,7 @@ class Portfolio:
 
         return transaction_metrics
 
-    def _get_transactions_history(self, only_tickers=None, other_fields=None):
+    def _get_stock_transactions_history(self, only_tickers=None, other_fields=None):
         """Get the history of stock transcations by merging transaction and price history.
 
         Parameters
@@ -421,8 +421,8 @@ class Portfolio:
 
         Returns
         ----------
-        transactions_history : DataFrame
-            the price history of transactions
+        stock_transactions_history : DataFrame
+            the price history of stock transactions
         """
         if only_tickers is None:
             only_tickers = []
@@ -431,17 +431,17 @@ class Portfolio:
 
         transactions = self.transactions
 
-        transactions_history = self.calc_transaction_metrics(
+        stock_transactions_history = self.calc_transaction_metrics(
             transactions, other_fields=other_fields
         )
 
         # filter tickers
         if only_tickers:
-            transactions_history = transactions_history[
-                transactions_history["ticker"].isin(only_tickers)
+            stock_transactions_history = stock_transactions_history[
+                stock_transactions_history["ticker"].isin(only_tickers)
             ]
 
-        return transactions_history
+        return stock_transactions_history
 
     def _calc_average_price(self, df):
         """Calculate the average cost basis.
@@ -473,7 +473,7 @@ class Portfolio:
                     ) / df.loc[df.index[i], "cumulative_units"]
         return df
 
-    def _get_return_pct(self, ticker, date, tx_df=None):
+    def _get_return_pct(self, ticker, date, stk_tx_df=None):
         """Get the dollar weighted return of a ticker.
 
         Parameters
@@ -482,24 +482,26 @@ class Portfolio:
             ticker that will be used to calculate metric
         date : date
             date on which to perform the returns as of
-        tx_df : DataFrame
+        stk_tx_df : DataFrame
             dataframe to get return percent from
         Returns
         ----------
         return_pct : float
             the dollar weighted return of ticker
         """
-        if tx_df is None:
-            tx_df = self.transactions_history
-        transactions = tx_df[tx_df["cost"] != 0]
+        if stk_tx_df is None:
+            stk_tx_df = self.stock_transactions_history
+        transactions = stk_tx_df[stk_tx_df["cost"] != 0]
 
         # get the current price and transactions
         if ticker == "portfolio":
-            current_price = tx_df[tx_df["date"] == date]
+            current_price = stk_tx_df[stk_tx_df["date"] == date]
             ticker_transactions = transactions[transactions["date"] <= date].copy()
 
         else:
-            current_price = tx_df[(tx_df["ticker"] == ticker) & (tx_df["date"] == date)]
+            current_price = stk_tx_df[
+                (stk_tx_df["ticker"] == ticker) & (stk_tx_df["date"] == date)
+            ]
             ticker_transactions = transactions[
                 (transactions["ticker"] == ticker) & (transactions["date"] <= date)
             ].copy()
@@ -540,14 +542,14 @@ class Portfolio:
 
         return return_pct
 
-    def _get_return_pcts(self, date=None, tx_df=None):
+    def _get_return_pcts(self, date=None, stk_tx_df=None):
         """Get the dollar weighted return of transactions.
 
         Parameters
         ----------
         date : date (optional)
             date on which to perform the returns as of
-        tx_df : DataFrame
+        stk_tx_df : DataFrame
             dataframe to get return percent from
 
         Returns
@@ -557,17 +559,19 @@ class Portfolio:
         """
         if date is None:
             date = self._max_date
-        if tx_df is None:
-            tx_df = self.transactions_history
+        if stk_tx_df is None:
+            stk_tx_df = self.stock_transactions_history
 
-        tickers = list(tx_df["ticker"].unique())
+        tickers = list(stk_tx_df["ticker"].unique())
         tickers = [tick for tick in tickers if pd.isnull(tick) is False]
 
         return_pcts = pd.DataFrame()
 
         # get return of each ticker
         for ticker in tickers:
-            ticker_return = self._get_return_pct(ticker=ticker, date=date, tx_df=tx_df)
+            ticker_return = self._get_return_pct(
+                ticker=ticker, date=date, stk_tx_df=stk_tx_df
+            )
 
             return_pcts = pd.concat(
                 [
@@ -578,7 +582,7 @@ class Portfolio:
 
         # get portfolio return
         portfolio_return = self._get_return_pct(
-            ticker="portfolio", date=date, tx_df=tx_df
+            ticker="portfolio", date=date, stk_tx_df=stk_tx_df
         )
         return_pcts = pd.concat(
             [
@@ -617,24 +621,24 @@ class Portfolio:
 
         return clean_df
 
-    def _get_portfolio_view(self, tx_df=None):
+    def _get_portfolio_view(self, stk_tx_df=None):
         """Get the return of the portfolio over time.
 
         Useful for plotting returns visually.
 
         Parameters
         ----------
-        tx_df : DataFrame
+        stk_tx_df : DataFrame
             dataframe to get return percent from
 
         Returns
         ----------
         portfolio_view : DataFrame
         """
-        if tx_df is None:
-            tx_df = self.transactions_history
+        if stk_tx_df is None:
+            stk_tx_df = self.stock_transactions_history
         portfolio_col = ["ticker", "date", "return"]
-        portfolio_view = tx_df[portfolio_col]
+        portfolio_view = stk_tx_df[portfolio_col]
         portfolio_view = portfolio_view.pivot_table(
             index="date", columns="ticker", values="return", aggfunc="sum"
         )
@@ -642,24 +646,24 @@ class Portfolio:
 
         return portfolio_view
 
-    def _get_cost_view(self, tx_df=None):
+    def _get_cost_view(self, stk_tx_df=None):
         """Get the cost of the portfolio over time.
 
         Useful for plotting cost visually.
 
         Parameters
         ----------
-        tx_df : DataFrame
+        stk_tx_df : DataFrame
             dataframe to get return percent from
 
         Returns
         ----------
         cost_view : DataFrame
         """
-        if tx_df is None:
-            tx_df = self.transactions_history
+        if stk_tx_df is None:
+            stk_tx_df = self.stock_transactions_history
         cost_col = ["ticker", "date", "cumulative_cost"]
-        cost_view = tx_df[cost_col]
+        cost_view = stk_tx_df[cost_col]
         cost_view = cost_view.pivot_table(
             index="date", columns="ticker", values="cumulative_cost", aggfunc="sum"
         )
