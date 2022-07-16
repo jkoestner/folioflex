@@ -61,7 +61,7 @@ def portfolio_query(tx_file, filter_broker=None):
     personal_portfolio_tx : dataframe
        provides the portfolio transaction history
     """
-    personal_portfolio = portfolio.portfolio(
+    personal_portfolio = portfolio.Portfolio(
         tx_file,
         filter_type=["Cash", "Dividend"],
         filter_broker=filter_broker,

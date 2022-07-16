@@ -20,7 +20,7 @@ from pyxirr import xirr
 pd.options.display.float_format = "{:,.2f}".format
 
 
-class portfolio:
+class Portfolio:
     """An object containing information about portfolio.
 
     Parameters
@@ -180,7 +180,7 @@ class portfolio:
         min_date = tx_df[tx_df["units"] != 0]["date"].min()
         tx_df = tx_df[tx_df["date"] >= min_date]
 
-        # get dates to loop through
+        # get dates to loop through func(get_performace)
         dates = pd.to_datetime(tx_df["date"].unique()).sort_values(ascending=False)
 
         all_performance = pd.DataFrame()
@@ -303,6 +303,9 @@ class portfolio:
     def calc_transaction_metrics(self, tx_df, price_history=None, other_fields=None):
         """Calculate summation metrics on transactions DataFrame.
 
+        Note:
+        does not include portfolio metrics
+
         Parameters
         ----------
         tx_df : DataFrame
@@ -316,6 +319,13 @@ class portfolio:
         ----------
         transaction_metrics : DataFrame
             DataFrame containing updated metrics
+            - cumulative_units
+            - cumulative_cost
+            - average_price
+            - market_value
+            - return
+            - unrealized
+            - realized
         """
         if other_fields is None:
             other_fields = []
@@ -400,7 +410,7 @@ class portfolio:
         return transaction_metrics
 
     def _get_transactions_history(self, only_tickers=None, other_fields=None):
-        """Get the history of transcations by merging transaction and price history.
+        """Get the history of stock transcations by merging transaction and price history.
 
         Parameters
         ----------

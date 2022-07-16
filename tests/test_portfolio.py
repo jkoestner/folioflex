@@ -16,14 +16,14 @@ tx_file = PROJECT_PATH / pathlib.Path("tests") / "files" / "test_transactions.xl
 
 def test_portfolio_load():
     """Checks if portfolio class can connect."""
-    pf = portfolio.portfolio(tx_file, filter_type=["Cash", "Dividend"])
+    pf = portfolio.Portfolio(tx_file, filter_type=["Cash", "Dividend"])
 
     assert pf.file is not None, "Expected that portfolio connects."
 
 
 def test_transactions_load():
     """Checks if transactions load correctly."""
-    pf = portfolio.portfolio(tx_file, filter_type=["Dividend"])
+    pf = portfolio.Portfolio(tx_file, filter_type=["Dividend"])
 
     assert len(pf.transactions) == len(
         pd.read_excel(tx_file)
@@ -32,7 +32,7 @@ def test_transactions_load():
 
 def test_perfomance_calculations():
     """Checks calculations of performance."""
-    pf = portfolio.portfolio(tx_file, filter_type=["Cash", "Dividend"], funds=["BLKRK"])
+    pf = portfolio.Portfolio(tx_file, filter_type=["Cash", "Dividend"], funds=["BLKRK"])
     performance = pf.get_performance(date="05-02-2022")
 
     assert (
@@ -70,7 +70,7 @@ def test_perfomance_calculations():
 
 def test_fund_index():
     """Checks calculations of fund index."""
-    pf = portfolio.portfolio(tx_file, filter_type=["Cash", "Dividend"], funds=["BLKRK"])
+    pf = portfolio.Portfolio(tx_file, filter_type=["Cash", "Dividend"], funds=["BLKRK"])
     performance = pf.get_performance(date="05-27-2022")
 
     assert (

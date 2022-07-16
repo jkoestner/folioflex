@@ -12,6 +12,6 @@ remote_path = utils.get_remote_path()
 
 # tracker vars
 tracker_tx_file = remote_path + r"transactions.xlsx"
-tracker_portfolio = portfolio.portfolio(
+tracker_portfolio = portfolio.Portfolio(
     tracker_tx_file, filter_type=["Cash", "Dividend"], funds=["BLKRK"]
 )
