@@ -356,7 +356,7 @@ class Portfolio:
             cash_tx["type"] = "Cash"
             cash_tx["units"] = cash_tx["cost"]
             cash_tx["cost"] = cash_tx["cost"]
-            cash_tx["price"] = 1
+            cash_tx["sale_price"] = 1
             transactions = pd.concat([transactions, cash_tx])
             transactions.loc[transactions["ticker"] == "Cash", "cost"] = (
                 transactions.loc[transactions["ticker"] == "Cash", "cost"] * -1
