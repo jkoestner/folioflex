@@ -477,25 +477,6 @@ class Portfolio:
 
         return transactions_history
 
-    def _get_book_transactions_history(self):
-        """Get the history of stock transcations by merging transaction and price history.
-
-        Parameters
-        ----------
-        other_fields : list (optional)
-            additional fields to include
-
-        Returns
-        ----------
-        book_transactions_history : DataFrame
-            the history of book transactions
-        """
-        transactions = self.transactions
-
-        book_transactions_history = transactions[transactions["type"] == "Cash"]
-
-        return book_transactions_history
-
     def _calc_average_price(self, df):
         """Calculate the average cost basis.
 

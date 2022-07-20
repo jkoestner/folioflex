@@ -63,7 +63,7 @@ def portfolio_query(tx_file, filter_broker=None):
     """
     personal_portfolio = portfolio.Portfolio(
         tx_file,
-        filter_type=["Cash", "Dividend"],
+        filter_type=["Dividend"],
         filter_broker=filter_broker,
         funds=["BLKEQIX", "TRPILCG", "TRPSV", "LIPIX", "BLKRVIX", "BLKRGIX", "HLIEIX"],
         other_fields=["Broker", "Account"],
