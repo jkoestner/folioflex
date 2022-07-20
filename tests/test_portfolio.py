@@ -15,20 +15,20 @@ tx_file = PROJECT_PATH / pathlib.Path("tests") / "files" / "test_transactions.xl
 
 filter_type = ["Dividend"]
 funds = ["BLKRK"]
+other_fields = ["broker"]
 date = "05-02-2022"
+pf = portfolio.Portfolio(
+    tx_file, filter_type=filter_type, funds=funds, other_fields=other_fields
+)
 
 
 def test_portfolio_load():
     """Checks if portfolio class can connect."""
-    pf = portfolio.Portfolio(tx_file, filter_type=filter_type)
-
     assert pf.file is not None, "Expected that portfolio connects."
 
 
 def test_transactions_load():
     """Checks if transactions load correctly."""
-    pf = portfolio.Portfolio(tx_file, filter_type=filter_type)
-
     assert len(pf.transactions) == len(
         pd.read_excel(tx_file)
     ), "Expected to have no differences in loading file."
@@ -36,7 +36,6 @@ def test_transactions_load():
 
 def test_calc_cumulative_units():
     """Checks calculations of performance."""
-    pf = portfolio.Portfolio(tx_file, filter_type=filter_type, funds=funds)
     performance = pf.get_performance(date=date)
 
     assert (
@@ -46,7 +45,6 @@ def test_calc_cumulative_units():
 
 def test_calc_average_price():
     """Checks calculations of performance."""
-    pf = portfolio.Portfolio(tx_file, filter_type=filter_type, funds=funds)
     performance = pf.get_performance(date=date)
 
     assert (
@@ -56,7 +54,6 @@ def test_calc_average_price():
 
 def test_calc_return_pct():
     """Checks calculations of performance."""
-    pf = portfolio.Portfolio(tx_file, filter_type=filter_type, funds=funds)
     performance = pf.get_performance(date=date)
 
     assert (
@@ -66,27 +63,24 @@ def test_calc_return_pct():
 
 def test_calc_market_value():
     """Checks calculations of performance."""
-    pf = portfolio.Portfolio(tx_file, filter_type=filter_type, funds=funds)
     performance = pf.get_performance(date=date)
 
     assert (
-        round(performance.loc["portfolio", "market_value"], 0) == 15850
+        round(performance.loc["portfolio", "market_value"], 0) == 16420
     ), "Expected market_value to be last_price * cumulative_units"
 
 
 def test_calc_cumulative_cost():
     """Checks calculations of performance."""
-    pf = portfolio.Portfolio(tx_file, filter_type=filter_type, funds=funds)
     performance = pf.get_performance(date=date)
 
     assert (
-        round(performance.loc["portfolio", "cumulative_cost"], 0) == 21433
+        round(performance.loc["portfolio", "cumulative_cost"], 0) == -22003
     ), "Expected cumulative_cost to be sum of cost"
 
 
 def test_calc_return():
     """Checks calculations of performance."""
-    pf = portfolio.Portfolio(tx_file, filter_type=filter_type, funds=funds)
     performance = pf.get_performance(date=date)
 
     assert (
@@ -96,7 +90,6 @@ def test_calc_return():
 
 def test_calc_unrealized_return():
     """Checks calculations of performance."""
-    pf = portfolio.Portfolio(tx_file, filter_type=filter_type, funds=funds)
     performance = pf.get_performance(date=date)
 
     assert (
@@ -106,7 +99,6 @@ def test_calc_unrealized_return():
 
 def test_calc_realized_return():
     """Checks calculations of performance."""
-    pf = portfolio.Portfolio(tx_file, filter_type=filter_type, funds=funds)
     performance = pf.get_performance(date=date)
 
     assert (
@@ -116,11 +108,10 @@ def test_calc_realized_return():
 
 def test_fund_index():
     """Checks calculations of fund index."""
-    pf = portfolio.Portfolio(tx_file, filter_type=filter_type, funds=funds)
     performance = pf.get_performance(date="05-27-2022")
 
     assert (
-        performance.loc["BLKRK", "cumulative_units"] == 15
+        performance.loc["BLKRK", "cumulative_units"] == 10
     ), "Expected cumulative_units to be sum of units"
 
     assert (
@@ -128,5 +119,5 @@ def test_fund_index():
     ), "Expected average price to match the weighted cost basis"
 
     assert (
-        performance.loc["BLKRK", "market_value"] == 210
+        performance.loc["BLKRK", "market_value"] == 140
     ), "Expected market_value to be last_price * cumulative_units"
