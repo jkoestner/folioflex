@@ -706,8 +706,8 @@ def personal_get_results(personal_task_status, personal_task_id):
 def update_PersonalGraph(slide_value, personal_status, personal_portfolio_tx):
     """Provide personal graph."""
     if personal_status == "ready":
-        tx_df = pd.read_json(personal_portfolio_tx)
-        fig = utils.update_graph(slide_value, tracker_portfolio, tx_df)
+        tx_hist_df = pd.read_json(personal_portfolio_tx)
+        fig = utils.update_graph(slide_value, tracker_portfolio, tx_hist_df)
     else:
         "could not load"
         fig = dict(data=[], layout=go.Layout(hovermode="closest"))
@@ -728,8 +728,8 @@ def update_PersonalGraph(slide_value, personal_status, personal_portfolio_tx):
 def update_PersonalSlider(personal_status, personal_portfolio_tx):
     """Provide sector data table."""
     if personal_status == "ready":
-        tx_df = pd.read_json(personal_portfolio_tx)
-        portfolio_view = tracker_portfolio._get_portfolio_view(tx_df=tx_df)
+        tx_hist_df = pd.read_json(personal_portfolio_tx)
+        portfolio_view = tracker_portfolio._get_portfolio_view(tx_hist_df=tx_hist_df)
         min, max, value, marks = utils.get_slider_values(portfolio_view.index)
     else:
         min = 0
@@ -756,9 +756,9 @@ def update_PersonalSlider(personal_status, personal_portfolio_tx):
 def update_PersonalPerformance(personal_status, personal_portfolio_tx):
     """Provide personal performance table."""
     if personal_status == "ready":
-        tx_df = pd.read_json(personal_portfolio_tx)
+        tx_hist_df = pd.read_json(personal_portfolio_tx)
         performance = tracker_portfolio.get_performance(
-            date=tx_df["date"].max(), tx_hist_df=tx_df
+            date=tx_hist_df["date"].max(), tx_hist_df=tx_hist_df
         ).reset_index()
 
         performance_table = [
@@ -786,12 +786,12 @@ def update_PersonalPerformance(personal_status, personal_portfolio_tx):
 def update_PersonalTransaction(personal_status, personal_portfolio_tx):
     """Provide personal transaction table."""
     if personal_status == "ready":
-        tx_df = pd.read_json(personal_portfolio_tx)
-        tx_df = tx_df[tx_df["units"] != 0]
+        tx_hist_df = pd.read_json(personal_portfolio_tx)
+        tx_hist_df = tx_hist_df[tx_hist_df["units"] != 0]
 
         transaction_table = [
-            {"name": i, "id": i} for i in tx_df.columns
-        ], tx_df.to_dict("records")
+            {"name": i, "id": i} for i in tx_hist_df.columns
+        ], tx_hist_df.to_dict("records")
     else:
         transaction_table = (None, None)
 
