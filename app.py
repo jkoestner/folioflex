@@ -758,7 +758,7 @@ def update_PersonalPerformance(personal_status, personal_portfolio_tx):
     if personal_status == "ready":
         tx_df = pd.read_json(personal_portfolio_tx)
         performance = tracker_portfolio.get_performance(
-            date=tx_df["date"].max(), tx_df=tx_df
+            date=tx_df["date"].max(), tx_hist_df=tx_df
         ).reset_index()
 
         performance_table = [
