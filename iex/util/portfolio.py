@@ -346,16 +346,15 @@ class Portfolio:
             other_fields = []
 
         tx_df = tx_df.copy()
-        transactions = tx_df[tx_df["cost"] != 0]
+        transactions = tx_df[(tx_df["cost"] != 0) | (tx_df["units"] != 0)]
         tickers = list(transactions["ticker"].unique())
 
         # create cash transactions from stock purchases
         if "Cash" in tickers:
-            cash_tx = tx_df[tx_df["ticker"] != "Cash"].copy()
+            cash_tx = transactions[transactions["ticker"] != "Cash"].copy()
             cash_tx["ticker"] = "Cash"
             cash_tx["type"] = "Cash"
             cash_tx["units"] = cash_tx["cost"]
-            cash_tx["cost"] = cash_tx["cost"]
             cash_tx["sale_price"] = 1
             transactions = pd.concat([transactions, cash_tx])
             transactions.loc[transactions["ticker"] == "Cash", "cost"] = (
