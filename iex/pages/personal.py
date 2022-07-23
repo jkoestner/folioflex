@@ -13,7 +13,7 @@ layout = html.Div(
             [
                 utils.get_menu(),
                 html.Button(
-                    "Personal initialize", id="personal-initialize", n_clicks=0
+                    "Personal refresh", id="personal-initialize", n_clicks=0
                 ),
                 # dropdown
                 dcc.Dropdown(

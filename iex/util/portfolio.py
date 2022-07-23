@@ -127,6 +127,12 @@ class Portfolio:
         performance.loc["portfolio", "realized"] = performance["realized"].sum()
         performance.loc["portfolio", "unrealized"] = performance["unrealized"].sum()
 
+        duplicates = performance[performance.index.duplicated()].index
+        if len(duplicates) > 0:
+            print(
+                f" found {len(duplicates)} duplicate tickers in performance such as {duplicates[0]} on {date}"
+            )
+
         performance = pd.concat([performance, return_pcts], axis=1, join="inner")
 
         performance = performance[

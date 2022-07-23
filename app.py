@@ -553,7 +553,7 @@ def update_TrackerGraph(dropdown):
         ),
     )
 
-    px_line.update_yaxes(title_text=dropdown)
+    px_line.update_yaxes(title_text=dropdown, autorange=True, fixedrange=False)
     px_line.update_traces(
         visible="legendonly", selector=lambda t: t.name not in ["portfolio"]
     )
@@ -648,9 +648,11 @@ def personal_refresh_text(personal_task_status):
 
 @app.callback(
     Output("personal-task-status", "children"),
-    Input("interval-component", "n_intervals"),
     [
-        State("personal-task-id", "children"),
+        Input("interval-component", "n_intervals"),
+        Input("personal-task-id", "children"),
+    ],
+    [
         State("personal-task-status", "children"),
     ],
 )
@@ -684,7 +686,6 @@ def personal_get_results(personal_task_status, personal_task_id):
         job.delete()
         personal_portfolio_tx = personal_portfolio_tx.to_json()
         personal_status = "ready"
-        personal_task_id = "none"
     else:
         personal_status = "none"
         personal_portfolio_tx = None
@@ -788,6 +789,9 @@ def update_PersonalTransaction(personal_status, personal_portfolio_tx):
     if personal_status == "ready":
         tx_hist_df = pd.read_json(personal_portfolio_tx)
         tx_hist_df = tx_hist_df[tx_hist_df["units"] != 0]
+        tx_hist_df = tx_hist_df[tx_hist_df["ticker"] != "Cash"].sort_values(
+            by="date", ascending=False
+        )
 
         transaction_table = [
             {"name": i, "id": i} for i in tx_hist_df.columns
