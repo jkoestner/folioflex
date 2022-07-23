@@ -526,15 +526,12 @@ def sma_value(n_clicks, input_value):
 #    |_| |_| \_\/_/   \_\____|_|\_\_____|_| \_\
 
 tracker_portfolio = constants.tracker_portfolio
-tracker_portfolio_tx = constants.tracker_portfolio.transactions_history
 
 
 @app.callback(Output("Tracker-Graph", "figure"), [Input("Tracker-Dropdown", "value")])
 def update_TrackerGraph(dropdown):
     """Provide tracker graph."""
-    px_df = tracker_portfolio_tx.pivot_table(
-        index="date", columns="ticker", values=dropdown, aggfunc="min"
-    )
+    px_df = tracker_portfolio._get_view(view=dropdown)
     px_line = px.line(px_df, title="tracker")
     px_line.update_xaxes(
         title_text="Date",
@@ -730,8 +727,8 @@ def update_PersonalSlider(personal_status, personal_portfolio_tx):
     """Provide sector data table."""
     if personal_status == "ready":
         tx_hist_df = pd.read_json(personal_portfolio_tx)
-        portfolio_view = tracker_portfolio._get_portfolio_view(tx_hist_df=tx_hist_df)
-        min, max, value, marks = utils.get_slider_values(portfolio_view.index)
+        return_view = tracker_portfolio._get_view(view="return", tx_hist_df=tx_hist_df)
+        min, max, value, marks = utils.get_slider_values(return_view.index)
     else:
         min = 0
         max = 10

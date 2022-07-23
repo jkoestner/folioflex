@@ -173,8 +173,8 @@ def update_graph(slide_value, portfolio, tx_hist_df=None):
     res = []
     layout = go.Layout(hovermode="closest")
 
-    portfolio_view = portfolio._get_portfolio_view(tx_hist_df)
-    cost_view = portfolio._get_cost_view(tx_hist_df)
+    portfolio_view = portfolio._get_view(view="return", tx_hist_df=tx_hist_df)
+    cost_view = portfolio._get_view(view="cumulative_cost", tx_hist_df=tx_hist_df)
 
     return_grph = portfolio_view[
         (unix_time_millis(portfolio_view.index) > slide_value[0])

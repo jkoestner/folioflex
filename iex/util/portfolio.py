@@ -74,8 +74,8 @@ class Portfolio:
             other_fields=other_fields
         )
         self._max_date = self.transactions_history["date"].max()
-        self.portfolio_view = self._get_portfolio_view()
-        self.cost_view = self._get_cost_view()
+        self.return_view = self._get_view(view="return")
+        self.cost_view = self._get_view(view="cumulative_cost")
 
     def get_performance(self, date=None, tx_hist_df=None):
         """Get performance of portfolio and stocks traded at certain point of time.
@@ -659,53 +659,30 @@ class Portfolio:
 
         return clean_df
 
-    def _get_portfolio_view(self, tx_hist_df=None):
-        """Get the return of the portfolio over time.
+    def _get_view(self, view="market_value", tx_hist_df=None):
+        """Get the a specific view of the portfolio.
 
         Useful for plotting returns visually.
 
         Parameters
         ----------
+        view : str
+            column to sum over on the portfolio dataframe
+               - e.g. "market_value", "return", "cumulative_cost"
         tx_hist_df : DataFrame
             dataframe to get return percent from
 
         Returns
         ----------
-        portfolio_view : DataFrame
+        view_df : DataFrame
         """
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
-        portfolio_col = ["ticker", "date", "return"]
-        portfolio_view = tx_hist_df[portfolio_col]
-        portfolio_view = portfolio_view.pivot_table(
-            index="date", columns="ticker", values="return", aggfunc="sum"
+        portfolio_col = ["ticker", "date"] + [view]
+        view_df = tx_hist_df[portfolio_col]
+        view_df = view_df.pivot_table(
+            index="date", columns="ticker", values=view, aggfunc="sum"
         )
-        portfolio_view["portfolio"] = portfolio_view.sum(axis=1)
+        view_df["portfolio"] = view_df.sum(axis=1)
 
-        return portfolio_view
-
-    def _get_cost_view(self, tx_hist_df=None):
-        """Get the cost of the portfolio over time.
-
-        Useful for plotting cost visually.
-
-        Parameters
-        ----------
-        tx_hist_df : DataFrame
-            dataframe to get return percent from
-
-        Returns
-        ----------
-        cost_view : DataFrame
-        """
-        if tx_hist_df is None:
-            tx_hist_df = self.transactions_history
-        cost_col = ["ticker", "date", "cumulative_cost"]
-        cost_view = tx_hist_df[cost_col]
-        cost_view = cost_view.pivot_table(
-            index="date", columns="ticker", values="cumulative_cost", aggfunc="sum"
-        )
-        cost_view["portfolio"] = cost_view.sum(axis=1)
-        cost_view = cost_view.round(2)
-
-        return cost_view
+        return view_df

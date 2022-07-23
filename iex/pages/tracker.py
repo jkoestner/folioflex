@@ -21,7 +21,7 @@ layout = html.Div(
                 html.P(),
                 dcc.Dropdown(
                     id="Tracker-Dropdown",
-                    options=["return", "return_pct", "market_value"],
+                    options=["return", "market_value"],
                     value="return",
                 ),
                 html.P(),
