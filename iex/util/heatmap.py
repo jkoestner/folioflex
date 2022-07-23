@@ -84,5 +84,7 @@ def get_sp500_tickers():
         },
         inplace=True,
     )
+    # only keep GOOG
+    sp500_tickers = sp500_tickers[sp500_tickers["symbol"] != "GOOGL"]
 
     return sp500_tickers
