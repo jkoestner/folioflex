@@ -786,9 +786,7 @@ def update_PersonalTransaction(personal_status, personal_portfolio_tx):
     if personal_status == "ready":
         tx_hist_df = pd.read_json(personal_portfolio_tx)
         tx_hist_df = tx_hist_df[tx_hist_df["units"] != 0]
-        tx_hist_df = tx_hist_df[tx_hist_df["ticker"] != "Cash"].sort_values(
-            by="date", ascending=False
-        )
+        tx_hist_df = tx_hist_df[tx_hist_df["ticker"] != "Cash"]
 
         transaction_table = [
             {"name": i, "id": i} for i in tx_hist_df.columns

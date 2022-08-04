@@ -257,6 +257,8 @@ class Portfolio:
         if only_tickers:
             transactions = transactions[transactions["ticker"].isin(only_tickers)]
 
+        transactions = transactions.sort_values(by="date", ascending=False)
+
         return transactions
 
     def _get_price_history(self):
@@ -445,6 +447,10 @@ class Portfolio:
         tx_hist_df["cumulative_cost"] = tx_hist_df["cumulative_cost"].replace(0, np.nan)
 
         transaction_metrics = tx_hist_df
+
+        transaction_metrics = transaction_metrics.sort_values(
+            by="date", ascending=False
+        )
 
         return transaction_metrics
 
