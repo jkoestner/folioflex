@@ -274,6 +274,62 @@ def update_activeanalysis(n_clicks):
     return active_table
 
 
+@app.callback(
+    [
+        Output("insider-summary-table", "columns"),
+        Output("insider-summary-table", "data"),
+    ],
+    [Input("insider-summary-button", "n_clicks")],
+    [State("stock-input", "value")],
+)
+def update_insidersummaryanalysis(n_clicks, input_value):
+    """Provide insider summary table."""
+    if n_clicks == 0:
+        insider_summary_table = (None, None)
+    else:
+        url_insider_summary = (
+            "https://cloud.iexapis.com/stable/stock/"
+            + format(input_value)
+            + "/insider-roster?token="
+            + constants.iex_api_live
+        )
+        insider = pd.read_json(url_insider_summary, orient="columns")
+
+        insider_summary_table = [
+            {"name": i, "id": i} for i in insider.columns
+        ], insider.to_dict("records")
+
+    return insider_summary_table
+
+
+@app.callback(
+    [
+        Output("insider-tx-table", "columns"),
+        Output("insider-tx-table", "data"),
+    ],
+    [Input("insider-tx-button", "n_clicks")],
+    [State("stock-input", "value")],
+)
+def update_insidertransactionsanalysis(n_clicks, input_value):
+    """Provide insider transactions table."""
+    if n_clicks == 0:
+        insider_transactions_table = (None, None)
+    else:
+        url_insider_transactions = (
+            "https://cloud.iexapis.com/stable/stock/"
+            + format(input_value)
+            + "/insider-transactions?token="
+            + constants.iex_api_live
+        )
+        insider = pd.read_json(url_insider_transactions, orient="columns")
+
+        insider_transactions_table = [
+            {"name": i, "id": i} for i in insider.columns
+        ], insider.to_dict("records")
+
+    return insider_transactions_table
+
+
 #   ____  _____ ____ _____ ___  ____
 #  / ___|| ____/ ___|_   _/ _ \|  _ \
 #  \___ \|  _|| |     | || | | | |_) |

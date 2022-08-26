@@ -36,6 +36,8 @@ class Portfolio:
     funds : list (optional)
         the symbols that should be analyzed as funds. These symbols won't have any
         yahoo finance reference, so we use transaction prices to fill in blank values
+    benchmark : list (optional)
+        the symbols to use as a benchmark to compare against.
     other_fields : list (optional)
         additional fields to include
     """
@@ -46,6 +48,7 @@ class Portfolio:
         filter_type=None,
         filter_broker=None,
         funds=None,
+        benchmark=None,
         other_fields=None,
     ):
 
@@ -55,12 +58,15 @@ class Portfolio:
             filter_broker = []
         if funds is None:
             funds = []
+        if benchmark is None:
+            benchmark = []
         if other_fields is None:
             other_fields = []
 
         print("read '{}'".format(tx_file))
         self.file = tx_file
         self.funds = funds
+        self.benchmark = benchmark
         self.transactions = self._get_transactions(
             filter_type=filter_type,
             filter_broker=filter_broker,
@@ -71,7 +77,7 @@ class Portfolio:
         print(f"You had {len(self.transactions)} transactions")
         self.price_history = self._get_price_history()
         self.transactions_history = self._get_transactions_history(
-            other_fields=other_fields
+            other_fields=other_fields, benchmark=benchmark
         )
         self._max_date = self.transactions_history["date"].max()
         self.return_view = self._get_view(view="return")
@@ -119,13 +125,26 @@ class Portfolio:
         performance.loc["portfolio", "date"] = pd.to_datetime(
             date, infer_datetime_format=True
         )
-        performance.loc["portfolio", "cumulative_cost"] = performance[
-            "cumulative_cost"
+        # remove benchmark from portfolio calculation
+        if "broker" in performance.columns:
+            condition = performance["broker"] != "benchmark"
+        else:
+            condition = performance["date"] != ""
+        performance.loc["portfolio", "cumulative_cost"] = performance.loc[
+            condition, "cumulative_cost"
         ].sum()
-        performance.loc["portfolio", "market_value"] = performance["market_value"].sum()
-        performance.loc["portfolio", "return"] = performance["return"].sum()
-        performance.loc["portfolio", "realized"] = performance["realized"].sum()
-        performance.loc["portfolio", "unrealized"] = performance["unrealized"].sum()
+        performance.loc["portfolio", "market_value"] = performance.loc[
+            condition, "market_value"
+        ].sum()
+        performance.loc["portfolio", "return"] = performance.loc[
+            condition, "return"
+        ].sum()
+        performance.loc["portfolio", "realized"] = performance.loc[
+            condition, "realized"
+        ].sum()
+        performance.loc["portfolio", "unrealized"] = performance.loc[
+            condition, "unrealized"
+        ].sum()
 
         duplicates = performance[performance.index.duplicated()].index
         if len(duplicates) > 0:
@@ -238,7 +257,7 @@ class Portfolio:
         transactions = transactions[cols]
         transactions = transactions[~transactions["type"].isin(filter_type)]
         if filter_broker:
-            transactions = transactions[transactions["Broker"].isin(filter_broker)]
+            transactions = transactions[transactions["broker"].isin(filter_broker)]
 
         # handle multiple transactions on same day by grouping
         transactions = (
@@ -272,7 +291,12 @@ class Portfolio:
                - date
                - last price
         """
-        tickers = [tick for tick in self.tickers if tick not in self.funds + ["Cash"]]
+        tickers = [
+            tick for tick in self.tickers if tick not in self.funds
+        ] + self.benchmark
+
+        if self.benchmark:
+            print(f"Adding {self.benchmark} as a benchmark")
         price_history = yf.download(tickers, start=datetime(self._min_year, 1, 1))
         self._clean_index(clean_df=price_history, lvl=0)
         price_history.index.rename("date", inplace=True)
@@ -323,7 +347,9 @@ class Portfolio:
 
         return price_history
 
-    def calc_transaction_metrics(self, tx_df, price_history=None, other_fields=None):
+    def calc_transaction_metrics(
+        self, tx_df, price_history=None, other_fields=None, benchmark=None
+    ):
         """Calculate summation metrics on transactions DataFrame.
 
         Note:
@@ -337,6 +363,8 @@ class Portfolio:
             Price history DataFrame
         other_fields : list (optional)
             additional fields to include
+        benchmark : list (optional)
+            the symbols to use as a benchmark to compare against.
 
         Returns
         ----------
@@ -352,10 +380,17 @@ class Portfolio:
         """
         if other_fields is None:
             other_fields = []
+        if benchmark is None:
+            benchmark = []
+
+        if benchmark != [] and "broker" not in other_fields:
+            raise Exception(
+                "When providing a benchmark, the 'broker' column in `other_fields` must be passed as well"
+            )
 
         tx_df = tx_df.copy()
         transactions = tx_df[(tx_df["cost"] != 0) | (tx_df["units"] != 0)]
-        tickers = list(transactions["ticker"].unique())
+        tickers = list(transactions["ticker"].unique()) + benchmark
 
         # create cash transactions from stock purchases
         if "Cash" in tickers:
@@ -364,6 +399,13 @@ class Portfolio:
             cash_tx["type"] = "Cash"
             cash_tx["units"] = cash_tx["cost"]
             cash_tx["sale_price"] = 1
+            # add benchmark from cash transactions
+            if benchmark:
+                benchmark_tx = transactions[transactions["ticker"] == "Cash"].copy()
+                benchmark_tx["ticker"] = benchmark[0]
+                benchmark_tx["broker"] = "benchmark"
+                benchmark_tx["cost"] = -benchmark_tx["cost"]
+                transactions = pd.concat([transactions, benchmark_tx])
             transactions = pd.concat([transactions, cash_tx])
             transactions.loc[transactions["ticker"] == "Cash", "cost"] = (
                 transactions.loc[transactions["ticker"] == "Cash", "cost"] * -1
@@ -392,6 +434,25 @@ class Portfolio:
             .fillna(0)
             .sort_values(by=["ticker", "date"], ignore_index=True)
         )
+
+        # update benchmark values
+        if benchmark:
+            # zero out sale price of offsetting transactions
+            condition = (tx_hist_df["broker"] == "benchmark") & (
+                tx_hist_df["units"] == 0
+            )
+            tx_hist_df.loc[condition, "sale_price"] = 0
+            # update sale price and units of benchmark
+            condition = (tx_hist_df["broker"] == "benchmark") & (
+                tx_hist_df["sale_price"] > 0
+            )
+            tx_hist_df.loc[condition, "sale_price"] = tx_hist_df.loc[
+                condition, "last_price"
+            ]
+            tx_hist_df.loc[condition, "units"] = -(
+                tx_hist_df.loc[condition, "cost"]
+                / tx_hist_df.loc[condition, "last_price"]
+            )
 
         # cumulative amounts
         tx_hist_df["cumulative_units"] = tx_hist_df.groupby("ticker")[
@@ -454,7 +515,9 @@ class Portfolio:
 
         return transaction_metrics
 
-    def _get_transactions_history(self, only_tickers=None, other_fields=None):
+    def _get_transactions_history(
+        self, only_tickers=None, other_fields=None, benchmark=None
+    ):
         """Get the history of stock transcations by merging transaction and price history.
 
         Parameters
@@ -473,11 +536,13 @@ class Portfolio:
             only_tickers = []
         if other_fields is None:
             other_fields = []
+        if benchmark is None:
+            benchmark = []
 
         transactions = self.transactions
 
         transactions_history = self.calc_transaction_metrics(
-            transactions, other_fields=other_fields
+            transactions, other_fields=other_fields, benchmark=benchmark
         )
 
         # filter tickers
@@ -614,7 +679,9 @@ class Portfolio:
         # get return of each ticker
         for ticker in tickers:
             ticker_return = self._get_return_pct(
-                ticker=ticker, date=date, tx_hist_df=tx_hist_df
+                ticker=ticker,
+                date=date,
+                tx_hist_df=tx_hist_df,
             )
 
             return_pcts = pd.concat(
@@ -625,8 +692,14 @@ class Portfolio:
             )
 
         # get portfolio return
+        if "broker" in tx_hist_df.columns:
+            condition = tx_hist_df["broker"] != "benchmark"
+        else:
+            condition = tx_hist_df["date"] != ""
         portfolio_return = self._get_return_pct(
-            ticker="portfolio", date=date, tx_hist_df=tx_hist_df
+            ticker="portfolio",
+            date=date,
+            tx_hist_df=tx_hist_df[condition],
         )
         return_pcts = pd.concat(
             [
