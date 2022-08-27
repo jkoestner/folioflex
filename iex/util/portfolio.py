@@ -36,6 +36,9 @@ class Portfolio:
     funds : list (optional)
         the symbols that should be analyzed as funds. These symbols won't have any
         yahoo finance reference, so we use transaction prices to fill in blank values
+    delisted : list (optional)
+        similar to funds. These symbols won't have any yahoo finance reference, so we
+        use transaction prices to fill in blank values
     benchmark : list (optional)
         the symbols to use as a benchmark to compare against.
     other_fields : list (optional)
@@ -48,6 +51,7 @@ class Portfolio:
         filter_type=None,
         filter_broker=None,
         funds=None,
+        delisted=None,
         benchmark=None,
         other_fields=None,
     ):
@@ -58,6 +62,8 @@ class Portfolio:
             filter_broker = []
         if funds is None:
             funds = []
+        if delisted is None:
+            delisted = []
         if benchmark is None:
             benchmark = []
         if other_fields is None:
@@ -66,6 +72,7 @@ class Portfolio:
         print("read '{}'".format(tx_file))
         self.file = tx_file
         self.funds = funds
+        self.delisted = delisted
         self.benchmark = benchmark
         self.transactions = self._get_transactions(
             filter_type=filter_type,
@@ -292,7 +299,7 @@ class Portfolio:
                - last price
         """
         tickers = [
-            tick for tick in self.tickers if tick not in self.funds
+            tick for tick in self.tickers if tick not in self.funds + self.delisted
         ] + self.benchmark
 
         if self.benchmark:
@@ -320,7 +327,13 @@ class Portfolio:
                 " price to develop price history, since they are funds and not"
                 " available in stock exchanges"
             )
-        for fund in self.funds:
+        if self.delisted:
+            print(
+                f"Did not get price info for {self.delisted} and will use transaction"
+                " price to develop price history, since they are delisted and not"
+                " available in stock exchanges"
+            )
+        for fund in self.funds + self.delisted:
             df = template_df.copy()
             fund_df = transactions[transactions["ticker"] == fund]
             df = pd.merge(
