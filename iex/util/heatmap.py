@@ -46,8 +46,9 @@ def get_heatmap():
     sp500["changePercent"] = (
         sp500["changePercent"].replace("[\\$,]", "", regex=True).astype(float)
     )
-    # nulls in market cap will not allow aggregation, replacing with 1
+    # nulls/zero in market cap will not allow aggregation, replacing with 1
     sp500["marketCap"] = sp500["marketCap"].fillna(1)
+    sp500["marketCap"] = sp500["marketCap"].replace(to_replace=0, value=1)
 
     fig = px.treemap(
         sp500,
