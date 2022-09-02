@@ -56,7 +56,7 @@ def test_calc_average_price():
     performance = pf.get_performance(date=date)
 
     assert (
-        round(performance.loc["AMD", "average_price"], 2) == 99.05
+        round(performance.loc["AMD", "average_price"], 2) == 99.25
     ), "Expected average price to match the weighted cost basis"
 
 
@@ -86,7 +86,7 @@ def test_calc_market_value():
     performance = pf.get_performance(date=date)
 
     assert (
-        round(performance.loc["portfolio", "market_value"], 0) == 16420
+        round(performance.loc["portfolio", "market_value"], 0) == 16422
     ), "Expected market_value to be last_price * cumulative_units"
 
 
@@ -94,10 +94,12 @@ def test_calc_cumulative_cost():
     """Checks calculations of performance - cumulative cost."""
     performance = pf.get_performance(date=date)
     test_df = pd.read_excel(tx_file)
-    test_cost = (test_df[test_df["ticker"] == "Cash"]["cost"].sum()) * -1
+    test_cost = (
+        test_df[(test_df["ticker"] == "Cash") & (test_df["date"] <= date)]["cost"].sum()
+    ) * -1
 
     assert (
-        round(performance.loc["portfolio", "cumulative_cost"], 0) == test_cost
+        performance.loc["portfolio", "cumulative_cost"] == test_cost
     ), "Expected cumulative_cost to be sum of cost"
 
 
@@ -106,7 +108,7 @@ def test_calc_return():
     performance = pf.get_performance(date=date)
 
     assert (
-        round(performance.loc["portfolio", "return"], 0) == -5584
+        round(performance.loc["portfolio", "return"], 0) == -5582
     ), "Expected return to be market_value - cumulative_cost"
 
 
@@ -124,7 +126,7 @@ def test_calc_realized_return():
     performance = pf.get_performance(date=date)
 
     assert (
-        round(performance.loc["portfolio", "realized"], 0) == 149
+        round(performance.loc["portfolio", "realized"], 0) == 151
     ), "Expected realized to be return - unrealized"
 
 
