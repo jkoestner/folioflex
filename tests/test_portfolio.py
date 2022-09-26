@@ -86,7 +86,7 @@ def test_calc_market_value():
     performance = pf.get_performance(date=date)
 
     assert (
-        round(performance.loc["portfolio", "market_value"], 0) == 16422
+        round(performance.loc["portfolio", "market_value"], 0) == 16421
     ), "Expected market_value to be last_price * cumulative_units"
 
 
@@ -117,7 +117,7 @@ def test_calc_unrealized_return():
     performance = pf.get_performance(date=date)
 
     assert (
-        round(performance.loc["portfolio", "unrealized"], 0) == -5732
+        round(performance.loc["portfolio", "unrealized"], 0) == -5733
     ), "Expected unrealized to be market_value - average_price * cumulative units"
 
 
