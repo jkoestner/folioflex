@@ -20,10 +20,10 @@ else:
     # if debugging locally will need a redis
     redis_url = os.getenv("LOCAL_REDIS")
 
+print(f"redis url: {redis_url}")
 conn = redis.from_url(redis_url)
 
 if __name__ == "__main__":
-    print(f"redis url: {redis_url}")
     with Connection(conn):
         worker = Worker(map(Queue, listen))
         worker.work()
