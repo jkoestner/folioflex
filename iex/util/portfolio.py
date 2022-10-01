@@ -500,9 +500,9 @@ class Portfolio:
         # fill in other_fields null values
         for field in other_fields:
             tx_hist_df[field] = tx_hist_df[field].replace(0, np.nan)
-            tx_hist_df[field] = tx_hist_df.groupby(["ticker"])[field].apply(
-                lambda x: x.ffill().bfill()
-            )
+            tx_hist_df[field] = tx_hist_df.groupby(["ticker"], group_keys=False)[
+                field
+            ].apply(lambda x: x.ffill().bfill())
 
         # sort values
         tx_hist_df = tx_hist_df.sort_values(by=["ticker", "date"], ignore_index=True)
