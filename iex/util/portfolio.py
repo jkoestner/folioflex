@@ -426,7 +426,7 @@ class Portfolio:
 
         transactions = (
             transactions.groupby(by=["date", "ticker"] + other_fields)
-            .sum()
+            .sum(numeric_only=True)
             .reset_index()
         )
 
@@ -476,7 +476,9 @@ class Portfolio:
         )
 
         # average price
-        tx_hist_df = tx_hist_df.groupby("ticker").apply(self._calc_average_price)
+        tx_hist_df = tx_hist_df.groupby("ticker", group_keys=False).apply(
+            self._calc_average_price
+        )
         tx_hist_df.loc[tx_hist_df["ticker"] == "Cash", "average_price"] = 1
 
         # market value
