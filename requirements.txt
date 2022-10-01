@@ -11,6 +11,7 @@ openpyxl>=3.0.7
 pandas>=0.25.0
 pyxirr>=0.7.2
 rq>=1.1.0
+git+https://github.com/rq/rq@master#egg=rq
 redis>=3.3.8
 yfinance>=0.1.63
 pandas_market_calendars>=1.2
