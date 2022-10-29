@@ -82,6 +82,7 @@ class Portfolio:
         self._min_year = self.transactions["date"].min().year
         self.tickers = list(self.transactions["ticker"].unique())
         print(f"You had {len(self.transactions)} transactions")
+        self.check_tx()
         self.price_history = self._get_price_history()
         self.transactions_history = self._get_transactions_history(
             other_fields=other_fields, benchmark=benchmark
@@ -429,7 +430,12 @@ class Portfolio:
             .sum(numeric_only=True)
             .reset_index()
         )
-
+        # aggregating sale_price for a single day
+        transactions["sale_price"] = np.where(
+            transactions["units"] == 0,
+            0,
+            transactions["cost"] / transactions["units"] * -1,
+        )
         if price_history is None:
             price_history = self.price_history
 
@@ -780,3 +786,116 @@ class Portfolio:
         view_df["portfolio"] = view_df.sum(axis=1)
 
         return view_df
+
+    def check_tx(self, tx_df=None):
+        """Check that transactions have correct data.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            dataframe to performe checks on
+
+        Returns
+        ----------
+        portfolio_checks_failed : int
+        """
+        if tx_df is None:
+            tx_df = self.transactions
+
+        portfolio_checks_failed = 0
+        # buy checks
+        if any(tx_df[tx_df["type"] == "SELL"]["units"] > 0):
+            err_df = tx_df[(tx_df["type"] == "SELL") & (tx_df["units"] > 0)]
+            print(
+                f"There were transactions that had positive units for SELL "
+                f"type such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['units']} units"
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        if any(tx_df[tx_df["type"] == "SELL"]["cost"] < 0):
+            err_df = tx_df[(tx_df["type"] == "SELL") & (tx_df["cost"] < 0)]
+            print(
+                f"There were transactions that had negative cost for SELL "
+                f"type such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['cost']} cost"
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        # sell short checks
+        if any(tx_df[tx_df["type"] == "SELL SHORT"]["units"] > 0):
+            err_df = tx_df[(tx_df["type"] == "SELL SHORT") & (tx_df["units"] > 0)]
+            print(
+                f"There were transactions that had positive units for SELL "
+                f"SHORT type such as {err_df.iloc[1]['ticker']} "
+                f"with {err_df.iloc[1]['units']} units"
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        if any(tx_df[tx_df["type"] == "SELL SHORT"]["cost"] < 0):
+            err_df = tx_df[(tx_df["type"] == "SELL SHORT") & (tx_df["cost"] < 0)]
+            print(
+                f"There were transactions that had negative cost for SELL SHORT "
+                f"type such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['cost']} cost"
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        # buy
+        if any(tx_df[tx_df["type"] == "BUY"]["units"] < 0):
+            err_df = tx_df[(tx_df["type"] == "BUY") & (tx_df["units"] < 0)]
+            print(
+                f"There were transactions that had negative units for BUY type "
+                f"such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['units']} units "
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        if any(tx_df[tx_df["type"] == "BUY"]["cost"] > 0):
+            err_df = tx_df[(tx_df["type"] == "BUY") & (tx_df["cost"] > 0)]
+            print(
+                f"There were transactions that had positive cost for BUY type "
+                f"such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['cost']} cost "
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        # buy cover
+        if any(tx_df[tx_df["type"] == "BUY COVER"]["units"] < 0):
+            err_df = tx_df[(tx_df["type"] == "BUY COVER") & (tx_df["units"] < 0)]
+            print(
+                f"There were transactions that had negative units for BUY "
+                f"COVER type such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['units']} units "
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        if any(tx_df[tx_df["type"] == "BUY COVER"]["cost"] > 0):
+            err_df = tx_df[(tx_df["type"] == "BUY COVER") & (tx_df["cost"] > 0)]
+            print(
+                f"There were transactions that had positive cost for BUY COVER type "
+                f"such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['cost']} cost "
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        # type checks
+        tx_allowed_types = ["BOOK", "BUY", "Cash", "SELL", "BUY COVER", "SELL SHORT"]
+        tx_types = tx_df["type"].unique()
+        for tx_type in tx_types:
+            if tx_type not in tx_allowed_types:
+                print(f"This type '{tx_type}' is not in {tx_allowed_types}")
+                portfolio_checks_failed = portfolio_checks_failed + 1
+
+        # column checks
+        tx_needed_columns = ["ticker", "date", "type", "units", "cost"]
+        tx_columns = list(tx_df.columns)
+        for tx_needed_column in tx_needed_columns:
+            if tx_needed_column not in tx_columns:
+                print(
+                    f"This column '{tx_needed_column}' is needed, and not "
+                    f"in {tx_columns}"
+                )
+                portfolio_checks_failed = portfolio_checks_failed + 1
+
+        return portfolio_checks_failed

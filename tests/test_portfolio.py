@@ -84,9 +84,16 @@ def test_calc_return_pct():
 def test_calc_market_value():
     """Checks calculations of performance - market value."""
     performance = pf.get_performance(date=date)
+    performance["test_market_value"] = (
+        performance["last_price"] * performance["cumulative_units"]
+    )
+    performance.loc["portfolio", "test_market_value"] = performance[
+        "test_market_value"
+    ].sum()
 
     assert (
-        round(performance.loc["portfolio", "market_value"], 0) == 16421
+        performance.loc["portfolio", "market_value"]
+        == performance.loc["portfolio", "test_market_value"]
     ), "Expected market_value to be last_price * cumulative_units"
 
 
@@ -106,36 +113,51 @@ def test_calc_cumulative_cost():
 def test_calc_return():
     """Checks calculations of performance - return."""
     performance = pf.get_performance(date=date)
+    performance["test_return"] = (
+        performance["market_value"] + performance["cumulative_cost"]
+    )
 
-    assert (
-        round(performance.loc["portfolio", "return"], 0) == -5582
+    assert round(performance.loc["portfolio", "return"], 2) == round(
+        performance.loc["portfolio", "test_return"], 2
     ), "Expected return to be market_value - cumulative_cost"
 
 
 def test_calc_unrealized_return():
     """Checks calculations of performance - unrealized return."""
     performance = pf.get_performance(date=date)
+    performance["test_unrealized"] = (
+        performance["market_value"]
+        - performance["average_price"] * performance["cumulative_units"]
+    )
+    performance.loc["portfolio", "test_unrealized"] = performance[
+        "test_unrealized"
+    ].sum()
 
-    assert (
-        round(performance.loc["portfolio", "unrealized"], 0) == -5733
+    assert round(performance.loc["portfolio", "unrealized"], 2) == round(
+        performance.loc["portfolio", "test_unrealized"], 2
     ), "Expected unrealized to be market_value - average_price * cumulative units"
 
 
 def test_calc_realized_return():
     """Checks calculations of performance - realized return."""
     performance = pf.get_performance(date=date)
+    performance["test_realized"] = performance["return"] - performance["unrealized"]
 
-    assert (
-        round(performance.loc["portfolio", "realized"], 0) == 151
+    assert round(performance.loc["portfolio", "realized"], 2) == round(
+        performance.loc["portfolio", "test_realized"], 2
     ), "Expected realized to be return - unrealized"
 
 
 def test_fund_trans():
     """Checks calculations of fund transactions."""
     performance = pf.get_performance(date="05-27-2022")
+    test_units = pf.transactions[pf.transactions["ticker"] == "BLKRK"]["units"].sum()
+    performance["test_market_value"] = (
+        performance["last_price"] * performance["cumulative_units"]
+    )
 
     assert (
-        performance.loc["BLKRK", "cumulative_units"] == 10
+        performance.loc["BLKRK", "cumulative_units"] == test_units
     ), "Expected cumulative_units to be sum of units"
 
     assert (
@@ -143,14 +165,18 @@ def test_fund_trans():
     ), "Expected average price to match the weighted cost basis"
 
     assert (
-        performance.loc["BLKRK", "market_value"] == 140
+        performance.loc["BLKRK", "market_value"]
+        == performance.loc["BLKRK", "test_market_value"]
     ), "Expected market_value to be last_price * cumulative_units"
 
 
 def test_delisted_trans():
     """Checks calculations of delisted transactions."""
     performance = pf.get_performance(date="05-27-2022")
+    performance["test_return"] = (
+        performance["market_value"] + performance["cumulative_cost"]
+    )
 
     assert (
-        performance.loc["CCIV", "return"] == 2
+        performance.loc["CCIV", "return"] == performance.loc["CCIV", "test_return"]
     ), "Expected cumulative_units to be market_value - cumulative_cost"
