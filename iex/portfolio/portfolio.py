@@ -228,139 +228,6 @@ class Portfolio:
 
         return all_performance
 
-    def _get_transactions(
-        self, only_tickers=None, filter_type=None, filter_broker=None, other_fields=None
-    ):
-        """Get the transactions made.
-
-        Parameters
-        ----------
-        tickers : list (optional)
-            list of tickers to only include
-        filter_type : list (optional)
-            list of strings to exclude out of `type` field.
-            e.g. a dividend type may not want to be included in total
-        filter_broker : list (optional)
-            list of strings to include out of `broker` field.
-        other_fields : list (optional)
-            additional fields to include
-
-        Returns
-        ----------
-        transactions : DataFrame
-            the transactions made on portfolio
-
-        """
-        if only_tickers is None:
-            only_tickers = []
-        if filter_type is None:
-            filter_type = []
-        if filter_broker is None:
-            filter_broker = []
-        if other_fields is None:
-            other_fields = []
-
-        cols = ["date", "ticker", "type", "units", "cost"] + other_fields
-        transactions = pd.read_excel(self.file, engine="openpyxl")
-        transactions = transactions[cols]
-        transactions = transactions[~transactions["type"].isin(filter_type)]
-        if filter_broker:
-            transactions = transactions[transactions["broker"].isin(filter_broker)]
-
-        # handle multiple transactions on same day by grouping
-        transactions = (
-            transactions.groupby(
-                by=["date", "ticker", "type"] + other_fields, dropna=False
-            )
-            .sum()
-            .reset_index()
-        )
-
-        transactions["date"] = pd.to_datetime(transactions["date"], format="%d/%m/%Y")
-
-        transactions["sale_price"] = (transactions["cost"] / transactions["units"]) * -1
-        transactions.loc[transactions["ticker"] == "Cash", "sale_price"] = 1
-
-        if only_tickers:
-            transactions = transactions[transactions["ticker"].isin(only_tickers)]
-
-        transactions = transactions.sort_values(by="date", ascending=False)
-
-        return transactions
-
-    def _get_price_history(self):
-        """Get the history of prices.
-
-        Returns
-        ----------
-        price_history : DataFrame
-            the price history
-               - ticker
-               - date
-               - last price
-        """
-        tickers = [
-            tick for tick in self.tickers if tick not in self.funds + self.delisted
-        ] + self.benchmark
-
-        if self.benchmark:
-            print(f"Adding {self.benchmark} as a benchmark")
-        price_history = yf.download(tickers, start=datetime(self._min_year, 1, 1))
-        self._clean_index(clean_df=price_history, lvl=0)
-        price_history.index.rename("date", inplace=True)
-        price_history.columns.rename("measure", level=0, inplace=True)
-        price_history.columns.rename("ticker", level=1, inplace=True)
-
-        price_history = price_history.stack(level="ticker")
-        price_history.index = price_history.index.swaplevel("date", "ticker")
-        price_history.sort_index(axis=0, level="ticker", inplace=True)
-        price_history = price_history.reset_index()
-        cols = ["ticker", "date", "adj_close"]
-        price_history = price_history[cols]
-        price_history.rename(columns={"adj_close": "last_price"}, inplace=True)
-
-        # adding fund price history
-        transactions = self.transactions
-        template_df = pd.DataFrame(price_history["date"].unique(), columns=["date"])
-        if self.funds:
-            print(
-                f"Did not get price info for {self.funds} and will use transaction"
-                " price to develop price history, since they are funds and not"
-                " available in stock exchanges"
-            )
-        if self.delisted:
-            print(
-                f"Did not get price info for {self.delisted} and will use transaction"
-                " price to develop price history, since they are delisted and not"
-                " available in stock exchanges"
-            )
-        for fund in self.funds + self.delisted:
-            df = template_df.copy()
-            fund_df = transactions[transactions["ticker"] == fund]
-            df = pd.merge(
-                df,
-                fund_df[["date", "sale_price"]],
-                how="outer",
-                on=["date"],
-            )
-            df["ticker"] = fund
-            df = df.groupby("date").min().reset_index()
-            df[["sale_price"]] = df[["sale_price"]].fillna(method="ffill")
-            df.rename(columns={"sale_price": "last_price"}, inplace=True)
-            price_history = pd.concat([price_history, df])
-
-        # adding cash price history
-        if "Cash" in self.tickers:
-            print("Adding transaction history for cash transactions")
-            df = template_df.copy()
-            df["ticker"] = "Cash"
-            df["last_price"] = 1
-            price_history = pd.concat([price_history, df])
-
-        price_history = price_history.sort_values(["ticker", "date"])
-
-        return price_history
-
     def calc_transaction_metrics(
         self, tx_df, price_history=None, other_fields=None, benchmark=None
     ):
@@ -535,6 +402,139 @@ class Portfolio:
         )
 
         return transaction_metrics
+
+    def _get_transactions(
+        self, only_tickers=None, filter_type=None, filter_broker=None, other_fields=None
+    ):
+        """Get the transactions made.
+
+        Parameters
+        ----------
+        tickers : list (optional)
+            list of tickers to only include
+        filter_type : list (optional)
+            list of strings to exclude out of `type` field.
+            e.g. a dividend type may not want to be included in total
+        filter_broker : list (optional)
+            list of strings to include out of `broker` field.
+        other_fields : list (optional)
+            additional fields to include
+
+        Returns
+        ----------
+        transactions : DataFrame
+            the transactions made on portfolio
+
+        """
+        if only_tickers is None:
+            only_tickers = []
+        if filter_type is None:
+            filter_type = []
+        if filter_broker is None:
+            filter_broker = []
+        if other_fields is None:
+            other_fields = []
+
+        cols = ["date", "ticker", "type", "units", "cost"] + other_fields
+        transactions = pd.read_excel(self.file, engine="openpyxl")
+        transactions = transactions[cols]
+        transactions = transactions[~transactions["type"].isin(filter_type)]
+        if filter_broker:
+            transactions = transactions[transactions["broker"].isin(filter_broker)]
+
+        # handle multiple transactions on same day by grouping
+        transactions = (
+            transactions.groupby(
+                by=["date", "ticker", "type"] + other_fields, dropna=False
+            )
+            .sum()
+            .reset_index()
+        )
+
+        transactions["date"] = pd.to_datetime(transactions["date"], format="%d/%m/%Y")
+
+        transactions["sale_price"] = (transactions["cost"] / transactions["units"]) * -1
+        transactions.loc[transactions["ticker"] == "Cash", "sale_price"] = 1
+
+        if only_tickers:
+            transactions = transactions[transactions["ticker"].isin(only_tickers)]
+
+        transactions = transactions.sort_values(by="date", ascending=False)
+
+        return transactions
+
+    def _get_price_history(self):
+        """Get the history of prices.
+
+        Returns
+        ----------
+        price_history : DataFrame
+            the price history
+               - ticker
+               - date
+               - last price
+        """
+        tickers = [
+            tick for tick in self.tickers if tick not in self.funds + self.delisted
+        ] + self.benchmark
+
+        if self.benchmark:
+            print(f"Adding {self.benchmark} as a benchmark")
+        price_history = yf.download(tickers, start=datetime(self._min_year, 1, 1))
+        self._clean_index(clean_df=price_history, lvl=0)
+        price_history.index.rename("date", inplace=True)
+        price_history.columns.rename("measure", level=0, inplace=True)
+        price_history.columns.rename("ticker", level=1, inplace=True)
+
+        price_history = price_history.stack(level="ticker")
+        price_history.index = price_history.index.swaplevel("date", "ticker")
+        price_history.sort_index(axis=0, level="ticker", inplace=True)
+        price_history = price_history.reset_index()
+        cols = ["ticker", "date", "adj_close"]
+        price_history = price_history[cols]
+        price_history.rename(columns={"adj_close": "last_price"}, inplace=True)
+
+        # adding fund price history
+        transactions = self.transactions
+        template_df = pd.DataFrame(price_history["date"].unique(), columns=["date"])
+        if self.funds:
+            print(
+                f"Did not get price info for {self.funds} and will use transaction"
+                " price to develop price history, since they are funds and not"
+                " available in stock exchanges"
+            )
+        if self.delisted:
+            print(
+                f"Did not get price info for {self.delisted} and will use transaction"
+                " price to develop price history, since they are delisted and not"
+                " available in stock exchanges"
+            )
+        for fund in self.funds + self.delisted:
+            df = template_df.copy()
+            fund_df = transactions[transactions["ticker"] == fund]
+            df = pd.merge(
+                df,
+                fund_df[["date", "sale_price"]],
+                how="outer",
+                on=["date"],
+            )
+            df["ticker"] = fund
+            df = df.groupby("date").min().reset_index()
+            df[["sale_price"]] = df[["sale_price"]].fillna(method="ffill")
+            df.rename(columns={"sale_price": "last_price"}, inplace=True)
+            price_history = pd.concat([price_history, df])
+
+        # adding cash price history
+        if "Cash" in self.tickers:
+            print("Adding transaction history for cash transactions")
+            df = template_df.copy()
+            df["ticker"] = "Cash"
+            df["last_price"] = 1
+            price_history = pd.concat([price_history, df])
+
+        price_history = price_history.sort_values(["ticker", "date"])
+
+        return price_history
 
     def _get_transactions_history(
         self, only_tickers=None, other_fields=None, benchmark=None

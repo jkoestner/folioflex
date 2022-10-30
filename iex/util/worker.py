@@ -10,7 +10,8 @@ import yfinance as yf
 
 from rq import Worker, Queue, Connection
 
-from iex.util import layouts, portfolio
+from iex.util import layouts
+from iex.portfolio import portfolio
 
 listen = ["high", "default", "low"]
 

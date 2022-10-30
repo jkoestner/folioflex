@@ -2,7 +2,8 @@
 
 import os
 
-from iex.util import utils, portfolio
+from iex.util import utils
+from iex.portfolio import portfolio
 
 alpha_vantage_api = os.environ["ALPHAVANTAGE_API"]
 iex_api_live = os.environ["IEX_API_LIVE"]
