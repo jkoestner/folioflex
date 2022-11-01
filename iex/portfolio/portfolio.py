@@ -39,7 +39,7 @@ class Portfolio:
     delisted : list (optional)
         similar to funds. These symbols won't have any yahoo finance reference, so we
         use transaction prices to fill in blank values
-    benchmark : list (optional)
+    benchmarks : list (optional)
         the symbols to use as a benchmark to compare against.
     other_fields : list (optional)
         additional fields to include
@@ -52,7 +52,7 @@ class Portfolio:
         filter_broker=None,
         funds=None,
         delisted=None,
-        benchmark=None,
+        benchmarks=None,
         other_fields=None,
     ):
 
@@ -64,8 +64,8 @@ class Portfolio:
             funds = []
         if delisted is None:
             delisted = []
-        if benchmark is None:
-            benchmark = []
+        if benchmarks is None:
+            benchmarks = []
         if other_fields is None:
             other_fields = []
 
@@ -73,8 +73,8 @@ class Portfolio:
         self.file = tx_file
         self.funds = funds
         self.delisted = delisted
-        self.benchmark = benchmark
-        self.transactions = self._get_transactions(
+        self.benchmarks = benchmarks
+        self.transactions = self.get_transactions(
             filter_type=filter_type,
             filter_broker=filter_broker,
             other_fields=other_fields,
@@ -84,8 +84,8 @@ class Portfolio:
         print(f"You had {len(self.transactions)} transactions")
         self.check_tx()
         self.price_history = self._get_price_history()
-        self.transactions_history = self._get_transactions_history(
-            other_fields=other_fields, benchmark=benchmark
+        self.transactions_history = self.get_transactions_history(
+            tx_df=self.transactions, other_fields=other_fields, benchmarks=benchmarks
         )
         self._max_date = self.transactions_history["date"].max()
         self.return_view = self._get_view(view="return")
@@ -179,6 +179,110 @@ class Portfolio:
 
         return performance
 
+    def get_transactions(self, filter_type=None, filter_broker=None, other_fields=None):
+        """Get the transactions made.
+
+        Parameters
+        ----------
+        filter_type : list (optional)
+            list of strings to exclude out of `type` field.
+            e.g. a dividend type may not want to be included in total
+        filter_broker : list (optional)
+            list of strings to include out of `broker` field.
+        other_fields : list (optional)
+            additional fields to include
+
+        Returns
+        ----------
+        transactions : DataFrame
+            the transactions made on portfolio
+
+        """
+        if filter_type is None:
+            filter_type = []
+        if filter_broker is None:
+            filter_broker = []
+        if other_fields is None:
+            other_fields = []
+
+        cols = ["date", "ticker", "type", "units", "cost"] + other_fields
+        transactions = pd.read_excel(self.file, engine="openpyxl")
+        transactions = transactions[cols]
+        transactions = transactions[~transactions["type"].isin(filter_type)]
+        if filter_broker:
+            transactions = transactions[transactions["broker"].isin(filter_broker)]
+
+        # handle multiple transactions on same day by grouping
+        transactions = (
+            transactions.groupby(
+                by=["date", "ticker", "type"] + other_fields, dropna=False
+            )
+            .sum()
+            .reset_index()
+        )
+
+        transactions["date"] = pd.to_datetime(transactions["date"], format="%d/%m/%Y")
+
+        transactions["sale_price"] = (transactions["cost"] / transactions["units"]) * -1
+        transactions.loc[transactions["ticker"] == "Cash", "sale_price"] = 1
+
+        # sort values descending
+        transactions = transactions.sort_values(by="date", ascending=False)
+
+        return transactions
+
+    def get_transactions_history(
+        self, tx_df, price_history=None, other_fields=None, benchmarks=None
+    ):
+        """Get the history of stock transcations by merging transaction and price history.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            Transactions to calculate metrics on
+        price_history : DataFrame
+            Price history DataFrame
+        other_fields : list (optional)
+            additional fields to include
+
+        Returns
+        ----------
+        transactions_history : DataFrame
+            the price history of stock transactions
+        """
+        if price_history is None:
+            price_history = self.price_history
+        if other_fields is None:
+            other_fields = []
+        if benchmarks is None:
+            benchmarks = []
+
+        tx_df = tx_df.copy()
+        transactions = tx_df[(tx_df["cost"] != 0) | (tx_df["units"] != 0)]
+
+        transactions_history = self._add_price_history(
+            tx_df=transactions, price_history=price_history, other_fields=other_fields
+        )
+        transactions_history = self._calc_tx_metrics(tx_hist_df=transactions_history)
+
+        for benchmark in benchmarks:
+            benchmark_history = self._add_benchmark(
+                tx_df=transactions,
+                ticker=benchmark,
+                price_history=price_history,
+                other_fields=other_fields,
+            )
+            transactions_history = pd.concat(
+                [transactions_history, benchmark_history], axis=0
+            )
+
+        # sort values descending
+        transactions_history = transactions_history.sort_values(
+            by=["ticker", "date"], ignore_index=True, ascending=False
+        )
+
+        return transactions_history
+
     def get_all_performance(self, step=5, tx_hist_df=None):
         """Get performance of portfolio and stocks traded for duration of portfolio.
 
@@ -228,241 +332,6 @@ class Portfolio:
 
         return all_performance
 
-    def calc_transaction_metrics(
-        self, tx_df, price_history=None, other_fields=None, benchmark=None
-    ):
-        """Calculate summation metrics on transactions DataFrame.
-
-        Note:
-        does not include portfolio metrics
-
-        Parameters
-        ----------
-        tx_df : DataFrame
-            Transactions to calculate metrics on
-        price_history : DataFrame
-            Price history DataFrame
-        other_fields : list (optional)
-            additional fields to include
-        benchmark : list (optional)
-            the symbols to use as a benchmark to compare against.
-
-        Returns
-        ----------
-        transaction_metrics : DataFrame
-            DataFrame containing updated metrics
-            - cumulative_units
-            - cumulative_cost
-            - average_price
-            - market_value
-            - return
-            - unrealized
-            - realized
-        """
-        if other_fields is None:
-            other_fields = []
-        if benchmark is None:
-            benchmark = []
-
-        if benchmark != [] and "broker" not in other_fields:
-            raise Exception(
-                "When providing a benchmark, the 'broker' column in `other_fields` must be passed as well"
-            )
-
-        tx_df = tx_df.copy()
-        transactions = tx_df[(tx_df["cost"] != 0) | (tx_df["units"] != 0)]
-        tickers = list(transactions["ticker"].unique()) + benchmark
-
-        # create cash transactions from stock purchases
-        if "Cash" in tickers:
-            cash_tx = transactions[transactions["ticker"] != "Cash"].copy()
-            cash_tx["ticker"] = "Cash"
-            cash_tx["type"] = "Cash"
-            cash_tx["units"] = cash_tx["cost"]
-            cash_tx["sale_price"] = 1
-            # add benchmark from cash transactions
-            if benchmark:
-                benchmark_tx = transactions[transactions["ticker"] == "Cash"].copy()
-                benchmark_tx["ticker"] = benchmark[0]
-                benchmark_tx["broker"] = "benchmark"
-                benchmark_tx["cost"] = -benchmark_tx["cost"]
-                transactions = pd.concat([transactions, benchmark_tx])
-            transactions = pd.concat([transactions, cash_tx])
-            transactions.loc[transactions["ticker"] == "Cash", "cost"] = (
-                transactions.loc[transactions["ticker"] == "Cash", "cost"] * -1
-            )
-
-        transactions = (
-            transactions.groupby(by=["date", "ticker"] + other_fields)
-            .sum(numeric_only=True)
-            .reset_index()
-        )
-        # aggregating sale_price for a single day
-        transactions["sale_price"] = np.where(
-            transactions["units"] == 0,
-            0,
-            transactions["cost"] / transactions["units"] * -1,
-        )
-        if price_history is None:
-            price_history = self.price_history
-
-        price_history = price_history[price_history["ticker"].isin(tickers)]
-
-        tx_hist_df = (
-            pd.merge(
-                price_history,
-                transactions[
-                    ["date", "ticker", "sale_price", "units", "cost"] + other_fields
-                ],
-                how="outer",
-                on=["date", "ticker"],
-            )
-            .fillna(0)
-            .sort_values(by=["ticker", "date"], ignore_index=True)
-        )
-
-        # update benchmark values
-        if benchmark:
-            # zero out sale price of offsetting transactions
-            condition = (tx_hist_df["broker"] == "benchmark") & (
-                tx_hist_df["units"] == 0
-            )
-            tx_hist_df.loc[condition, "sale_price"] = 0
-            # update sale price and units of benchmark
-            condition = (tx_hist_df["broker"] == "benchmark") & (
-                tx_hist_df["sale_price"] > 0
-            )
-            tx_hist_df.loc[condition, "sale_price"] = tx_hist_df.loc[
-                condition, "last_price"
-            ]
-            tx_hist_df.loc[condition, "units"] = -(
-                tx_hist_df.loc[condition, "cost"]
-                / tx_hist_df.loc[condition, "last_price"]
-            )
-
-        # cumulative amounts
-        tx_hist_df["cumulative_units"] = tx_hist_df.groupby("ticker")[
-            "units"
-        ].transform(pd.Series.cumsum)
-        tx_hist_df["cumulative_cost"] = tx_hist_df.groupby("ticker")["cost"].transform(
-            pd.Series.cumsum
-        )
-
-        # average price
-        tx_hist_df = tx_hist_df.groupby("ticker", group_keys=False).apply(
-            self._calc_average_price
-        )
-        tx_hist_df.loc[tx_hist_df["ticker"] == "Cash", "average_price"] = 1
-
-        # market value
-        tx_hist_df["market_value"] = (
-            tx_hist_df["cumulative_units"] * tx_hist_df["last_price"]
-        )
-
-        # return
-        tx_hist_df["return"] = (
-            tx_hist_df["market_value"] + tx_hist_df["cumulative_cost"]
-        )
-
-        tx_hist_df["unrealized"] = tx_hist_df["market_value"] - (
-            tx_hist_df["average_price"] * tx_hist_df["cumulative_units"]
-        )
-
-        tx_hist_df["realized"] = tx_hist_df["return"] - tx_hist_df["unrealized"]
-
-        # fill in other_fields null values
-        for field in other_fields:
-            tx_hist_df[field] = tx_hist_df[field].replace(0, np.nan)
-            tx_hist_df[field] = tx_hist_df.groupby(["ticker"], group_keys=False)[
-                field
-            ].apply(lambda x: x.ffill().bfill())
-
-        # sort values
-        tx_hist_df = tx_hist_df.sort_values(by=["ticker", "date"], ignore_index=True)
-
-        # fill in zeroes
-        for field in [
-            "average_price",
-            "market_value",
-            "return",
-            "unrealized",
-            "realized",
-            "cumulative_units",
-        ]:
-            condition = tx_hist_df["cumulative_cost"] == 0
-            tx_hist_df.loc[condition, field] = tx_hist_df.loc[condition, field].replace(
-                0, np.nan
-            )
-        tx_hist_df["cumulative_cost"] = tx_hist_df["cumulative_cost"].replace(0, np.nan)
-
-        transaction_metrics = tx_hist_df
-
-        transaction_metrics = transaction_metrics.sort_values(
-            by="date", ascending=False
-        )
-
-        return transaction_metrics
-
-    def _get_transactions(
-        self, only_tickers=None, filter_type=None, filter_broker=None, other_fields=None
-    ):
-        """Get the transactions made.
-
-        Parameters
-        ----------
-        tickers : list (optional)
-            list of tickers to only include
-        filter_type : list (optional)
-            list of strings to exclude out of `type` field.
-            e.g. a dividend type may not want to be included in total
-        filter_broker : list (optional)
-            list of strings to include out of `broker` field.
-        other_fields : list (optional)
-            additional fields to include
-
-        Returns
-        ----------
-        transactions : DataFrame
-            the transactions made on portfolio
-
-        """
-        if only_tickers is None:
-            only_tickers = []
-        if filter_type is None:
-            filter_type = []
-        if filter_broker is None:
-            filter_broker = []
-        if other_fields is None:
-            other_fields = []
-
-        cols = ["date", "ticker", "type", "units", "cost"] + other_fields
-        transactions = pd.read_excel(self.file, engine="openpyxl")
-        transactions = transactions[cols]
-        transactions = transactions[~transactions["type"].isin(filter_type)]
-        if filter_broker:
-            transactions = transactions[transactions["broker"].isin(filter_broker)]
-
-        # handle multiple transactions on same day by grouping
-        transactions = (
-            transactions.groupby(
-                by=["date", "ticker", "type"] + other_fields, dropna=False
-            )
-            .sum()
-            .reset_index()
-        )
-
-        transactions["date"] = pd.to_datetime(transactions["date"], format="%d/%m/%Y")
-
-        transactions["sale_price"] = (transactions["cost"] / transactions["units"]) * -1
-        transactions.loc[transactions["ticker"] == "Cash", "sale_price"] = 1
-
-        if only_tickers:
-            transactions = transactions[transactions["ticker"].isin(only_tickers)]
-
-        transactions = transactions.sort_values(by="date", ascending=False)
-
-        return transactions
-
     def _get_price_history(self):
         """Get the history of prices.
 
@@ -476,10 +345,10 @@ class Portfolio:
         """
         tickers = [
             tick for tick in self.tickers if tick not in self.funds + self.delisted
-        ] + self.benchmark
+        ] + self.benchmarks
 
-        if self.benchmark:
-            print(f"Adding {self.benchmark} as a benchmark")
+        if self.benchmarks:
+            print(f"Adding {self.benchmarks} as a benchmark")
         price_history = yf.download(tickers, start=datetime(self._min_year, 1, 1))
         self._clean_index(clean_df=price_history, lvl=0)
         price_history.index.rename("date", inplace=True)
@@ -530,49 +399,243 @@ class Portfolio:
             df = template_df.copy()
             df["ticker"] = "Cash"
             df["last_price"] = 1
-            price_history = pd.concat([price_history, df])
+            price_history = pd.concat([price_history, df], axis=0)
 
-        price_history = price_history.sort_values(["ticker", "date"])
+        # sort values descending
+        price_history = price_history.sort_values(["ticker", "date"], ascending=False)
 
         return price_history
 
-    def _get_transactions_history(
-        self, only_tickers=None, other_fields=None, benchmark=None
-    ):
-        """Get the history of stock transcations by merging transaction and price history.
+    def _add_price_history(self, tx_df, price_history=None, other_fields=None):
+        """Add price history to transactions DataFrame.
 
         Parameters
         ----------
-        only_tickers : list (optional)
-            list of tickers to only include
+        tx_df : DataFrame
+            Transactions to calculate metrics on
+        price_history : DataFrame
+            Price history DataFrame
         other_fields : list (optional)
             additional fields to include
 
         Returns
         ----------
-        transactions_history : DataFrame
-            the price history of stock transactions
+        tx_merge_df : DataFrame
+            DataFrame that has transactions and price history
         """
-        if only_tickers is None:
-            only_tickers = []
         if other_fields is None:
             other_fields = []
-        if benchmark is None:
-            benchmark = []
 
-        transactions = self.transactions
+        tickers = list(tx_df["ticker"].unique())
 
-        transactions_history = self.calc_transaction_metrics(
-            transactions, other_fields=other_fields, benchmark=benchmark
+        # create cash transactions from stock purchases
+        if "Cash" in tickers:
+            cash_tx = tx_df[tx_df["ticker"] != "Cash"].copy()
+            cash_tx["ticker"] = "Cash"
+            cash_tx["type"] = "Cash"
+            cash_tx["units"] = cash_tx["cost"]
+            cash_tx["sale_price"] = 1
+            tx_df = pd.concat([tx_df, cash_tx], axis=0)
+            tx_df.loc[tx_df["ticker"] == "Cash", "cost"] = (
+                tx_df.loc[tx_df["ticker"] == "Cash", "cost"] * -1
+            )
+
+        tx_df = (
+            tx_df.groupby(by=["date", "ticker"] + other_fields)
+            .sum(numeric_only=True)
+            .reset_index()
+        )
+        # aggregating sale_price for a single day
+        tx_df["sale_price"] = np.where(
+            tx_df["units"] == 0,
+            0,
+            tx_df["cost"] / tx_df["units"] * -1,
         )
 
-        # filter tickers
-        if only_tickers:
-            transactions_history = transactions_history[
-                transactions_history["ticker"].isin(only_tickers)
-            ]
+        price_history = price_history[price_history["ticker"].isin(tickers)]
 
-        return transactions_history
+        tx_merge_df = (
+            pd.merge(
+                price_history,
+                tx_df[["date", "ticker", "sale_price", "units", "cost"] + other_fields],
+                how="outer",
+                on=["date", "ticker"],
+            )
+            .fillna(0)
+            .sort_values(by=["ticker", "date"], ignore_index=True)
+        )
+
+        # sort values descending
+        tx_merge_df = tx_merge_df.sort_values(by="date", ascending=False)
+
+        return tx_merge_df
+
+    def _calc_tx_metrics(self, tx_hist_df):
+        """Calculate summation metrics on transactions DataFrame.
+
+        Note:
+        does not include portfolio metrics
+
+        Parameters
+        ----------
+        tx_hist_df : DataFrame
+            Transactions history to calculate metrics on
+
+        Returns
+        ----------
+        transaction_metrics : DataFrame
+            DataFrame containing updated metrics
+            - cumulative_units
+            - cumulative_cost
+            - average_price
+            - market_value
+            - return
+            - unrealized
+            - realized
+        """
+        # sort values ascending to calculat cumsum correctly
+        tx_hist_df = tx_hist_df.sort_values(by=["ticker", "date"], ascending=True)
+
+        # cumulative amounts
+        tx_hist_df["cumulative_units"] = tx_hist_df.groupby("ticker")[
+            "units"
+        ].transform(pd.Series.cumsum)
+        tx_hist_df["cumulative_cost"] = tx_hist_df.groupby("ticker")["cost"].transform(
+            pd.Series.cumsum
+        )
+
+        # average price
+        tx_hist_df = tx_hist_df.groupby("ticker", group_keys=False).apply(
+            self._calc_average_price
+        )
+        tx_hist_df.loc[tx_hist_df["ticker"] == "Cash", "average_price"] = 1
+
+        # market value
+        tx_hist_df["market_value"] = (
+            tx_hist_df["cumulative_units"] * tx_hist_df["last_price"]
+        )
+
+        # return
+        tx_hist_df["return"] = (
+            tx_hist_df["market_value"] + tx_hist_df["cumulative_cost"]
+        )
+
+        tx_hist_df["unrealized"] = tx_hist_df["market_value"] - (
+            tx_hist_df["average_price"] * tx_hist_df["cumulative_units"]
+        )
+
+        tx_hist_df["realized"] = tx_hist_df["return"] - tx_hist_df["unrealized"]
+
+        # fill in zeroes
+        for field in [
+            "average_price",
+            "market_value",
+            "return",
+            "unrealized",
+            "realized",
+            "cumulative_units",
+        ]:
+            condition = tx_hist_df["cumulative_cost"] == 0
+            tx_hist_df.loc[condition, field] = tx_hist_df.loc[condition, field].replace(
+                0, np.nan
+            )
+
+        tx_hist_df["cumulative_cost"] = tx_hist_df["cumulative_cost"].replace(0, np.nan)
+
+        transaction_metrics = tx_hist_df
+
+        return transaction_metrics
+
+    def _add_benchmark(self, tx_df, ticker, price_history=None, other_fields=None):
+        """Add a benchmark with transaction history dataframe.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            Transactions to calculate metrics on
+        ticker : str
+            The ticker to create the benchmark for
+        price_history : DataFrame
+            Price history DataFrame
+        other_fields : list (optional)
+            additional fields to include
+
+        Returns
+        ----------
+        benchmark_tx_hist : DataFrame
+            DataFrame containing transaction history for dataframe
+        """
+        if other_fields is None:
+            other_fields = []
+        if price_history is None:
+            price_history = self.price_history
+
+        tx_df = tx_df.copy()
+        transactions = tx_df[(tx_df["cost"] != 0) | (tx_df["units"] != 0)]
+        benchmark_tx = transactions[transactions["ticker"] == "Cash"].copy()
+
+        # add benchmark from cash transactions
+        benchmark_tx["ticker"] = ticker
+        benchmark_tx["broker"] = "benchmark"
+        benchmark_tx["cost"] = -benchmark_tx["cost"]
+
+        benchmark_tx = (
+            benchmark_tx.groupby(by=["date", "ticker"] + other_fields)
+            .sum(numeric_only=True)
+            .reset_index()
+        )
+        # aggregating sale_price for a single day
+        benchmark_tx["sale_price"] = np.where(
+            benchmark_tx["units"] == 0,
+            0,
+            benchmark_tx["cost"] / benchmark_tx["units"] * -1,
+        )
+
+        price_history = price_history[price_history["ticker"] == ticker]
+
+        benchmark_tx_hist = (
+            pd.merge(
+                price_history,
+                benchmark_tx[
+                    ["date", "ticker", "sale_price", "units", "cost"] + other_fields
+                ],
+                how="outer",
+                on=["date", "ticker"],
+            )
+            .fillna(0)
+            .sort_values(by=["ticker", "date"], ignore_index=True)
+        )
+
+        # zero out sale price of offsetting transactions
+        condition = benchmark_tx_hist["units"] == 0
+        benchmark_tx_hist.loc[condition, "sale_price"] = 0
+        # update sale price
+        condition = benchmark_tx_hist["sale_price"] > 0
+        benchmark_tx_hist.loc[condition, "sale_price"] = benchmark_tx_hist.loc[
+            condition, "last_price"
+        ]
+        # update units
+        benchmark_tx_hist.loc[condition, "units"] = -(
+            benchmark_tx_hist.loc[condition, "cost"]
+            / benchmark_tx_hist.loc[condition, "last_price"]
+        )
+
+        # fill in other_fields null values
+        for field in other_fields:
+            benchmark_tx_hist[field] = benchmark_tx_hist[field].replace(0, np.nan)
+            benchmark_tx_hist[field] = benchmark_tx_hist.groupby(
+                ["ticker"], group_keys=False
+            )[field].apply(lambda x: x.ffill().bfill())
+
+        # sort values descending
+        benchmark_tx_hist = benchmark_tx_hist.sort_values(
+            by=["ticker", "date"], ascending=False
+        )
+        benchmark_tx_hist["ticker"] = "benchmark-" + ticker
+
+        benchmark_tx_hist = self._calc_tx_metrics(benchmark_tx_hist)
+
+        return benchmark_tx_hist
 
     def _calc_average_price(self, df):
         """Calculate the average cost basis.

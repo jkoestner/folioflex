@@ -7,7 +7,7 @@ from pyxirr import xirr
 try:
     import portfolio
 except (ImportError, ModuleNotFoundError):
-    from iex.util import portfolio
+    from iex.portfolio import portfolio
 
 PROJECT_PATH = pathlib.Path(__file__).resolve().parent.parent
 

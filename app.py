@@ -29,7 +29,8 @@ from rq.job import Job
 from rq.exceptions import NoSuchJobError
 
 from iex.pages import stocks, sectors, ideas, macro, tracker, crypto, personal
-from iex.util import constants, layouts, heatmap, utils, worker
+from iex.util import constants, layouts, utils, worker
+from iex.portfolio import heatmap
 
 q = Queue(connection=worker.conn)
 
