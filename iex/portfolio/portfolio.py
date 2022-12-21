@@ -350,7 +350,7 @@ class Portfolio:
         if self.benchmarks:
             print(f"Adding {self.benchmarks} as a benchmark")
         price_history = yf.download(tickers, start=datetime(self._min_year, 1, 1))
-        self._clean_index(clean_df=price_history, lvl=0)
+        self._clean_index(clean_df=price_history, lvl=0, tickers=tickers)
         price_history.index.rename("date", inplace=True)
         price_history.columns.rename("measure", level=0, inplace=True)
         price_history.columns.rename("ticker", level=1, inplace=True)
@@ -794,7 +794,7 @@ class Portfolio:
 
         return return_pcts
 
-    def _clean_index(self, clean_df, lvl):
+    def _clean_index(self, clean_df, lvl, tickers):
         """Clean the index of DataFrame.
 
         Parameters
@@ -803,12 +803,17 @@ class Portfolio:
             the dataframe on which to clean
         lvl : int
             the level of index to clean
+        tickers : list (optional)
+            when only using 1 ticker that ticker needs to be passed to create a multiIndex column
 
         Returns
         ----------
         clean_df : DataFrame
             a clean DataFrame
         """
+        if clean_df.columns.nlevels == 1:
+            clean_df.columns = pd.MultiIndex.from_product([clean_df.columns, tickers])
+
         idx = clean_df.columns.levels[lvl]
         idx = (
             idx.str.lower()
