@@ -221,13 +221,28 @@ class Portfolio:
             .reset_index()
         )
 
+        # sale price to be based on units bought and not sold (resolves same day sales)
         transactions["date"] = pd.to_datetime(transactions["date"], format="%d/%m/%Y")
+        transactions["sale_cost"] = np.where(
+            transactions["units"] <= 0,
+            0,
+            transactions["cost"],
+        )
+        transactions["sale_units"] = np.where(
+            transactions["units"] <= 0,
+            0,
+            transactions["units"],
+        )
 
-        transactions["sale_price"] = (transactions["cost"] / transactions["units"]) * -1
+        transactions["sale_price"] = (
+            transactions["sale_cost"] / transactions["sale_units"]
+        ) * -1
         transactions.loc[transactions["ticker"] == "Cash", "sale_price"] = 1
 
         # sort values descending
         transactions = transactions.sort_values(by="date", ascending=False)
+
+        transactions = transactions[cols + ["sale_price"]]
 
         return transactions
 
@@ -440,16 +455,28 @@ class Portfolio:
                 tx_df.loc[tx_df["ticker"] == "Cash", "cost"] * -1
             )
 
+        # sale price to be based on units bought and not sold (resolves same day sales)
+        tx_df["sale_cost"] = np.where(
+            tx_df["units"] <= 0,
+            0,
+            tx_df["cost"],
+        )
+        tx_df["sale_units"] = np.where(
+            tx_df["units"] <= 0,
+            0,
+            tx_df["units"],
+        )
+
         tx_df = (
             tx_df.groupby(by=["date", "ticker"] + other_fields)
             .sum(numeric_only=True)
             .reset_index()
         )
-        # aggregating sale_price for a single day
+
         tx_df["sale_price"] = np.where(
             tx_df["units"] == 0,
             0,
-            tx_df["cost"] / tx_df["units"] * -1,
+            tx_df["sale_cost"] / tx_df["sale_units"] * -1,
         )
 
         price_history = price_history[price_history["ticker"].isin(tickers)]
@@ -579,16 +606,28 @@ class Portfolio:
         benchmark_tx["broker"] = "benchmark"
         benchmark_tx["cost"] = -benchmark_tx["cost"]
 
+        # sale price to be based on units bought and not sold (resolves same day sales)
+        benchmark_tx["sale_cost"] = np.where(
+            benchmark_tx["units"] <= 0,
+            0,
+            benchmark_tx["cost"],
+        )
+        benchmark_tx["sale_units"] = np.where(
+            benchmark_tx["units"] <= 0,
+            0,
+            benchmark_tx["units"],
+        )
+
         benchmark_tx = (
             benchmark_tx.groupby(by=["date", "ticker"] + other_fields)
             .sum(numeric_only=True)
             .reset_index()
         )
-        # aggregating sale_price for a single day
+
         benchmark_tx["sale_price"] = np.where(
             benchmark_tx["units"] == 0,
             0,
-            benchmark_tx["cost"] / benchmark_tx["units"] * -1,
+            benchmark_tx["sale_cost"] / benchmark_tx["sale_units"] * -1,
         )
 
         price_history = price_history[price_history["ticker"] == ticker]
