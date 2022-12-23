@@ -646,7 +646,7 @@ class Portfolio:
         condition = benchmark_tx_hist["units"] == 0
         benchmark_tx_hist.loc[condition, "sale_price"] = 0
         # update sale price
-        condition = benchmark_tx_hist["sale_price"] > 0
+        condition = benchmark_tx_hist["units"] != 0
         benchmark_tx_hist.loc[condition, "sale_price"] = benchmark_tx_hist.loc[
             condition, "last_price"
         ]
