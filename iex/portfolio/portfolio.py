@@ -134,10 +134,8 @@ class Portfolio:
             date, infer_datetime_format=True
         )
         # remove benchmark from portfolio calculation
-        if "broker" in performance.columns:
-            condition = performance["broker"] != "benchmark"
-        else:
-            condition = performance["date"] != ""
+        condition = ~performance.index.str.contains("benchmark")
+
         performance.loc["portfolio", "cumulative_cost"] = performance.loc[
             condition, "cumulative_cost"
         ].sum()
@@ -603,7 +601,6 @@ class Portfolio:
 
         # add benchmark from cash transactions
         benchmark_tx["ticker"] = ticker
-        benchmark_tx["broker"] = "benchmark"
         benchmark_tx["cost"] = -benchmark_tx["cost"]
 
         # sale price to be based on units bought and not sold (resolves same day sales)
