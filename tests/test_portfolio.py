@@ -1,7 +1,8 @@
 """Tests the portfolio tracker."""
-
+import numpy as np
 import pathlib
 import pandas as pd
+
 from pyxirr import xirr
 
 try:
@@ -16,15 +17,15 @@ tx_file = PROJECT_PATH / pathlib.Path("tests") / "files" / "test_transactions.xl
 filter_type = ["Dividend"]
 funds = ["BLKRK"]
 delisted = ["CCIV"]
-other_fields = ["broker"]
 date = "05-02-2022"
+benchmarks = ["IVV"]
 
 pf = portfolio.Portfolio(
     tx_file,
     filter_type=filter_type,
     funds=funds,
     delisted=delisted,
-    other_fields=other_fields,
+    benchmarks=benchmarks,
 )
 
 
@@ -84,6 +85,7 @@ def test_calc_return_pct():
 def test_calc_market_value():
     """Checks calculations of performance - market value."""
     performance = pf.get_performance(date=date)
+    performance = performance[~performance.index.str.contains("benchmark")].copy()
     performance["test_market_value"] = (
         performance["last_price"] * performance["cumulative_units"]
     )
@@ -125,6 +127,7 @@ def test_calc_return():
 def test_calc_unrealized_return():
     """Checks calculations of performance - unrealized return."""
     performance = pf.get_performance(date=date)
+    performance = performance[~performance.index.str.contains("benchmark")].copy()
     performance["test_unrealized"] = (
         performance["market_value"]
         - performance["average_price"] * performance["cumulative_units"]
@@ -180,3 +183,44 @@ def test_delisted_trans():
     assert (
         performance.loc["CCIV", "return"] == performance.loc["CCIV", "test_return"]
     ), "Expected cumulative_units to be market_value - cumulative_cost"
+
+
+def test_benchmark():
+    """Checks benchmark is calculating market value correctly."""
+    performance = pf.get_performance(date=date)
+    cash_tx = pf.transactions[pf.transactions["ticker"] == "Cash"].copy()
+    cash_tx = cash_tx[cash_tx["date"] <= date]
+    cash_tx["ticker"] = benchmarks[0]
+
+    price_history = pf.price_history
+
+    cash_tx_hist = (
+        pd.merge(
+            price_history,
+            cash_tx[["date", "ticker", "sale_price", "units", "cost"]],
+            how="outer",
+            on=["date", "ticker"],
+        )
+        .fillna(0)
+        .sort_values(by=["ticker", "date"], ignore_index=True)
+    )
+    cash_tx_hist = cash_tx_hist[cash_tx_hist["ticker"] == benchmarks[0]]
+    cash_tx_hist["sale_price"] = np.where(
+        cash_tx_hist["units"] == 0,
+        0,
+        cash_tx_hist["last_price"],
+    )
+    cash_tx_hist["units"] = np.where(
+        cash_tx_hist["units"] == 0,
+        0,
+        cash_tx_hist["cost"] / cash_tx_hist["sale_price"],
+    )
+
+    benchmark_market_value = (
+        cash_tx_hist["units"].sum()
+        * cash_tx_hist[cash_tx_hist["date"] == date]["last_price"].values[0]
+    )
+
+    assert round(performance.loc["benchmark-IVV", "market_value"], 2) == round(
+        benchmark_market_value, 2
+    ), "Expected benchmark to be based on cash transactions"

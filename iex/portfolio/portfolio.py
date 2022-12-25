@@ -12,6 +12,7 @@ as well as a few functions
 
 import numpy as np
 import pandas as pd
+import pandas_market_calendars as mcal
 import yfinance as yf
 
 from datetime import datetime
@@ -1001,5 +1002,22 @@ class Portfolio:
                     f"in {tx_columns}"
                 )
                 portfolio_checks_failed = portfolio_checks_failed + 1
+
+        # date checks
+        tx_df_min = tx_df["date"].min()
+        tx_df_max = tx_df["date"].max()
+        stock_dates = (
+            mcal.get_calendar("NYSE")
+            .schedule(start_date=tx_df_min, end_date=tx_df_max)
+            .index
+        )
+        invalid_dt = tx_df["date"][~tx_df["date"].isin(stock_dates)].to_list()
+        invalid_dt = [datetime.strftime(i, "%Y-%m-%d") for i in invalid_dt]
+        if len(invalid_dt) > 0:
+            print(
+                f"{len(invalid_dt)} transaction(s) dates were done outside of stock market "
+                f"dates such as {invalid_dt} \n"
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
 
         return portfolio_checks_failed
