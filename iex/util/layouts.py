@@ -2,6 +2,7 @@
 
 List of lookups for reference to dashapp
 """
+from dash.dash_table.Format import Format, Scheme
 
 # set up lists
 USexchanges = [
@@ -100,6 +101,65 @@ formatter_col = {
     "latestSource": "{:,.2f}".format,
     "latestUpdate": "{:,.2f}".format,
 }
+
+performance_col = [
+    dict(id="ticker", name="ticker", type="numeric", format=Format()),
+    dict(id="date", name="date", type="numeric", format=Format()),
+    dict(
+        id="average_price",
+        name="average_price",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed),
+    ),
+    dict(
+        id="last_price",
+        name="last_price",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed),
+    ),
+    dict(
+        id="cumulative_units",
+        name="cumulative_units",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed),
+    ),
+    dict(
+        id="cumulative_cost",
+        name="cumulative_cost",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed),
+    ),
+    dict(
+        id="market_value",
+        name="market_value",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed),
+    ),
+    dict(
+        id="return",
+        name="return",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed),
+    ),
+    dict(
+        id="return_pct",
+        name="return_pct",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.percentage),
+    ),
+    dict(
+        id="realized",
+        name="realized",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed),
+    ),
+    dict(
+        id="unrealized",
+        name="unrealized",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed),
+    ),
+]
 
 list_sector = [
     "XLV",

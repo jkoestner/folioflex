@@ -3,9 +3,9 @@ IEX cloud finance
 
 ![workflow badge](https://github.com/jkoestner/iex/actions/workflows/main.yml/badge.svg)
 
-This is an app built with https://dashboard.heroku.com/ as the host
+This is an app built with https://fly.io/ as the host
 
-The app can be seen at https://koestner.herokuapp.com/
+The app can be seen at https://koestner.fly.dev/
 
 Pages includes:
 - stocks

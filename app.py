@@ -816,9 +816,7 @@ def update_PersonalPerformance(personal_status, personal_portfolio_tx):
             date=tx_hist_df["date"].max(), tx_hist_df=tx_hist_df
         ).reset_index()
 
-        performance_table = [
-            {"name": i, "id": i} for i in performance.columns
-        ], performance.to_dict("records")
+        performance_table = layouts.performance_col, performance.to_dict("records")
     else:
         performance_table = (None, None)
 
