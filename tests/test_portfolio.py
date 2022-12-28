@@ -107,8 +107,8 @@ def test_calc_cumulative_cost():
         test_df[(test_df["ticker"] == "Cash") & (test_df["date"] <= date)]["cost"].sum()
     ) * -1
 
-    assert (
-        performance.loc["portfolio", "cumulative_cost"] == test_cost
+    assert round(performance.loc["portfolio", "cumulative_cost"], 2) == round(
+        test_cost, 2
     ), "Expected cumulative_cost to be sum of cost"
 
 
