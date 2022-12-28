@@ -815,6 +815,9 @@ def update_PersonalPerformance(personal_status, personal_portfolio_tx):
         performance = tracker_portfolio.get_performance(
             date=tx_hist_df["date"].max(), tx_hist_df=tx_hist_df
         ).reset_index()
+        performance = performance[performance["market_value"] != 0].sort_values(
+            "return", ascending=False
+        )
 
         performance_table = layouts.performance_col, performance.to_dict("records")
     else:
@@ -841,11 +844,11 @@ def update_PersonalTransaction(personal_status, personal_portfolio_tx):
     if personal_status == "ready":
         tx_hist_df = pd.read_json(personal_portfolio_tx)
         tx_hist_df = tx_hist_df[tx_hist_df["units"] != 0]
-        tx_hist_df = tx_hist_df[tx_hist_df["ticker"] != "Cash"]
+        tx_hist_df = tx_hist_df[tx_hist_df["ticker"] != "Cash"].sort_values(
+            "date", ascending=False
+        )
 
-        transaction_table = [
-            {"name": i, "id": i} for i in tx_hist_df.columns
-        ], tx_hist_df.to_dict("records")
+        transaction_table = layouts.transactions_col, tx_hist_df.to_dict("records")
     else:
         transaction_table = (None, None)
 

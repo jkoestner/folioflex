@@ -4,7 +4,7 @@ from dash import dash_table
 from dash import dcc
 from dash import html
 
-from iex.util import constants, utils
+from iex.util import constants, layouts, utils
 
 tracker_portfolio = constants.tracker_portfolio
 
@@ -34,7 +34,7 @@ layout = html.Div(
                 dash_table.DataTable(
                     id="perfomance-table",
                     sort_action="native",
-                    columns=[{"name": i, "id": i} for i in performance.columns],
+                    columns=layouts.performance_col,
                     data=performance.to_dict("records"),
                 ),
                 html.P(),

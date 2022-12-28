@@ -103,43 +103,43 @@ formatter_col = {
 }
 
 performance_col = [
-    dict(id="ticker", name="ticker", type="numeric", format=Format()),
-    dict(id="date", name="date", type="numeric", format=Format()),
+    dict(id="ticker", name="ticker"),
+    dict(id="date", name="date"),
     dict(
         id="average_price",
         name="average_price",
         type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed),
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
     ),
     dict(
         id="last_price",
         name="last_price",
         type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed),
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
     ),
     dict(
         id="cumulative_units",
         name="cumulative_units",
         type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed),
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
     ),
     dict(
         id="cumulative_cost",
         name="cumulative_cost",
         type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed),
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
     ),
     dict(
         id="market_value",
         name="market_value",
         type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed),
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
     ),
     dict(
         id="return",
         name="return",
         type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed),
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
     ),
     dict(
         id="return_pct",
@@ -151,13 +151,94 @@ performance_col = [
         id="realized",
         name="realized",
         type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed),
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
     ),
     dict(
         id="unrealized",
         name="unrealized",
         type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed),
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+]
+
+transactions_col = [
+    dict(
+        id="ticker",
+        name="ticker",
+    ),
+    dict(
+        id="date",
+        name="date",
+    ),
+    dict(
+        id="last_price",
+        name="last_price",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="sale_price",
+        name="sale_price",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="units",
+        name="units",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="cost",
+        name="cost",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="broker",
+        name="broker",
+    ),
+    dict(
+        id="cumulative_units",
+        name="cumulative_units",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="cumulative_cost",
+        name="cumulative_cost",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="average_price",
+        name="average_price",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="market_value",
+        name="market_value",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="return",
+        name="return",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="unrealized",
+        name="unrealized",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="realized",
+        name="realized",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
     ),
 ]
 

@@ -68,7 +68,8 @@ def portfolio_query(tx_file, filter_broker=None):
         filter_type=["Dividend"],
         filter_broker=filter_broker,
         funds=["BLKEQIX", "TRPILCG", "TRPSV", "LIPIX", "BLKRVIX", "BLKRGIX", "HLIEIX"],
-        other_fields=["broker", "account"],
+        other_fields=["broker"],
+        benchmarks=["IVV"],
     )
     personal_portfolio_tx = personal_portfolio.transactions_history
 
