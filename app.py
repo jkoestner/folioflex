@@ -493,9 +493,7 @@ def update_table(dropdown_value):
         collection = collection[layouts.cols_col]
         collection = collection.sort_values(by=["cap*perc"], ascending=False)
 
-        sector_table = [
-            {"name": i, "id": i} for i in collection.columns
-        ], collection.to_dict("records")
+        sector_table = layouts.collection_fmt, collection.to_dict("records")
 
     return sector_table
 
@@ -819,7 +817,7 @@ def update_PersonalPerformance(personal_status, personal_portfolio_tx):
             "return", ascending=False
         )
 
-        performance_table = layouts.performance_col, performance.to_dict("records")
+        performance_table = layouts.performance_fmt, performance.to_dict("records")
     else:
         performance_table = (None, None)
 
@@ -848,7 +846,7 @@ def update_PersonalTransaction(personal_status, personal_portfolio_tx):
             "date", ascending=False
         )
 
-        transaction_table = layouts.transactions_col, tx_hist_df.to_dict("records")
+        transaction_table = layouts.transactions_fmt, tx_hist_df.to_dict("records")
     else:
         transaction_table = (None, None)
 

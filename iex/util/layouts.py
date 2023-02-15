@@ -9,6 +9,22 @@ USexchanges = [
     "NASDAQ",
     "New York Stock Exchange",
 ]  # ,'US OTC', 'NYSE American' 'NASDAQ', 'New York Stock Exchange'
+
+list_sector = [
+    "XLV",
+    "XLK",
+    "XLY",
+    "XLP",
+    "XLB",
+    "XLI",
+    "IYT",
+    "RWR",
+    "XLF",
+    "XLU",
+    "SPY",
+]
+
+# set up columns
 cols_col = [
     "symbol",
     "companyName",
@@ -89,20 +105,103 @@ active_col = [
     "peRatio",
 ]
 
-formatter_col = {
-    "peRatio": "{:,.2f}".format,
-    "cap*perc": "{:,.2f}".format,
-    "changePercent": "{0:.2%}".format,
-    "marketCap": "{:,.2f}".format,
-    "change": "{:,.2f}".format,
-    "close": "{:,.2f}".format,
-    "open": "{:,.2f}".format,
-    "latestPrice": "{:,.2f}".format,
-    "latestSource": "{:,.2f}".format,
-    "latestUpdate": "{:,.2f}".format,
-}
+# set up table formats
+collection_fmt = [
+    dict(id="symbol", name="symbol"),
+    dict(id="companyName", name="companyName"),
+    dict(
+        id="primaryExchange",
+        name="primaryExchange",
+    ),
+    dict(
+        id="vol_delta",
+        name="vol_delta",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.percentage),
+    ),
+    dict(
+        id="volume",
+        name="volume",
+        type="numeric",
+        format=Format(precision=0, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="avgTotalVolume",
+        name="avgTotalVolume",
+        type="numeric",
+        format=Format(precision=0, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="changePercent",
+        name="changePercent",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.percentage),
+    ),
+    dict(
+        id="change",
+        name="change",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="ytdChange",
+        name="ytdChange",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.percentage),
+    ),
+    dict(
+        id="open",
+        name="open",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="close",
+        name="close",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="latestPrice",
+        name="latestPrice",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="latestSource",
+        name="latestSource",
+    ),
+    dict(
+        id="latestTime",
+        name="latestTime",
+    ),
+    dict(
+        id="previousClose",
+        name="previousClose",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="previousVolume",
+        name="previousVolume",
+        type="numeric",
+        format=Format(precision=0, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="marketCap",
+        name="marketCap",
+        type="numeric",
+        format=Format(precision=0, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="peRatio",
+        name="peRatio",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+    ),
+]
 
-performance_col = [
+performance_fmt = [
     dict(id="ticker", name="ticker"),
     dict(id="date", name="date"),
     dict(
@@ -161,7 +260,7 @@ performance_col = [
     ),
 ]
 
-transactions_col = [
+transactions_fmt = [
     dict(
         id="ticker",
         name="ticker",
@@ -240,18 +339,4 @@ transactions_col = [
         type="numeric",
         format=Format(precision=2, scheme=Scheme.fixed).group(True),
     ),
-]
-
-list_sector = [
-    "XLV",
-    "XLK",
-    "XLY",
-    "XLP",
-    "XLB",
-    "XLI",
-    "IYT",
-    "RWR",
-    "XLF",
-    "XLU",
-    "SPY",
 ]

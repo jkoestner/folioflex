@@ -34,7 +34,7 @@ layout = html.Div(
                 dash_table.DataTable(
                     id="perfomance-table",
                     sort_action="native",
-                    columns=layouts.performance_col,
+                    columns=layouts.performance_fmt,
                     data=performance.to_dict("records"),
                 ),
                 html.P(),
