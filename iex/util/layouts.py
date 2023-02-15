@@ -106,7 +106,7 @@ active_col = [
 ]
 
 # set up table formats
-collection_fmt = [
+active_fmt = [
     dict(id="symbol", name="symbol"),
     dict(id="companyName", name="companyName"),
     dict(
@@ -117,7 +117,7 @@ collection_fmt = [
         id="vol_delta",
         name="vol_delta",
         type="numeric",
-        format=Format(precision=2, scheme=Scheme.percentage),
+        format=Format(precision=0, scheme=Scheme.percentage),
     ),
     dict(
         id="volume",
@@ -135,7 +135,7 @@ collection_fmt = [
         id="changePercent",
         name="changePercent",
         type="numeric",
-        format=Format(precision=2, scheme=Scheme.percentage),
+        format=Format(precision=0, scheme=Scheme.percentage),
     ),
     dict(
         id="change",
@@ -147,7 +147,7 @@ collection_fmt = [
         id="ytdChange",
         name="ytdChange",
         type="numeric",
-        format=Format(precision=2, scheme=Scheme.percentage),
+        format=Format(precision=0, scheme=Scheme.percentage),
     ),
     dict(
         id="open",

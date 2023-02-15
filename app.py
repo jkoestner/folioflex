@@ -268,9 +268,7 @@ def update_activeanalysis(n_clicks):
         active["changePercent"] = active["changePercent"].astype(float)
         active["ytdChange"] = active["ytdChange"].astype(float)
 
-        active_table = [{"name": i, "id": i} for i in active.columns], active.to_dict(
-            "records"
-        )
+        active_table = layouts.active_fmt, active.to_dict("records")
 
     return active_table
 
@@ -493,7 +491,9 @@ def update_table(dropdown_value):
         collection = collection[layouts.cols_col]
         collection = collection.sort_values(by=["cap*perc"], ascending=False)
 
-        sector_table = layouts.collection_fmt, collection.to_dict("records")
+        sector_table = [
+            {"name": i, "id": i} for i in collection.columns
+        ], collection.to_dict("records")
 
     return sector_table
 

@@ -10,32 +10,6 @@ from urllib import request
 from iex.util import constants, utils
 
 # Creating the dash app
-btc = json.loads(
-    request.urlopen(
-        "https://cloud.iexapis.com/stable/crypto/btcusd/price?token="
-        + constants.iex_api_live
-    )
-    .read()
-    .decode("utf8")
-)["price"]
-
-ape = json.loads(
-    request.urlopen(
-        "https://cloud.iexapis.com/stable/crypto/apeusdt/price?token="
-        + constants.iex_api_live
-    )
-    .read()
-    .decode("utf8")
-)["price"]
-
-eth = json.loads(
-    request.urlopen(
-        "https://cloud.iexapis.com/stable/crypto/ethusd/price?token="
-        + constants.iex_api_live
-    )
-    .read()
-    .decode("utf8")
-)["price"]
 
 layout = html.Div(
     [
@@ -70,13 +44,13 @@ layout = html.Div(
             [
                 # crypto prices
                 html.Label("BTC:"),
-                html.Label(btc),
+                html.Label("iex removed"),
                 html.P(),
                 html.Label("APE:"),
-                html.Label(ape),
+                html.Label("iex removed"),
                 html.P(),
                 html.Label("ETH:"),
-                html.Label(eth),
+                html.Label("iex removed"),
             ],
             className="three columns",
         ),
