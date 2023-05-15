@@ -6,6 +6,7 @@ dash-table>=4.0.2
 Flask>=1.1.1
 Flask-Compress>=1.4.0
 gunicorn>=19.9.0
+jupyterlab
 numpy>=1.22.3
 openpyxl>=3.0.7
 pandas>=0.25.0
