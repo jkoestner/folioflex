@@ -6,7 +6,7 @@ This initiates a class with a number of objects, such as:
    - funds : symbols that are considered funds
    - transactions : the transactions the occured
    - transaction_history : provides the symbol price history
-as well as a few functions
+There are function in class as well:
    - perfomance : this function will provide the performance of portfolio
 """
 
@@ -44,6 +44,8 @@ class Portfolio:
         the symbols to use as a benchmark to compare against.
     other_fields : list (optional)
         additional fields to include
+    name : str (optional)
+        name of portfolio
     """
 
     def __init__(
@@ -55,8 +57,8 @@ class Portfolio:
         delisted=None,
         benchmarks=None,
         other_fields=None,
+        name="portfolio",
     ):
-
         if filter_type is None:
             filter_type = []
         if filter_broker is None:
@@ -70,8 +72,10 @@ class Portfolio:
         if other_fields is None:
             other_fields = []
 
-        print("read '{}'".format(tx_file))
+        print(f"created '{name}' portfolio")
+        print(f"read {tx_file}")
         self.file = tx_file
+        self.name = name
         self.funds = funds
         self.delisted = delisted
         self.benchmarks = benchmarks
@@ -760,7 +764,6 @@ class Portfolio:
             return_pct = np.NaN
 
         else:
-
             return_pct = xirr(
                 ticker_transactions["date"], ticker_transactions["market_value"]
             )
@@ -813,10 +816,7 @@ class Portfolio:
             )
 
         # get portfolio return
-        if "broker" in tx_hist_df.columns:
-            condition = tx_hist_df["broker"] != "benchmark"
-        else:
-            condition = tx_hist_df["date"] != ""
+        condition = ~tx_hist_df["ticker"].str.contains("benchmark")
         portfolio_return = self._get_return_pct(
             ticker="portfolio",
             date=date,
@@ -883,12 +883,14 @@ class Portfolio:
         """
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
-        portfolio_col = ["ticker", "date"] + [view]
-        view_df = tx_hist_df[portfolio_col]
+        cols = ["ticker", "date"] + [view]
+        view_df = tx_hist_df[cols]
         view_df = view_df.pivot_table(
             index="date", columns="ticker", values=view, aggfunc="sum"
         )
-        view_df["portfolio"] = view_df.sum(axis=1)
+        view_df["portfolio"] = view_df.loc[
+            :, ~view_df.columns.str.contains("benchmark")
+        ].sum(axis=1)
 
         return view_df
 

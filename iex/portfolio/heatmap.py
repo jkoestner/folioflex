@@ -12,52 +12,38 @@ from urllib import request
 from iex.util import constants
 
 
-def get_heatmap():
+def get_heatmap(returns=None):
     """Provide figure for heatmap.
+
+    Parameters
+    ----------
+    df : DataFrame
+        returns used for stock heatmap
+
 
     Returns
     -------
     fig : Figure
        heatmap figure
     """
+    if returns is None:
+        returns = get_sp500_returns()
     sp500_tickers = get_sp500_tickers()
-
-    # iterate through ticker list. iex restricts results to 100
-    sp500_returns = pd.DataFrame()
-    temp_df = pd.DataFrame()
-    for i in [100, 200, 300, 400, 500, 600]:
-        start = i - 100
-        iex_query = (
-            "https://cloud.iexapis.com/stable/stock/market/batch?symbols="
-            + ",".join(sp500_tickers.iloc[start:i]["symbol"])
-            + "&types=quote&token="
-            + constants.iex_api_live
-        )
-        temp_df = pd.read_json(iex_query, orient="index")
-        temp_df = pd.json_normalize(temp_df["quote"])
-        sp500_returns = pd.concat([sp500_returns, temp_df])
-
-    sp500 = pd.merge(
-        sp500_returns[["changePercent", "marketCap", "symbol"]],
+    returns = pd.merge(
+        returns[["return", "market_value", "ticker"]],
         sp500_tickers,
         how="outer",
-        on=["symbol"],
+        on=["ticker"],
     )
-    sp500["changePercent"] = (
-        sp500["changePercent"].replace("[\\$,]", "", regex=True).astype(float)
-    )
-    # nulls/zero in market cap will not allow aggregation, replacing with 1
-    sp500["marketCap"] = sp500["marketCap"].fillna(1)
-    sp500["marketCap"] = sp500["marketCap"].replace(to_replace=0, value=1)
 
     fig = px.treemap(
-        sp500,
-        path=[px.Constant("all"), "sector", "symbol"],
-        values="marketCap",
-        color="changePercent",
+        returns,
+        path=[px.Constant("all"), "sector", "ticker"],
+        values="market_value",
+        color="return",
         color_continuous_scale="armyrose_r",
         color_continuous_midpoint=0,
-        hover_data={"changePercent": ":.2p"},
+        hover_data={"return": ":.2p"},
     )
 
     return fig
@@ -81,9 +67,55 @@ def get_sp500_tickers():
     sp500_tickers.rename(
         columns={
             "GICS Sector": "sector",
-            "Symbol": "symbol",
+            "Symbol": "ticker",
         },
         inplace=True,
     )
 
     return sp500_tickers
+
+
+def get_sp500_returns():
+    """Get the sp500 returns used in heatmap.
+
+    Returns
+    -------
+    sp500_returns : DataFrame
+       sp500 returns
+    """
+    sp500_tickers = get_sp500_tickers()
+
+    # iterate through ticker list. iex restricts results to 100
+    sp500_returns = pd.DataFrame()
+    temp_df = pd.DataFrame()
+    for i in [100, 200, 300, 400, 500, 600]:
+        start = i - 100
+        iex_query = (
+            "https://cloud.iexapis.com/stable/stock/market/batch?symbols="
+            + ",".join(sp500_tickers.iloc[start:i]["ticker"])
+            + "&types=quote&token="
+            + constants.iex_api_live
+        )
+        temp_df = pd.read_json(iex_query, orient="index")
+        temp_df = pd.json_normalize(temp_df["quote"])
+        sp500_returns = pd.concat([sp500_returns, temp_df])
+
+    sp500_returns["changePercent"] = (
+        sp500_returns["changePercent"].replace("[\\$,]", "", regex=True).astype(float)
+    )
+    # nulls/zero in market cap will not allow aggregation, replacing with 1
+    sp500_returns["marketCap"] = sp500_returns["marketCap"].fillna(1)
+    sp500_returns["marketCap"] = sp500_returns["marketCap"].replace(
+        to_replace=0, value=1
+    )
+
+    sp500_returns.rename(
+        columns={
+            "changePercent": "return",
+            "marketCap": "market_value",
+            "symbol": "ticker",
+        },
+        inplace=True,
+    )
+
+    return sp500_returns
