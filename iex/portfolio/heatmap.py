@@ -12,38 +12,47 @@ from urllib import request
 from iex.util import constants
 
 
-def get_heatmap(returns=None):
+def get_heatmap(portfolio=None):
     """Provide figure for heatmap.
 
     Parameters
     ----------
-    df : DataFrame
-        returns used for stock heatmap
-
+    portfolio : Portfolio Class (default is None)
+        portfolio to get heatmap for, if None use sp500
 
     Returns
     -------
     fig : Figure
        heatmap figure
     """
-    if returns is None:
+    if portfolio is None:
         returns = get_sp500_returns()
+    else:
+        returns = portfolio.get_performance()
+        returns = returns.reset_index()
+        returns = returns.reset_index()
+        returns = returns[~returns["ticker"].isin(["portfolio"])]
+        condition = ~returns["ticker"].str.contains("benchmark")
+        returns = returns[condition]
+    returns = returns[["return_pct", "market_value", "ticker"]]
     sp500_tickers = get_sp500_tickers()
     returns = pd.merge(
-        returns[["return", "market_value", "ticker"]],
+        returns,
         sp500_tickers,
         how="outer",
         on=["ticker"],
     )
+    returns["sector"] = returns["sector"].fillna("Other")
+    returns = returns[returns["market_value"] > 0]  # remove nulls/zero in market cap
 
     fig = px.treemap(
         returns,
         path=[px.Constant("all"), "sector", "ticker"],
         values="market_value",
-        color="return",
+        color="return_pct",
         color_continuous_scale="armyrose_r",
         color_continuous_midpoint=0,
-        hover_data={"return": ":.2p"},
+        hover_data={"return_pct": ":.2p"},
     )
 
     return fig
@@ -111,7 +120,7 @@ def get_sp500_returns():
 
     sp500_returns.rename(
         columns={
-            "changePercent": "return",
+            "changePercent": "return_pct",
             "marketCap": "market_value",
             "symbol": "ticker",
         },

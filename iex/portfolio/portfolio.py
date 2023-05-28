@@ -157,6 +157,18 @@ class Portfolio:
             condition, "unrealized"
         ].sum()
 
+        condition = performance.index.str.contains("Cash")
+        performance.loc["portfolio", "cash"] = performance.loc[
+            condition, "market_value"
+        ].sum()
+
+        condition = ~performance.index.str.contains(
+            "|".join(["Cash", "benchmark", "portfolio"])
+        )
+        performance.loc["portfolio", "equity"] = performance.loc[
+            condition, "market_value"
+        ].sum()
+
         duplicates = performance[performance.index.duplicated()].index
         if len(duplicates) > 0:
             print(
@@ -177,8 +189,12 @@ class Portfolio:
                 "return_pct",
                 "realized",
                 "unrealized",
+                "cash",
+                "equity",
             ]
         ]
+
+        performance = performance["return_pct"].apply(lambda x: "{:.2%}".format(x))
 
         return performance
 
