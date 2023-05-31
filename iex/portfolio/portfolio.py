@@ -207,10 +207,6 @@ class Portfolio:
             ]
         ]
 
-        performance["return_pct"] = performance["return_pct"].apply(
-            lambda x: "{:.2%}".format(x)
-        )
-
         return performance
 
     def get_transactions(self, filter_type=None, filter_broker=None, other_fields=None):
