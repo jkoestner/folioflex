@@ -1,13 +1,22 @@
 """
-Creates a portfolio tracker.
+Creates classes and functions to analyze a portfolio of stocks.
 
-This initiates a class with a number of objects, such as:
+The Portfolio class has a number of objects, such as:
    - file : the transaction file locations
    - funds : symbols that are considered funds
    - transactions : the transactions the occured
    - transaction_history : provides the symbol price history
-There are function in class as well:
+   - return_view : provides the return view of the portfolio
+
+   There are function in class as well:
    - perfomance : this function will provide the performance of portfolio
+
+The Manager class has a number of objects, such as:
+    - portfolios : the portfolios that are managed
+
+    There are functions in class as well:
+    - get_summary : this function will provide the summary of all portfolios
+
 """
 
 import numpy as np
@@ -96,7 +105,7 @@ class Portfolio:
         self.return_view = self._get_view(view="return")
         self.cost_view = self._get_view(view="cumulative_cost")
 
-    def get_performance(self, date=None, tx_hist_df=None):
+    def get_performance(self, date=None, tx_hist_df=None, lookback=None):
         """Get performance of portfolio and stocks traded at certain point of time.
 
         Parameters
@@ -106,6 +115,8 @@ class Portfolio:
             If none we use the max date.
         tx_hist_df : DataFrame (default is all transactions)
             dataframe to get return percent from
+        lookback : int (default is None)
+            the number of days to look back
 
         Returns
         ----------
@@ -128,7 +139,9 @@ class Portfolio:
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
 
-        return_pcts = self._get_return_pcts(date, tx_hist_df)
+        return_pcts = self._get_return_pcts(
+            date=date, tx_hist_df=tx_hist_df, lookback=lookback
+        )
         performance = tx_hist_df.copy()
         performance = performance[performance["date"] == date]
         performance = performance.reset_index().set_index("ticker")
@@ -194,7 +207,9 @@ class Portfolio:
             ]
         ]
 
-        performance = performance["return_pct"].apply(lambda x: "{:.2%}".format(x))
+        performance["return_pct"] = performance["return_pct"].apply(
+            lambda x: "{:.2%}".format(x)
+        )
 
         return performance
 
@@ -724,7 +739,7 @@ class Portfolio:
                     ) / df.loc[df.index[i], "cumulative_units"]
         return df
 
-    def _get_return_pct(self, ticker, date, tx_hist_df=None):
+    def _get_return_pct(self, ticker, date, tx_hist_df=None, lookback=None):
         """Get the dollar weighted return of a ticker.
 
         Parameters
@@ -733,8 +748,10 @@ class Portfolio:
             ticker that will be used to calculate metric
         date : date
             date on which to perform the returns as of
-        tx_hist_df : DataFrame
+        tx_hist_df : DataFrame (optional)
             stock dataframe to get return percent from
+        lookback : int (optional)
+            number of days to lookback
         Returns
         ----------
         return_pct : float
@@ -743,6 +760,11 @@ class Portfolio:
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
         transactions = tx_hist_df[tx_hist_df["cost"] != 0]
+
+        # analyze history that is within the lookback period
+        if lookback is not None:
+            start_date = date - pd.Timedelta(days=lookback)
+            transactions = transactions[transactions["date"] >= start_date]
 
         # get the current price and transactions
         if ticker == "portfolio":
@@ -792,7 +814,7 @@ class Portfolio:
 
         return return_pct
 
-    def _get_return_pcts(self, date=None, tx_hist_df=None):
+    def _get_return_pcts(self, date=None, tx_hist_df=None, lookback=None):
         """Get the dollar weighted return of transactions.
 
         Parameters
@@ -801,6 +823,8 @@ class Portfolio:
             date on which to perform the returns as of
         tx_hist_df : DataFrame
             dataframe to get return percent from
+        lookback : int (optional)
+            number of days to lookback
 
         Returns
         ----------
@@ -822,6 +846,7 @@ class Portfolio:
                 ticker=ticker,
                 date=date,
                 tx_hist_df=tx_hist_df,
+                lookback=lookback,
             )
 
             return_pcts = pd.concat(
@@ -837,6 +862,7 @@ class Portfolio:
             ticker="portfolio",
             date=date,
             tx_hist_df=tx_hist_df[condition],
+            lookback=lookback,
         )
         return_pcts = pd.concat(
             [
@@ -1039,3 +1065,51 @@ class Portfolio:
             portfolio_checks_failed = portfolio_checks_failed + 1
 
         return portfolio_checks_failed
+
+
+class Manager:
+    """Manager is a class that analyzes multiple portfolios.
+
+    Parameters
+    ----------
+    portfolios : list
+        list of portfolios in the Portfolio class to analyze.
+    """
+
+    def __init__(
+        self,
+        portfolios,
+    ):
+        portfolio_repr = ", ".join([portfolio.name for portfolio in portfolios])
+        print(f"Summarizing following portfolios: [{portfolio_repr}]")
+        self.portfolios = portfolios
+        self.summary = self.get_summary()
+
+    def get_summary(self, date=None):
+        """Get summary of portfolios.
+
+        Parameters
+        ----------
+        date : date (default is max date in portfolio)
+            the date the asset summary should be as of.
+            If none we use the max date.
+
+        Returns
+        ----------
+        summary : DataFrame
+            the summary of portfolios
+                - cash
+                - equity
+                - market value
+                - return
+                - benchmark return
+
+        """
+        summary = pd.DataFrame()
+        for port in self.portfolios:
+            df = port.get_performance()
+            df = df[df.index == "portfolio"]
+            df = df.rename(index={"portfolio": port.name})
+            summary = pd.concat([df, summary])
+
+        return summary

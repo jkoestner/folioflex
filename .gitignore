@@ -6,3 +6,4 @@ portfolio.ipynb
 _pycache_/
 .vscode/
 .pytest_cache/
+docs/build/
