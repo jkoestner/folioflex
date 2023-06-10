@@ -81,8 +81,7 @@ class Portfolio:
         if other_fields is None:
             other_fields = []
 
-        print(f"created '{name}' portfolio")
-        print(f"read {tx_file}")
+        print(f"creating '{name}' portfolio")
         self.file = tx_file
         self.name = name
         self.funds = funds
@@ -93,6 +92,8 @@ class Portfolio:
             filter_broker=filter_broker,
             other_fields=other_fields,
         )
+        print(f"read {tx_file}")
+
         self._min_year = self.transactions["date"].min().year
         self.tickers = list(self.transactions["ticker"].unique())
         print(f"You had {len(self.transactions)} transactions")
@@ -130,6 +131,7 @@ class Portfolio:
                 - market value
                 - return
                 - return percentage
+                - simple return percentage
                 - realized
                 - unrealized
 
@@ -138,10 +140,16 @@ class Portfolio:
             date = self._max_date
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
+        # if lookback provided then apply lookback adjustment
+        if lookback is not None:
+            tx_hist_df = self._filter_lookback(
+                lookback=lookback, adjust_vars=True, tx_hist_df=tx_hist_df
+            )
 
-        return_pcts = self._get_return_pcts(
+        dwrr_return_pcts = self._get_return_pcts(
             date=date, tx_hist_df=tx_hist_df, lookback=lookback
         )
+
         performance = tx_hist_df.copy()
         performance = performance[performance["date"] == date]
         performance = performance.reset_index().set_index("ticker")
@@ -188,7 +196,15 @@ class Portfolio:
                 f" found {len(duplicates)} duplicate tickers in performance such as {duplicates[0]} on {date}"
             )
 
-        performance = pd.concat([performance, return_pcts], axis=1, join="inner")
+        performance = pd.concat([performance, dwrr_return_pcts], axis=1, join="inner")
+
+        # add in simple return percentage
+        performance["simple_return_pct"] = np.where(
+            (performance["cumulative_cost"] - performance["realized"]) == 0,
+            np.nan,
+            performance["return"]
+            / (-performance["cumulative_cost"] + performance["realized"]),
+        )
 
         performance = performance[
             [
@@ -200,6 +216,7 @@ class Portfolio:
                 "market_value",
                 "return",
                 "return_pct",
+                "simple_return_pct",
                 "realized",
                 "unrealized",
                 "cash",
@@ -411,32 +428,46 @@ class Portfolio:
         # adding fund price history
         transactions = self.transactions
         template_df = pd.DataFrame(price_history["date"].unique(), columns=["date"])
-        if self.funds:
+        funds = [tick for tick in self.tickers if tick in self.funds]
+        delisted = [tick for tick in self.tickers if tick in self.delisted]
+        if funds:
             print(
-                f"Did not get price info for {self.funds} and will use transaction"
+                f"Did not get price info for {funds} and will use transaction"
                 " price to develop price history, since they are funds and not"
                 " available in stock exchanges"
             )
-        if self.delisted:
+        if delisted:
             print(
-                f"Did not get price info for {self.delisted} and will use transaction"
+                f"Did not get price info for {delisted} and will use transaction"
                 " price to develop price history, since they are delisted and not"
                 " available in stock exchanges"
             )
-        for fund in self.funds + self.delisted:
-            df = template_df.copy()
-            fund_df = transactions[transactions["ticker"] == fund]
-            df = pd.merge(
-                df,
-                fund_df[["date", "sale_price"]],
+
+        # add price history for funds and delisted
+        all_funds = funds + delisted
+        if all_funds:
+            fund_dfs = [
+                transactions[transactions["ticker"] == fund] for fund in all_funds
+            ]
+            all_funds_df = pd.concat(fund_dfs)
+
+            expanded_template_df = pd.MultiIndex.from_product(
+                [template_df["date"], all_funds], names=["date", "ticker"]
+            ).to_frame(index=False)
+
+            fund_hist_df = pd.merge(
+                expanded_template_df,
+                all_funds_df[["date", "ticker", "sale_price"]],
                 how="outer",
-                on=["date"],
+                on=["date", "ticker"],
             )
-            df["ticker"] = fund
-            df = df.groupby("date").min().reset_index()
-            df[["sale_price"]] = df[["sale_price"]].fillna(method="ffill")
-            df.rename(columns={"sale_price": "last_price"}, inplace=True)
-            price_history = pd.concat([price_history, df])
+
+            fund_hist_df = fund_hist_df.groupby(["date", "ticker"]).min().reset_index()
+            fund_hist_df[["sale_price"]] = fund_hist_df.groupby("ticker")[
+                ["sale_price"]
+            ].fillna(method="ffill")
+            fund_hist_df.rename(columns={"sale_price": "last_price"}, inplace=True)
+            price_history = pd.concat([price_history, fund_hist_df])
 
         # adding cash price history
         if "Cash" in self.tickers:
@@ -531,7 +562,7 @@ class Portfolio:
         """Calculate summation metrics on transactions DataFrame.
 
         Note:
-        does not include portfolio metrics
+        does not include metrics for entire 'portfolio' but only for each ticker
 
         Parameters
         ----------
@@ -563,8 +594,9 @@ class Portfolio:
 
         # average price
         tx_hist_df = tx_hist_df.groupby("ticker", group_keys=False).apply(
-            self._calc_average_price
+            self._calc_average_price_speed
         )
+
         tx_hist_df.loc[tx_hist_df["ticker"] == "Cash", "average_price"] = 1
 
         # market value
@@ -735,7 +767,45 @@ class Portfolio:
                     ) / df.loc[df.index[i], "cumulative_units"]
         return df
 
-    def _get_return_pct(self, ticker, date, tx_hist_df=None, lookback=None):
+    def _calc_average_price_speed(self, df):
+        """Calculate the average cost basis.
+
+        Parameters
+        ----------
+        df : DataFrame
+            dataframe to apply calculation to
+
+        Returns
+        ----------
+        df : DataFrame
+            dataframe that includes the "average price"
+        """
+        df["average_price"] = np.nan
+        tx = df[df["units"] != 0]
+        if len(tx) != 0:
+            tx.loc[tx.index[0], "average_price"] = tx.loc[tx.index[0], "sale_price"]
+        if len(tx) != 1:
+            for i in range(1, len(tx)):
+                if tx.loc[tx.index[i], "cumulative_units"] == 0:
+                    tx.loc[tx.index[i], "average_price"] = 0
+                elif tx.loc[tx.index[i], "units"] <= 0:
+                    tx.loc[tx.index[i], "average_price"] = tx.loc[
+                        tx.index[i - 1], "average_price"
+                    ]
+                else:
+                    tx.loc[tx.index[i], "average_price"] = (
+                        tx.loc[tx.index[i], "sale_price"] * tx.loc[tx.index[i], "units"]
+                        + tx.loc[tx.index[i - 1], "cumulative_units"]
+                        * tx.loc[tx.index[i - 1], "average_price"]
+                    ) / tx.loc[tx.index[i], "cumulative_units"]
+
+        # merge average prices back into df
+        df.update(tx["average_price"])
+        df["average_price"] = df["average_price"].fillna(method="ffill")
+        df.loc[df["cumulative_units"] == 0, "average_price"] = 0
+        return df
+
+    def _get_dwrr_return_pct(self, ticker, date, tx_hist_df=None, lookback=None):
         """Get the dollar weighted return of a ticker.
 
         Parameters
@@ -755,32 +825,53 @@ class Portfolio:
         """
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
+
+        # if lookback provided then filter history to only include that period
+        if lookback is not None:
+            tx_hist_df = self._filter_lookback(
+                lookback=lookback, adjust_vars=False, tx_hist_df=tx_hist_df
+            )
+
         transactions = tx_hist_df[tx_hist_df["cost"] != 0]
 
-        # analyze history that is within the lookback period
-        if lookback is not None:
-            start_date = date - pd.Timedelta(days=lookback)
-            transactions = transactions[transactions["date"] >= start_date]
-
-        # get the current price and transactions
+        # get the current price, entry price, and transactions
         if ticker == "portfolio":
             current_price = tx_hist_df[tx_hist_df["date"] == date]
+            entry_price = tx_hist_df[
+                tx_hist_df["date"] == tx_hist_df["date"].min()
+            ].copy()
             ticker_transactions = transactions[transactions["date"] <= date].copy()
 
         else:
             current_price = tx_hist_df[
                 (tx_hist_df["ticker"] == ticker) & (tx_hist_df["date"] == date)
             ]
+            entry_price = tx_hist_df[
+                (tx_hist_df["ticker"] == ticker)
+                & (tx_hist_df["date"] == tx_hist_df["date"].min())
+            ].copy()
             ticker_transactions = transactions[
                 (transactions["ticker"] == ticker) & (transactions["date"] <= date)
             ].copy()
 
-        # combine the current price and transactions
-        current_price = current_price[["date", "ticker", "units", "market_value"]]
+        # combine the entry price, transactions, and current price
+
+        # entry price is the first transaction. To offset transactional costs on the same day
+        # the entry price removes the cost. Also xirr does not work with a start of 0 or nan
+        # so removing those transactions as well.
+        entry_price["market_value"] = entry_price["market_value"] + entry_price["cost"]
+        entry_price = entry_price[["date", "ticker", "units", "market_value"]]
+        entry_price.loc[:, "market_value"] *= -1
+        entry_price = entry_price[
+            (entry_price["market_value"] != 0) & (~entry_price["market_value"].isna())
+        ]
+        entry_price = entry_price.reset_index(drop=True)
         ticker_transactions["market_value"] = ticker_transactions["cost"]
+        current_price = current_price[["date", "ticker", "units", "market_value"]]
+
         ticker_transactions = pd.concat(
-            [ticker_transactions, current_price], ignore_index=True
-        )
+            [entry_price, ticker_transactions, current_price], ignore_index=True
+        ).sort_values(by="date", ascending=False)
         ticker_transactions["market_value"] = ticker_transactions[
             "market_value"
         ].replace(np.nan, 0)
@@ -811,13 +902,13 @@ class Portfolio:
         return return_pct
 
     def _get_return_pcts(self, date=None, tx_hist_df=None, lookback=None):
-        """Get the dollar weighted return of transactions.
+        """Get the return of transactions, either dollar or simple.
 
         Parameters
         ----------
         date : date (optional)
             date on which to perform the returns as of
-        tx_hist_df : DataFrame
+        tx_hist_df : DataFrame (optional)
             dataframe to get return percent from
         lookback : int (optional)
             number of days to lookback
@@ -825,7 +916,7 @@ class Portfolio:
         Returns
         ----------
         return_pcts : DataFrame
-            dollar weighted returns of all transactions
+            returns of all transactions
         """
         if date is None:
             date = self._max_date
@@ -833,12 +924,13 @@ class Portfolio:
             tx_hist_df = self.transactions_history
 
         tickers = list(tx_hist_df["ticker"].unique())
+        return_pcts_col = "return_pct"
 
         return_pcts = pd.DataFrame()
 
         # get return of each ticker
         for ticker in tickers:
-            ticker_return = self._get_return_pct(
+            ticker_return = self._get_dwrr_return_pct(
                 ticker=ticker,
                 date=date,
                 tx_hist_df=tx_hist_df,
@@ -848,13 +940,13 @@ class Portfolio:
             return_pcts = pd.concat(
                 [
                     return_pcts,
-                    pd.DataFrame({"ticker": [ticker], "return_pct": ticker_return}),
+                    pd.DataFrame({"ticker": [ticker], return_pcts_col: ticker_return}),
                 ]
             )
 
         # get portfolio return
         condition = ~tx_hist_df["ticker"].str.contains("benchmark")
-        portfolio_return = self._get_return_pct(
+        portfolio_return = self._get_dwrr_return_pct(
             ticker="portfolio",
             date=date,
             tx_hist_df=tx_hist_df[condition],
@@ -863,7 +955,9 @@ class Portfolio:
         return_pcts = pd.concat(
             [
                 return_pcts,
-                pd.DataFrame({"ticker": ["portfolio"], "return_pct": portfolio_return}),
+                pd.DataFrame(
+                    {"ticker": ["portfolio"], return_pcts_col: portfolio_return}
+                ),
             ]
         ).set_index(["ticker"])
 
@@ -911,7 +1005,7 @@ class Portfolio:
         ----------
         view : str
             column to sum over on the portfolio dataframe
-               - e.g. "market_value", "return", "cumulative_cost"
+               - e.g. "market_value", "return", "cumulative_cost", "realized"
         tx_hist_df : DataFrame
             dataframe to get return percent from
 
@@ -931,6 +1025,43 @@ class Portfolio:
         ].sum(axis=1)
 
         return view_df
+
+    def _filter_lookback(self, lookback, adjust_vars=False, tx_hist_df=None):
+        """Modify the transactions history dataframe to only include lookback.
+
+        Parameters
+        ----------
+        lookback : int
+            number of days to lookback
+        adjust_vars : bool
+            whether to adjust the variables return, realized, and unrealized
+        tx_hist_df : DataFrame (optional)
+            stock dataframe to get return percent from
+
+        Returns
+        ----------
+        lookback_df : DataFrame
+            dataframe that includes the lookback period
+        """
+        if tx_hist_df is None:
+            tx_hist_df = self.transactions_history
+        lookback_df = tx_hist_df.copy()
+        date = lookback_df["date"].max()
+        date = pd.to_datetime(date)
+        start_date = date - pd.Timedelta(days=lookback)
+        lookback_df = lookback_df[lookback_df["date"] >= start_date]
+
+        if adjust_vars:
+            # List of variables to modify
+            variables = ["return", "unrealized", "realized"]
+
+            # Grouping the DataFrame by 'ticker' and applying the operation to each group
+            for variable in variables:
+                lookback_df[variable] = lookback_df.groupby("ticker")[
+                    variable
+                ].transform(lambda x: x - x.iloc[-1])
+
+        return lookback_df
 
     def check_tx(self, tx_df=None):
         """Check that transactions have correct data.
@@ -1076,12 +1207,9 @@ class Manager:
         self,
         portfolios,
     ):
-        portfolio_repr = ", ".join([portfolio.name for portfolio in portfolios])
-        print(f"Summarizing following portfolios: [{portfolio_repr}]")
         self.portfolios = portfolios
-        self.summary = self.get_summary()
 
-    def get_summary(self, date=None):
+    def get_summary(self, date=None, lookback=None):
         """Get summary of portfolios.
 
         Parameters
@@ -1089,6 +1217,8 @@ class Manager:
         date : date (default is max date in portfolio)
             the date the asset summary should be as of.
             If none we use the max date.
+        lookback : int (default is None)
+            the number of days to look back
 
         Returns
         ----------
@@ -1101,11 +1231,14 @@ class Manager:
                 - benchmark return
 
         """
-        summary = pd.DataFrame()
+        portfolio_repr = ", ".join([portfolio.name for portfolio in self.portfolios])
+        print(f"Summarizing following portfolios: [{portfolio_repr}]")
+        dfs = []
         for port in self.portfolios:
-            df = port.get_performance()
+            df = port.get_performance(date=date, lookback=lookback)
             df = df[df.index == "portfolio"]
             df = df.rename(index={"portfolio": port.name})
-            summary = pd.concat([df, summary])
+            dfs.append(df)
+        summary = pd.concat(dfs)
 
         return summary
