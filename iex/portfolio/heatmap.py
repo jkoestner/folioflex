@@ -29,6 +29,7 @@ def get_heatmap(portfolio=None, lookback=None):
     """
     if portfolio is None:
         returns = get_sp500_returns()
+        color = "return_pct"
     else:
         returns = portfolio.get_performance(lookback=lookback)
         returns = returns.reset_index()
@@ -37,8 +38,9 @@ def get_heatmap(portfolio=None, lookback=None):
             ~returns["ticker"].isin(["portfolio"])
             & ~returns["ticker"].str.contains("benchmark")
         ]
+        color = "simple_return_pct"
 
-    returns = returns[["return_pct", "simple_return_pct", "market_value", "ticker"]]
+    returns = returns[[color, "market_value", "ticker"]]
     sp500_tickers = get_sp500_tickers()
     returns = pd.merge(
         returns,
@@ -53,10 +55,10 @@ def get_heatmap(portfolio=None, lookback=None):
         returns,
         path=[px.Constant("all"), "sector", "ticker"],
         values="market_value",
-        color="simple_return_pct",
+        color=color,
         color_continuous_scale="armyrose_r",
         color_continuous_midpoint=0,
-        hover_data={"simple_return_pct": ":.2p"},
+        hover_data={color: ":.2p"},
     )
 
     return fig
