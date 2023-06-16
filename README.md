@@ -3,9 +3,7 @@ IEX cloud finance
 
 ![workflow badge](https://github.com/jkoestner/iex/actions/workflows/main.yml/badge.svg)
 
-This is an app built with https://fly.io/ as the host
-
-The app can be seen at https://koestner.fly.dev/
+The app can be seen at https://koestner.fly.dev/ and was built with https://fly.io/ as the host
 
 Pages includes:
 - stocks
@@ -23,6 +21,8 @@ python app.py
 ```
 
 The code also contains a portfolio class to help build the returns from stock transactions.
+
+Full documentation can be seen here: https://jkoestner.github.io/IEX
 
 Data sources:
 - https://iexcloud.io/
