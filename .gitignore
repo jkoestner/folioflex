@@ -1,9 +1,10 @@
-portfolio.ipynb
 *.pyc
 *.ipynb_checkpoints
 .DS_Store
 .env
-_pycache_/
-.vscode/
+portfolio.ipynb
 .pytest_cache/
+.vscode/
 _build/
+_pycache_/
+docs/coverage/

@@ -1,0 +1,13 @@
+# coverage config file for pytest-cov coming from
+# https://pytest-cov.readthedocs.io/en/latest/
+# run using pytest --cov=iex --cov-report=html
+[run]
+data_file = docs/coverage/.coverage
+omit =
+    # omit everything in /pages
+    iex/pages/*
+    # omit init files
+    __init__.py
+
+[html]
+directory = docs/coverage/htmlcov
