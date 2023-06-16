@@ -7,3 +7,5 @@ _pycache_/
 .vscode/
 .pytest_cache/
 docs/build/
+docs/make.bat
+docs/Makefile
