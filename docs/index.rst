@@ -7,6 +7,4 @@ IEX is a finance app that can display information about stocks, sectors, ideas, 
    :maxdepth: 2
    :caption: Contents:
 
-   installation
    usage
-   portfolio_class
