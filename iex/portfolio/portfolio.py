@@ -19,6 +19,7 @@ The Manager class has a number of objects, such as:
 
 """
 
+import logging
 import numpy as np
 import pandas as pd
 import pandas_market_calendars as mcal
@@ -28,6 +29,18 @@ from datetime import datetime
 from pyxirr import xirr
 
 pd.options.display.float_format = "{:,.2f}".format
+
+# logging options https://docs.python.org/3/library/logging.html
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
+
+formatter = logging.Formatter(fmt="%(levelname)s: %(message)s")
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+console_handler.setFormatter(formatter)
+
+logger.addHandler(console_handler)
 
 
 class Portfolio:
@@ -81,22 +94,25 @@ class Portfolio:
         if other_fields is None:
             other_fields = []
 
-        print(f"creating '{name}' portfolio")
+        logger.info(f"creating '{name}' portfolio")
         self.file = tx_file
         self.name = name
+        self.filter_type = filter_type
+        self.filter_broker = filter_broker
         self.funds = funds
         self.delisted = delisted
         self.benchmarks = benchmarks
+        self.other_fields = other_fields
         self.transactions = self.get_transactions(
             filter_type=filter_type,
             filter_broker=filter_broker,
             other_fields=other_fields,
         )
-        print(f"read {tx_file}")
+        logger.info(f"read {tx_file}")
 
         self._min_year = self.transactions["date"].min().year
         self.tickers = list(self.transactions["ticker"].unique())
-        print(f"You had {len(self.transactions)} transactions")
+        logger.info(f"You had {len(self.transactions)} transactions")
         self.check_tx()
         self.price_history = self._get_price_history()
         self.transactions_history = self.get_transactions_history(
@@ -105,6 +121,22 @@ class Portfolio:
         self._max_date = self.transactions_history["date"].max()
         self.return_view = self._get_view(view="return")
         self.cost_view = self._get_view(view="cumulative_cost")
+
+    def refresh(self, log_level=None):
+        """Refresh the portfolio."""
+        if log_level is None:
+            log_level = self.log_level
+        self.__init__(
+            tx_file=self.file,
+            filter_type=self.filter_type,
+            filter_broker=self.filter_broker,
+            funds=self.funds,
+            delisted=self.delisted,
+            benchmarks=self.benchmarks,
+            other_fields=self.other_fields,
+            name=self.name,
+            log_level=log_level,
+        )
 
     def get_performance(self, date=None, tx_hist_df=None, lookback=None):
         """Get performance of portfolio and stocks traded at certain point of time.
@@ -192,8 +224,8 @@ class Portfolio:
 
         duplicates = performance[performance.index.duplicated()].index
         if len(duplicates) > 0:
-            print(
-                f" found {len(duplicates)} duplicate tickers in performance such as {duplicates[0]} on {date}"
+            logger.info(
+                f"found {len(duplicates)} duplicate tickers in performance such as {duplicates[0]} on {date}"
             )
 
         performance = pd.concat([performance, dwrr_return_pcts], axis=1, join="inner")
@@ -410,7 +442,7 @@ class Portfolio:
         ] + self.benchmarks
 
         if self.benchmarks:
-            print(f"Adding {self.benchmarks} as a benchmark")
+            logger.info(f"Adding {self.benchmarks} as a benchmark")
         price_history = yf.download(tickers, start=datetime(self._min_year, 1, 1))
         self._clean_index(clean_df=price_history, lvl=0, tickers=tickers)
         price_history.index.rename("date", inplace=True)
@@ -431,13 +463,13 @@ class Portfolio:
         funds = [tick for tick in self.tickers if tick in self.funds]
         delisted = [tick for tick in self.tickers if tick in self.delisted]
         if funds:
-            print(
+            logger.info(
                 f"Did not get price info for {funds} and will use transaction"
                 " price to develop price history, since they are funds and not"
                 " available in stock exchanges"
             )
         if delisted:
-            print(
+            logger.info(
                 f"Did not get price info for {delisted} and will use transaction"
                 " price to develop price history, since they are delisted and not"
                 " available in stock exchanges"
@@ -471,7 +503,7 @@ class Portfolio:
 
         # adding cash price history
         if "Cash" in self.tickers:
-            print("Adding transaction history for cash transactions")
+            logger.info("Adding transaction history for cash transactions")
             df = template_df.copy()
             df["ticker"] = "Cash"
             df["last_price"] = 1
@@ -1082,7 +1114,7 @@ class Portfolio:
         # buy checks
         if any(tx_df[tx_df["type"] == "SELL"]["units"] > 0):
             err_df = tx_df[(tx_df["type"] == "SELL") & (tx_df["units"] > 0)]
-            print(
+            logger.warning(
                 f"There were transactions that had positive units for SELL "
                 f"type such as {err_df.iloc[1]['ticker']} with "
                 f"{err_df.iloc[1]['units']} units"
@@ -1091,7 +1123,7 @@ class Portfolio:
 
         if any(tx_df[tx_df["type"] == "SELL"]["cost"] < 0):
             err_df = tx_df[(tx_df["type"] == "SELL") & (tx_df["cost"] < 0)]
-            print(
+            logger.warning(
                 f"There were transactions that had negative cost for SELL "
                 f"type such as {err_df.iloc[1]['ticker']} with "
                 f"{err_df.iloc[1]['cost']} cost"
@@ -1101,7 +1133,7 @@ class Portfolio:
         # sell short checks
         if any(tx_df[tx_df["type"] == "SELL SHORT"]["units"] > 0):
             err_df = tx_df[(tx_df["type"] == "SELL SHORT") & (tx_df["units"] > 0)]
-            print(
+            logger.warning(
                 f"There were transactions that had positive units for SELL "
                 f"SHORT type such as {err_df.iloc[1]['ticker']} "
                 f"with {err_df.iloc[1]['units']} units"
@@ -1110,7 +1142,7 @@ class Portfolio:
 
         if any(tx_df[tx_df["type"] == "SELL SHORT"]["cost"] < 0):
             err_df = tx_df[(tx_df["type"] == "SELL SHORT") & (tx_df["cost"] < 0)]
-            print(
+            logger.warning(
                 f"There were transactions that had negative cost for SELL SHORT "
                 f"type such as {err_df.iloc[1]['ticker']} with "
                 f"{err_df.iloc[1]['cost']} cost"
@@ -1120,7 +1152,7 @@ class Portfolio:
         # buy
         if any(tx_df[tx_df["type"] == "BUY"]["units"] < 0):
             err_df = tx_df[(tx_df["type"] == "BUY") & (tx_df["units"] < 0)]
-            print(
+            logger.warning(
                 f"There were transactions that had negative units for BUY type "
                 f"such as {err_df.iloc[1]['ticker']} with "
                 f"{err_df.iloc[1]['units']} units "
@@ -1129,7 +1161,7 @@ class Portfolio:
 
         if any(tx_df[tx_df["type"] == "BUY"]["cost"] > 0):
             err_df = tx_df[(tx_df["type"] == "BUY") & (tx_df["cost"] > 0)]
-            print(
+            logger.warning(
                 f"There were transactions that had positive cost for BUY type "
                 f"such as {err_df.iloc[1]['ticker']} with "
                 f"{err_df.iloc[1]['cost']} cost "
@@ -1139,7 +1171,7 @@ class Portfolio:
         # buy cover
         if any(tx_df[tx_df["type"] == "BUY COVER"]["units"] < 0):
             err_df = tx_df[(tx_df["type"] == "BUY COVER") & (tx_df["units"] < 0)]
-            print(
+            logger.warning(
                 f"There were transactions that had negative units for BUY "
                 f"COVER type such as {err_df.iloc[1]['ticker']} with "
                 f"{err_df.iloc[1]['units']} units "
@@ -1148,7 +1180,7 @@ class Portfolio:
 
         if any(tx_df[tx_df["type"] == "BUY COVER"]["cost"] > 0):
             err_df = tx_df[(tx_df["type"] == "BUY COVER") & (tx_df["cost"] > 0)]
-            print(
+            logger.warning(
                 f"There were transactions that had positive cost for BUY COVER type "
                 f"such as {err_df.iloc[1]['ticker']} with "
                 f"{err_df.iloc[1]['cost']} cost "
@@ -1160,7 +1192,7 @@ class Portfolio:
         tx_types = tx_df["type"].unique()
         for tx_type in tx_types:
             if tx_type not in tx_allowed_types:
-                print(f"This type '{tx_type}' is not in {tx_allowed_types}")
+                logger.warning(f"This type '{tx_type}' is not in {tx_allowed_types}")
                 portfolio_checks_failed = portfolio_checks_failed + 1
 
         # column checks
@@ -1168,7 +1200,7 @@ class Portfolio:
         tx_columns = list(tx_df.columns)
         for tx_needed_column in tx_needed_columns:
             if tx_needed_column not in tx_columns:
-                print(
+                logger.warning(
                     f"This column '{tx_needed_column}' is needed, and not "
                     f"in {tx_columns}"
                 )
@@ -1185,7 +1217,7 @@ class Portfolio:
         invalid_dt = tx_df["date"][~tx_df["date"].isin(stock_dates)].to_list()
         invalid_dt = [datetime.strftime(i, "%Y-%m-%d") for i in invalid_dt]
         if len(invalid_dt) > 0:
-            print(
+            logger.warning(
                 f"{len(invalid_dt)} transaction(s) dates were done outside of stock market "
                 f"dates such as {invalid_dt} \n"
             )
@@ -1209,12 +1241,22 @@ class Manager:
     ):
         self.portfolios = portfolios
 
+    def refresh(self):
+        """Refresh the portfolio."""
+        # refresh the portfolio data
+        for portfolio in self.portfolios:
+            portfolio.refresh(log_level=logging.CRITICAL)
+        self.__init__(
+            portfolios=self.portfolios,
+        )
+        logger.info("Refreshed portfolios.")
+
     def get_summary(self, date=None, lookback=None):
         """Get summary of portfolios.
 
         Parameters
         ----------
-        date : date (default is max date in portfolio)
+        date : date
             the date the asset summary should be as of.
             If none we use the max date.
         lookback : int (default is None)
@@ -1232,12 +1274,12 @@ class Manager:
 
         """
         portfolio_repr = ", ".join([portfolio.name for portfolio in self.portfolios])
-        print(f"Summarizing following portfolios: [{portfolio_repr}]")
+        logger.info(f"Summarizing following portfolios: [{portfolio_repr}]")
         dfs = []
-        for port in self.portfolios:
-            df = port.get_performance(date=date, lookback=lookback)
+        for portfolio in self.portfolios:
+            df = portfolio.get_performance(date=date, lookback=lookback)
             df = df[df.index == "portfolio"]
-            df = df.rename(index={"portfolio": port.name})
+            df = df.rename(index={"portfolio": portfolio.name})
             dfs.append(df)
         summary = pd.concat(dfs)
 
