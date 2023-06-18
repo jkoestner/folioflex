@@ -776,6 +776,39 @@ class Portfolio:
 
         return benchmark_tx_hist
 
+    def _add_portfolio(self, tx_df, price_history=None, other_fields=None):
+        """Add the portfolio with transaction history dataframe.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            Transactions to calculate metrics on
+        ticker : str
+            The ticker to create the benchmark for
+        price_history : DataFrame
+            Price history DataFrame
+        other_fields : list (optional)
+            additional fields to include
+
+        Returns
+        ----------
+        portfolio_tx_hist : DataFrame
+            DataFrame containing transaction history for dataframe
+        """
+        portfolio_tx_hist = []
+        # if tx_hist_df is None:
+        #     tx_hist_df = self.transactions_history
+        # cols = ["ticker", "date"] + [view]
+        # view_df = tx_hist_df[cols]
+        # view_df = view_df.pivot_table(
+        #     index="date", columns="ticker", values=view, aggfunc="sum"
+        # )
+        # view_df["portfolio"] = view_df.loc[
+        #     :, ~view_df.columns.str.contains("benchmark")
+        # ].sum(axis=1)
+
+        return portfolio_tx_hist
+
     def _calc_average_price(self, df):
         """Calculate the average cost basis.
 
