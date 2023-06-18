@@ -44,7 +44,17 @@ logger.addHandler(console_handler)
 
 
 class Portfolio:
-    """An object containing information about portfolio.
+    """An Portfolio class used to provide analysis of a portfolio.
+
+    The class requires a transaction file to be provided. The transaction file
+    will have sales and buys to then develop a return of the portfolio as well
+    as a return of the different assets that were purchased.
+
+    There are a number of options that the user can provide to filter the analysis
+    to a particular subset of transactions or brokers. There are also options to
+    provide a list of funds or delisted stocks so that when the ticker price history
+    is downloaded from yahoo finance, the price history is not downloaded and instead
+    use the price of the transactions.
 
     Parameters
     ----------
@@ -119,13 +129,11 @@ class Portfolio:
             tx_df=self.transactions, other_fields=other_fields, benchmarks=benchmarks
         )
         self._max_date = self.transactions_history["date"].max()
-        self.return_view = self._get_view(view="return")
-        self.cost_view = self._get_view(view="cumulative_cost")
+        self.return_view = self.get_view(view="return")
+        self.cost_view = self.get_view(view="cumulative_cost")
 
-    def refresh(self, log_level=None):
+    def refresh(self):
         """Refresh the portfolio."""
-        if log_level is None:
-            log_level = self.log_level
         self.__init__(
             tx_file=self.file,
             filter_type=self.filter_type,
@@ -135,7 +143,6 @@ class Portfolio:
             benchmarks=self.benchmarks,
             other_fields=self.other_fields,
             name=self.name,
-            log_level=log_level,
         )
 
     def get_performance(self, date=None, tx_hist_df=None, lookback=None):
@@ -934,7 +941,7 @@ class Portfolio:
         return return_pct
 
     def _get_return_pcts(self, date=None, tx_hist_df=None, lookback=None):
-        """Get the return of transactions, either dollar or simple.
+        """Get the dollar weighted return of transactions.
 
         Parameters
         ----------
@@ -1028,7 +1035,7 @@ class Portfolio:
 
         return clean_df
 
-    def _get_view(self, view="market_value", tx_hist_df=None):
+    def get_view(self, view="market_value", tx_hist_df=None):
         """Get the a specific view of the portfolio.
 
         Useful for plotting returns visually.
@@ -1245,7 +1252,7 @@ class Manager:
         """Refresh the portfolio."""
         # refresh the portfolio data
         for portfolio in self.portfolios:
-            portfolio.refresh(log_level=logging.CRITICAL)
+            portfolio.refresh()
         self.__init__(
             portfolios=self.portfolios,
         )
@@ -1253,6 +1260,9 @@ class Manager:
 
     def get_summary(self, date=None, lookback=None):
         """Get summary of portfolios.
+
+        TODO add in a benchmark variable to compare simple returns
+        TODO add in a function to review the returns of the portfolios
 
         Parameters
         ----------

@@ -29,7 +29,7 @@ from rq.job import Job
 from rq.exceptions import NoSuchJobError
 
 from iex.pages import stocks, sectors, ideas, macro, tracker, crypto, personal
-from iex.util import constants, layouts, utils, worker
+from iex.util import constants, layouts, page_constants, utils, worker
 from iex.portfolio import heatmap
 
 q = Queue(connection=worker.conn)
@@ -335,6 +335,7 @@ def update_insidertransactionsanalysis(n_clicks, input_value):
 #   ___) | |__| |___  | || |_| |  _ <
 #  |____/|_____\____| |_| \___/|_| \_\
 
+
 # Sector Graph
 @app.callback(
     Output("task-id", "children"),
@@ -580,13 +581,13 @@ def sma_value(n_clicks, input_value):
 #    | | |  _ <  / ___ \ |___| . \| |___|  _ <
 #    |_| |_| \_\/_/   \_\____|_|\_\_____|_| \_\
 
-tracker_portfolio = constants.tracker_portfolio
+tracker_portfolio = page_constants.tracker_portfolio
 
 
 @app.callback(Output("Tracker-Graph", "figure"), [Input("Tracker-Dropdown", "value")])
 def update_TrackerGraph(dropdown):
     """Provide tracker graph."""
-    px_df = tracker_portfolio._get_view(view=dropdown)
+    px_df = tracker_portfolio.get_view(view=dropdown)
     px_line = px.line(px_df, title="tracker")
     px_line.update_xaxes(
         title_text="Date",
@@ -782,7 +783,7 @@ def update_PersonalSlider(personal_status, personal_portfolio_tx):
     """Provide sector data table."""
     if personal_status == "ready":
         tx_hist_df = pd.read_json(personal_portfolio_tx)
-        return_view = tracker_portfolio._get_view(view="return", tx_hist_df=tx_hist_df)
+        return_view = tracker_portfolio.get_view(view="return", tx_hist_df=tx_hist_df)
         min, max, value, marks = utils.get_slider_values(return_view.index)
     else:
         min = 0

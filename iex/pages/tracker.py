@@ -4,9 +4,9 @@ from dash import dash_table
 from dash import dcc
 from dash import html
 
-from iex.util import constants, layouts, utils
+from iex.util import page_constants, layouts, utils
 
-tracker_portfolio = constants.tracker_portfolio
+tracker_portfolio = page_constants.tracker_portfolio
 
 performance = tracker_portfolio.get_performance().reset_index()
 transactions = tracker_portfolio.transactions
