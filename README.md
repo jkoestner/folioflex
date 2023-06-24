@@ -31,6 +31,23 @@ Data sources:
 - https://www.alphavantage.co
 - https://pypi.org/project/yahoo-finance/
 
+## Install packages
+To install packages, this repository can be installed by cloning the repository to a desktop location. Then opening a command terminal and changing directory
+to the root of the project and running the following command in the environment of choice.
+
+```
+pip install -r requirements.txt
+```
+
+## Jupyter Lab Usage
+
+To have conda environments work with Jupyter Notebooks a kernel needs to be defined. This can be done defining a kernel, shown below when
+in the conda environment.
+
+```
+python -m ipykernel install --user --name=iex
+```
+
 ## Logging
 
 If wanting to get more detail in output of messages the logging can increased
@@ -40,4 +57,11 @@ logger = logging.getLogger('iex.portfolio.portfolio')
 logger.setLevel(logging.WARNING)  # default: only print WARNINGS and above
 logger.setLevel(logging.CRITICAL)  # disable printing
 logger.setLevel(logging.DEBUG)  # verbose: print errors & debug info
+```
+
+## Coverage
+
+To see the test coverage the following command is run in the root directory. This is also documented in the `.coveragerc` file.
+```
+pytest --cov=iex --cov-report=html
 ```

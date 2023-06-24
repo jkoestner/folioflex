@@ -33,6 +33,8 @@ pd.options.display.float_format = "{:,.2f}".format
 # logging options https://docs.python.org/3/library/logging.html
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
+if logger.hasHandlers():
+    logger.handlers.clear()
 
 formatter = logging.Formatter(fmt="%(levelname)s: %(message)s")
 
@@ -194,29 +196,6 @@ class Portfolio:
         performance = performance.reset_index().set_index("ticker")
         performance.drop(["index", "units", "cost"], axis=1, inplace=True)
 
-        performance.loc["portfolio"] = np.nan
-        performance.loc["portfolio", "date"] = pd.to_datetime(
-            date, infer_datetime_format=True
-        )
-        # remove benchmark from portfolio calculation
-        condition = ~performance.index.str.contains("benchmark")
-
-        performance.loc["portfolio", "cumulative_cost"] = performance.loc[
-            condition, "cumulative_cost"
-        ].sum()
-        performance.loc["portfolio", "market_value"] = performance.loc[
-            condition, "market_value"
-        ].sum()
-        performance.loc["portfolio", "return"] = performance.loc[
-            condition, "return"
-        ].sum()
-        performance.loc["portfolio", "realized"] = performance.loc[
-            condition, "realized"
-        ].sum()
-        performance.loc["portfolio", "unrealized"] = performance.loc[
-            condition, "unrealized"
-        ].sum()
-
         condition = performance.index.str.contains("Cash")
         performance.loc["portfolio", "cash"] = performance.loc[
             condition, "market_value"
@@ -366,6 +345,8 @@ class Portfolio:
         )
         transactions_history = self._calc_tx_metrics(tx_hist_df=transactions_history)
 
+        transactions_history = self._add_portfolio(tx_hist_df=transactions_history)
+
         for benchmark in benchmarks:
             benchmark_history = self._add_benchmark(
                 tx_df=transactions,
@@ -384,7 +365,7 @@ class Portfolio:
 
         return transactions_history
 
-    def get_all_performance(self, step=5, tx_hist_df=None):
+    def _get_all_performance(self, step=5, tx_hist_df=None):
         """Get performance of portfolio and stocks traded for duration of portfolio.
 
         Parameters
@@ -776,36 +757,43 @@ class Portfolio:
 
         return benchmark_tx_hist
 
-    def _add_portfolio(self, tx_df, price_history=None, other_fields=None):
+    def _add_portfolio(self, tx_hist_df=None):
         """Add the portfolio with transaction history dataframe.
 
         Parameters
         ----------
-        tx_df : DataFrame
-            Transactions to calculate metrics on
-        ticker : str
-            The ticker to create the benchmark for
-        price_history : DataFrame
-            Price history DataFrame
-        other_fields : list (optional)
-            additional fields to include
+        tx__hist_df : DataFrame
+            Transactions history
 
         Returns
         ----------
         portfolio_tx_hist : DataFrame
-            DataFrame containing transaction history for dataframe
+            DataFrame containing portfolio transaction history
         """
-        portfolio_tx_hist = []
-        # if tx_hist_df is None:
-        #     tx_hist_df = self.transactions_history
-        # cols = ["ticker", "date"] + [view]
-        # view_df = tx_hist_df[cols]
-        # view_df = view_df.pivot_table(
-        #     index="date", columns="ticker", values=view, aggfunc="sum"
-        # )
-        # view_df["portfolio"] = view_df.loc[
-        #     :, ~view_df.columns.str.contains("benchmark")
-        # ].sum(axis=1)
+        portfolio_tx_hist = pd.DataFrame()
+        if tx_hist_df is None:
+            tx_hist_df = self.transactions_history
+        views = [
+            "cost",
+            "cumulative_cost",
+            "market_value",
+            "return",
+            "unrealized",
+            "realized",
+        ]
+        for view in views:
+            cols = ["ticker", "date"] + [view]
+            view_df = tx_hist_df[cols]
+            view_df = view_df.pivot_table(
+                index="date", columns="ticker", values=view, aggfunc="sum"
+            )
+            view_df["portfolio"] = view_df.loc[
+                :, ~view_df.columns.str.contains("benchmark")
+            ].sum(axis=1)
+            portfolio_tx_hist[view] = view_df["portfolio"]
+        portfolio_tx_hist["ticker"] = "portfolio"
+        portfolio_tx_hist.reset_index(inplace=True)
+        portfolio_tx_hist = pd.concat([tx_hist_df, portfolio_tx_hist], axis=0)
 
         return portfolio_tx_hist
 
@@ -907,24 +895,16 @@ class Portfolio:
         transactions = tx_hist_df[tx_hist_df["cost"] != 0]
 
         # get the current price, entry price, and transactions
-        if ticker == "portfolio":
-            current_price = tx_hist_df[tx_hist_df["date"] == date]
-            entry_price = tx_hist_df[
-                tx_hist_df["date"] == tx_hist_df["date"].min()
-            ].copy()
-            ticker_transactions = transactions[transactions["date"] <= date].copy()
-
-        else:
-            current_price = tx_hist_df[
-                (tx_hist_df["ticker"] == ticker) & (tx_hist_df["date"] == date)
-            ]
-            entry_price = tx_hist_df[
-                (tx_hist_df["ticker"] == ticker)
-                & (tx_hist_df["date"] == tx_hist_df["date"].min())
-            ].copy()
-            ticker_transactions = transactions[
-                (transactions["ticker"] == ticker) & (transactions["date"] <= date)
-            ].copy()
+        current_price = tx_hist_df[
+            (tx_hist_df["ticker"] == ticker) & (tx_hist_df["date"] == date)
+        ]
+        entry_price = tx_hist_df[
+            (tx_hist_df["ticker"] == ticker)
+            & (tx_hist_df["date"] == tx_hist_df["date"].min())
+        ].copy()
+        ticker_transactions = transactions[
+            (transactions["ticker"] == ticker) & (transactions["date"] <= date)
+        ].copy()
 
         # combine the entry price, transactions, and current price
 
@@ -1016,22 +996,7 @@ class Portfolio:
                 ]
             )
 
-        # get portfolio return
-        condition = ~tx_hist_df["ticker"].str.contains("benchmark")
-        portfolio_return = self._get_dwrr_return_pct(
-            ticker="portfolio",
-            date=date,
-            tx_hist_df=tx_hist_df[condition],
-            lookback=lookback,
-        )
-        return_pcts = pd.concat(
-            [
-                return_pcts,
-                pd.DataFrame(
-                    {"ticker": ["portfolio"], return_pcts_col: portfolio_return}
-                ),
-            ]
-        ).set_index(["ticker"])
+        return_pcts = return_pcts.set_index(["ticker"])
 
         return return_pcts
 
@@ -1294,9 +1259,6 @@ class Manager:
     def get_summary(self, date=None, lookback=None):
         """Get summary of portfolios.
 
-        TODO add in a benchmark variable to compare simple returns
-        TODO add in a function to review the returns of the portfolios
-
         Parameters
         ----------
         date : date
@@ -1320,10 +1282,49 @@ class Manager:
         logger.info(f"Summarizing following portfolios: [{portfolio_repr}]")
         dfs = []
         for portfolio in self.portfolios:
-            df = portfolio.get_performance(date=date, lookback=lookback)
-            df = df[df.index == "portfolio"]
-            df = df.rename(index={"portfolio": portfolio.name})
+            performance = portfolio.get_performance(date=date, lookback=lookback)
+            df = performance[performance.index == "portfolio"].rename(
+                index={"portfolio": portfolio.name}
+            )
+            # adding benchmark to the summary
+            benchmark = performance[performance.index.str.contains("benchmark")].head(1)
+            benchmark_dict = {}
+            if not benchmark.empty:
+                benchmark_dict["benchmark"] = benchmark.index.values[0].split("-")[1]
+                benchmark_dict["benchmark_simple_return_pct"] = benchmark[
+                    "simple_return_pct"
+                ].values[0]
+
+            df = df.assign(**benchmark_dict)
             dfs.append(df)
         summary = pd.concat(dfs)
 
         return summary
+
+    def get_view(self, view="market_value"):
+        """Get the view of portfolios.
+
+        Useful for plotting returns visually.
+
+        Parameters
+        ----------
+        view : str
+            column to sum over on the portfolio dataframe
+               - e.g. "market_value", "return", "cumulative_cost", "realized"
+
+        Returns
+        ----------
+        view_df : DataFrame
+
+        """
+        portfolio_repr = ", ".join([portfolio.name for portfolio in self.portfolios])
+        logger.info(f"View of following portfolios: [{portfolio_repr}]")
+        dfs = []
+        for portfolio in self.portfolios:
+            df = portfolio.get_view(view=view)
+            df = df[["portfolio"]]
+            df = df.rename(columns={"portfolio": portfolio.name})
+            dfs.append(df)
+        view_df = pd.concat(dfs, axis=1)
+
+        return view_df
