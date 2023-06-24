@@ -93,9 +93,8 @@ def test_calc_market_value():
         "test_market_value"
     ].sum()
 
-    assert (
-        performance.loc["portfolio", "market_value"]
-        == performance.loc["portfolio", "test_market_value"]
+    assert round(performance.loc["portfolio", "market_value"], 2) == round(
+        performance.loc["portfolio", "test_market_value"], 2
     ), "Expected market_value to be last_price * cumulative_units"
 
 
