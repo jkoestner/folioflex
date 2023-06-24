@@ -28,7 +28,6 @@ Full documentation can be seen here: https://jkoestner.github.io/IEX
 
 Data sources:
 - https://iexcloud.io/
-- https://www.alphavantage.co
 - https://pypi.org/project/yahoo-finance/
 
 ## Install packages

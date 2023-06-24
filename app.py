@@ -53,7 +53,7 @@ app.layout = html.Div(
         html.Div(id="task-status", children="none", style={"display": "none"}),
         html.Div(id="task-id", children="none", style={"display": "none"}),
         html.Div(id="sector-status", children="none", style={"display": "none"}),
-        html.Div(id="av-data", children="none", style={"display": "none"}),
+        html.Div(id="yf-data", children="none", style={"display": "none"}),
         html.Div(id="personal-task-status", children="none", style={"display": "none"}),
         html.Div(id="personal-task-id", children="none", style={"display": "none"}),
         html.Div(id="personal-status", children="none", style={"display": "none"}),
@@ -370,7 +370,7 @@ def status_check(n_intervals, task_id, task_status):
 
 
 @app.callback(
-    [Output("av-data", "children"), Output("sector-status", "children")],
+    [Output("yf-data", "children"), Output("sector-status", "children")],
     [Input("task-status", "children")],
     [State("task-id", "children")],
 )
@@ -396,12 +396,12 @@ def get_results(task_status, task_id):
         Output("slider", "marks"),
     ],
     [Input("sector-status", "children")],
-    [State("av-data", "children")],
+    [State("yf-data", "children")],
 )
-def update_SectorData(sector_status, av_data):
+def update_SectorData(sector_status, yf_data):
     """Provide sector data table."""
     if sector_status == "ready":
-        sector_close = pd.read_json(av_data)
+        sector_close = pd.read_json(yf_data)
         min, max, value, marks = utils.get_slider_values(sector_close.index)
     else:
         min = 0
@@ -415,15 +415,15 @@ def update_SectorData(sector_status, av_data):
 @app.callback(
     Output("Sector-Graph", "figure"),
     [Input("slider", "value")],
-    [State("av-data", "children"), State("sector-status", "children")],
+    [State("yf-data", "children"), State("sector-status", "children")],
 )
-def update_SectorGraph(slide_value, av_data, sector_status):
+def update_SectorGraph(slide_value, yf_data, sector_status):
     """Provide sector graph."""
     res = []
     layout = go.Layout(hovermode="closest")
 
     if sector_status == "ready" and slide_value != 0:
-        sector_close = pd.read_json(av_data)
+        sector_close = pd.read_json(yf_data)
         sector_data = sector_close[
             (utils.unix_time_millis(sector_close.index) > slide_value[0])
             & (utils.unix_time_millis(sector_close.index) <= slide_value[1])
