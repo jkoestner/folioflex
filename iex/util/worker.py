@@ -1,7 +1,12 @@
 """Worker connections.
 
-note: these worker queries need to be pushed to be pushed to remote to be used
-in local set up.
+note: there are two resources that are needed to use the worker processes.
+
+1. redis server - this is the message broker that is used to communicate between the
+worker and the main process.
+
+2. worker - this is the process that will be used to execute the tasks.  The worker
+will be listening to the redis server for tasks to execute.
 """
 
 import os
