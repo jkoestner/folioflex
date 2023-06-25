@@ -53,6 +53,10 @@ def sector_query(start="2018-01-01"):
     return sector_close["Adj Close"]
 
 
+def test():
+    return 1
+
+
 def portfolio_query(tx_file, filter_broker=None):
     """Query for worker to generate portfolio.
 
