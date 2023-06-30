@@ -51,12 +51,14 @@ app.layout = html.Div(
         dcc.Location(id="url", refresh=False),
         html.Div(id="page-content"),
         html.Div(id="task-status", children="none", style={"display": "none"}),
+        html.Div(id="refresh_text", children="none", style={"display": "none"}),
         html.Div(id="task-id", children="none", style={"display": "none"}),
         html.Div(id="sector-status", children="none", style={"display": "none"}),
         html.Div(id="yf-data", children="none", style={"display": "none"}),
         html.Div(id="personal-task-status", children="none", style={"display": "none"}),
         html.Div(id="personal-task-id", children="none", style={"display": "none"}),
         html.Div(id="personal-status", children="none", style={"display": "none"}),
+        html.Div(id="manager-df", children="none", style={"display": "none"}),
         html.Div(id="manager-task-status", children="none", style={"display": "none"}),
         html.Div(id="manager-task-id", children="none", style={"display": "none"}),
         html.Div(id="manager-status", children="none", style={"display": "none"}),
@@ -871,10 +873,7 @@ def initialize_ManagerTable(n_clicks, lookback):
         manager_task_id = "none"
     else:
         personal_tx_file = constants.aws_tx_file
-        manager_task_id = q.enqueue(
-            worker.manager_query, personal_tx_file, lookback=lookback
-        ).id
-
+        manager_task_id = q.enqueue(worker.manager_query, personal_tx_file, lookback).id
     return manager_task_id
 
 
@@ -912,31 +911,50 @@ def manager_status_check(n_intervals, manager_task_id, manager_task_status):
     return manager_task_status
 
 
-# performance table
+@app.callback(
+    [Output("manager-status", "children"), Output("manager-df", "children")],
+    Input("manager-task-status", "children"),
+    State("manager-task-id", "children"),
+)
+def manager_get_results(manager_task_status, manager_task_id):
+    """Provide status results."""
+    if manager_task_status == "finished":
+        job = Job.fetch(manager_task_id, connection=worker.conn)
+        manager_df = job.result
+        job.delete()
+        manager_df = manager_df.to_json()
+        manager_status = "ready"
+    else:
+        manager_status = "none"
+        manager_df = None
+
+    return manager_status, manager_df
+
+
+# manager table
 @app.callback(
     [
-        Output("manager_perfomance_table", "columns"),
-        Output("manager_perfomance_table", "data"),
+        Output("manager_table", "columns"),
+        Output("manager_table", "data"),
     ],
     [
         Input("manager-status", "children"),
     ],
     [
-        State("manager-portfolio-df", "children"),
+        State("manager-df", "children"),
     ],
 )
-def update_ManagerPerformance(manager_status, manager_portfolio_df):
-    """Provide manager performance table."""
+def update_ManagerTable(manager_status, manager_df):
+    """Provide personal performance table."""
     if manager_status == "ready":
-        pm_df = pd.read_json(manager_portfolio_df)
-
-        manager_perfomance_table = [
-            {"name": i, "id": i} for i in pm_df.columns
-        ], pm_df.to_dict("records")
+        manager_df = pd.read_json(manager_df).reset_index()
+        manager_table = [
+            {"name": i, "id": i} for i in manager_df.columns
+        ], manager_df.to_dict("records")
     else:
-        manager_perfomance_table = (None, None)
+        manager_table = (None, None)
 
-    return manager_perfomance_table
+    return manager_table
 
 
 #  __        _____  ____  _  _______ ____

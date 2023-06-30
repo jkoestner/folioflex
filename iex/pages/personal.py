@@ -18,9 +18,9 @@ layout = html.Div(
                 ),
                 html.Div(id="manager_refresh_text", children=""),
                 # creating table for portfolio manager
-                html.Label("Portfolio Manager"),
+                html.Label("Portfolio Manager Table"),
                 dash_table.DataTable(
-                    id="manager_perfomance_table",
+                    id="manager_table",
                     sort_action="native",
                     page_action="native",
                 ),
@@ -67,7 +67,7 @@ layout = html.Div(
                 html.P(),
                 html.P(),
                 # creating table for performance
-                html.Label("Performance"),
+                html.Label("Performance Table"),
                 dash_table.DataTable(
                     id="personal_perfomance_table",
                     sort_action="native",
@@ -76,7 +76,7 @@ layout = html.Div(
                 html.P(),
                 html.P(),
                 # creating table for transactions
-                html.Label("Transactions"),
+                html.Label("Transactions Table"),
                 dash_table.DataTable(
                     id="personal_transaction_table",
                     sort_action="native",
