@@ -57,6 +57,9 @@ app.layout = html.Div(
         html.Div(id="personal-task-status", children="none", style={"display": "none"}),
         html.Div(id="personal-task-id", children="none", style={"display": "none"}),
         html.Div(id="personal-status", children="none", style={"display": "none"}),
+        html.Div(id="manager-task-status", children="none", style={"display": "none"}),
+        html.Div(id="manager-task-id", children="none", style={"display": "none"}),
+        html.Div(id="manager-status", children="none", style={"display": "none"}),
         html.Div(
             id="personal-portfolio-tx", children="none", style={"display": "none"}
         ),
@@ -854,6 +857,88 @@ def update_PersonalTransaction(personal_status, personal_portfolio_tx):
     return transaction_table
 
 
+# ------------------------------------------------------------------
+# Portfolio Manager
+# initializing workers
+@app.callback(
+    Output("manager-task-id", "children"),
+    Input("manager-initialize", "n_clicks"),
+    State("lookback-input", "value"),
+)
+def initialize_ManagerTable(n_clicks, lookback):
+    """Provide sector analysis graph."""
+    if n_clicks == 0:
+        manager_task_id = "none"
+    else:
+        personal_tx_file = constants.aws_tx_file
+        manager_task_id = q.enqueue(
+            worker.manager_query, personal_tx_file, lookback=lookback
+        ).id
+
+    return manager_task_id
+
+
+# text
+@app.callback(
+    Output("manager_refresh_text", "children"),
+    Input("manager-task-status", "children"),
+)
+def manager_refresh_text(manager_task_status):
+    """Provide text for manager table."""
+    return manager_task_status
+
+
+@app.callback(
+    Output("manager-task-status", "children"),
+    [
+        Input("interval-component", "n_intervals"),
+        Input("manager-task-id", "children"),
+    ],
+    [
+        State("manager-task-status", "children"),
+    ],
+)
+def manager_status_check(n_intervals, manager_task_id, manager_task_status):
+    """Provide status check."""
+    if manager_task_id != "none":
+        try:
+            job = Job.fetch(manager_task_id, connection=worker.conn)
+            manager_task_status = job.get_status()
+        except NoSuchJobError:
+            manager_task_status = "standby"
+
+    else:
+        manager_task_status = "waiting"
+    return manager_task_status
+
+
+# performance table
+@app.callback(
+    [
+        Output("manager_perfomance_table", "columns"),
+        Output("manager_perfomance_table", "data"),
+    ],
+    [
+        Input("manager-status", "children"),
+    ],
+    [
+        State("manager-portfolio-df", "children"),
+    ],
+)
+def update_ManagerPerformance(manager_status, manager_portfolio_df):
+    """Provide manager performance table."""
+    if manager_status == "ready":
+        pm_df = pd.read_json(manager_portfolio_df)
+
+        manager_perfomance_table = [
+            {"name": i, "id": i} for i in pm_df.columns
+        ], pm_df.to_dict("records")
+    else:
+        manager_perfomance_table = (None, None)
+
+    return manager_perfomance_table
+
+
 #  __        _____  ____  _  _______ ____
 #  \ \      / / _ \|  _ \| |/ / ____|  _ \
 #   \ \ /\ / / | | | |_) | ' /|  _| | |_) |
@@ -868,16 +953,30 @@ def update_PersonalTransaction(personal_status, personal_portfolio_tx):
         Input("task-id", "children"),
         Input("personal-task-status", "children"),
         Input("personal-task-id", "children"),
+        Input("manager-task-status", "children"),
+        Input("manager-task-id", "children"),
     ],
 )
-def toggle_interval_speed(task_status, task_id, personal_task_status, personal_task_id):
+def toggle_interval_speed(
+    task_status,
+    task_id,
+    personal_task_status,
+    personal_task_id,
+    manager_task_status,
+    manager_task_id,
+):
     """Triggered by changes in task-id and task-status divs.
 
     It switches the page refresh interval to fast (1 sec) if a task is running, or slow (24 hours) if a task is
     pending or complete.
     """
-    if (task_id != "none" and task_status in ["started", "waiting"]) or (
-        personal_task_id != "none" and personal_task_status in ["started", "waiting"]
+    if (
+        (task_id != "none" and task_status in ["started", "waiting"])
+        or (
+            personal_task_id != "none"
+            and personal_task_status in ["started", "waiting"]
+        )
+        or (manager_task_id != "none" and manager_task_status in ["started", "waiting"])
     ):
         return 1000
     else:

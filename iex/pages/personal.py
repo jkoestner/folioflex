@@ -12,9 +12,19 @@ layout = html.Div(
         html.Div(
             [
                 utils.get_menu(),
-                html.Button(
-                    "Personal refresh", id="personal-initialize", n_clicks=0
+                html.Button("Portfolio Manager", id="manager-initialize", n_clicks=0),
+                dcc.Input(
+                    id="lookback-input", placeholder="Enter Lookback...", type="number"
                 ),
+                html.Div(id="manager_refresh_text", children=""),
+                # creating table for portfolio manager
+                html.Label("Portfolio Manager"),
+                dash_table.DataTable(
+                    id="manager_perfomance_table",
+                    sort_action="native",
+                    page_action="native",
+                ),
+                html.Button("Portolio", id="personal-initialize", n_clicks=0),
                 # dropdown
                 dcc.Dropdown(
                     [

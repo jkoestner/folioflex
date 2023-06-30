@@ -26,7 +26,6 @@ else:
     # if debugging locally will need a redis
     redis_url = os.getenv("LOCAL_REDIS")
 
-print(f"redis url: {redis_url}")
 conn = redis.from_url(redis_url)
 
 if __name__ == "__main__":
@@ -35,7 +34,7 @@ if __name__ == "__main__":
         worker.work()
 
 
-def sector_query(start="2018-01-01"):
+def sector_query(start="2023-01-01"):
     """Provide the sector historical stock prices.
 
     Parameters
@@ -72,10 +71,162 @@ def portfolio_query(tx_file, filter_broker=None):
         tx_file,
         filter_type=["Dividend"],
         filter_broker=filter_broker,
-        funds=["BLKEQIX", "TRPILCG", "TRPSV", "LIPIX", "BLKRVIX", "BLKRGIX", "HLIEIX"],
+        funds=[
+            "BLKEQIX",
+            "BLKRGIX",
+            "BLKRVIX",
+            "HLIEIX",
+            "LIPIX",
+            "TRPILCG",
+            "TRPSV",
+            "DODIX",
+        ],
+        delisted=[
+            "CCIV",
+            "CGRO",
+            "DCRB",
+            "DMYD",
+            "FIII",
+            "HZON",
+            "KCAC",
+            "LGVW",
+            "NGAC",
+            "PRPB",
+            "PSTH",
+            "SNPR",
+            "SRNGU",
+            "STPK",
+            "SVFA",
+            "RBAC",
+            "RKLY",
+            "THCA",
+            "TWTR",
+            "TVIX",
+            "XIV",
+        ],
         other_fields=["broker"],
         benchmarks=["IVV"],
     )
     personal_portfolio_tx = personal_portfolio.transactions_history
 
     return personal_portfolio_tx
+
+
+def manager_query(tx_file, lookback=None):
+    """Query for worker to generate manager.
+
+    Parameters
+    ----------
+    tx_file : str
+       file to create
+    lookback : int (optional)
+        amount of days to lookback
+
+    Returns
+    -------
+    pm_df : dataframe
+       provides the portfolio manager performance dataframe
+    """
+    # constant variables used in program
+    filter_type = ["Dividend"]
+    funds = [
+        "BLKEQIX",
+        "BLKRGIX",
+        "BLKRVIX",
+        "HLIEIX",
+        "LIPIX",
+        "TRPILCG",
+        "TRPSV",
+        "DODIX",
+    ]
+    delisted = [
+        "CCIV",
+        "CGRO",
+        "DCRB",
+        "DMYD",
+        "FIII",
+        "HZON",
+        "KCAC",
+        "LGVW",
+        "NGAC",
+        "PRPB",
+        "PSTH",
+        "SNPR",
+        "SRNGU",
+        "STPK",
+        "SVFA",
+        "RBAC",
+        "RKLY",
+        "THCA",
+        "TWTR",
+        "TVIX",
+        "XIV",
+    ]
+    other_fields = ["broker"]
+    benchmarks = ["IVV"]
+
+    # create portfolio objects
+    pf = portfolio.Portfolio(
+        tx_file,
+        filter_type=filter_type,
+        funds=funds,
+        delisted=delisted,
+        other_fields=other_fields,
+        benchmarks=benchmarks,
+        name="all",
+    )
+    fidelity = portfolio.Portfolio(
+        tx_file,
+        filter_type=filter_type,
+        funds=funds,
+        delisted=delisted,
+        other_fields=other_fields,
+        benchmarks=benchmarks,
+        name="fidelity",
+        filter_broker=["Fidelity"],
+    )
+    ib = portfolio.Portfolio(
+        tx_file,
+        filter_type=filter_type,
+        funds=funds,
+        delisted=delisted,
+        other_fields=other_fields,
+        benchmarks=benchmarks,
+        name="ib",
+        filter_broker=["IB"],
+    )
+    eiten = portfolio.Portfolio(
+        tx_file,
+        filter_type=filter_type,
+        funds=funds,
+        delisted=delisted,
+        other_fields=other_fields,
+        benchmarks=benchmarks,
+        name="eiten",
+        filter_broker=["IB-eiten"],
+    )
+    roth = portfolio.Portfolio(
+        tx_file,
+        filter_type=filter_type,
+        funds=funds,
+        delisted=delisted,
+        other_fields=other_fields,
+        benchmarks=benchmarks,
+        name="roth",
+        filter_broker=["Ally_Roth"],
+    )
+    company = portfolio.Portfolio(
+        tx_file,
+        filter_type=filter_type,
+        funds=funds,
+        delisted=delisted,
+        other_fields=other_fields,
+        benchmarks=benchmarks,
+        name="company",
+        filter_broker=["Company"],
+    )
+    portfolios = [pf, fidelity, ib, eiten, roth, company]
+    pm = portfolio.Manager(portfolios)
+    pm_df = pm.get_summary(lookback=lookback)
+
+    return pm_df
