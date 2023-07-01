@@ -24,7 +24,7 @@ layout = html.Div(
                     sort_action="native",
                     page_action="native",
                 ),
-                html.Button("Portolio", id="personal-initialize", n_clicks=0),
+                html.Button("Portfolio", id="personal-initialize", n_clicks=0),
                 # dropdown
                 dcc.Dropdown(
                     [

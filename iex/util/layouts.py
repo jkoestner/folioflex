@@ -201,6 +201,80 @@ active_fmt = [
     ),
 ]
 
+manager_fmt = [
+    dict(id="ticker", name="ticker"),
+    dict(id="date", name="date"),
+    dict(id="average_price", name="average_price"),
+    dict(id="last_price", name="last_price"),
+    dict(
+        id="cumulative_units",
+        name="cumulative_units",
+        type="numeric",
+        format=Format(precision=0, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="cumulative_cost",
+        name="cumulative_cost",
+        type="numeric",
+        format=Format(precision=0, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="market_value",
+        name="market_value",
+        type="numeric",
+        format=Format(precision=0, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="return",
+        name="return",
+        type="numeric",
+        format=Format(precision=0, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="return_pct",
+        name="return_pct",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.percentage),
+    ),
+    dict(
+        id="simple_return_pct",
+        name="simple_return_pct",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.percentage),
+    ),
+    dict(
+        id="realized",
+        name="realized",
+        type="numeric",
+        format=Format(precision=0, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="unrealized",
+        name="unrealized",
+        type="numeric",
+        format=Format(precision=0, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="cash",
+        name="cash",
+        type="numeric",
+        format=Format(precision=0, scheme=Scheme.fixed).group(True),
+    ),
+    dict(
+        id="equity",
+        name="equity",
+        type="numeric",
+        format=Format(precision=0, scheme=Scheme.fixed).group(True),
+    ),
+    dict(id="benchmark", name="benchmark"),
+    dict(
+        id="benchmark_simple_return_pct",
+        name="benchmark_simple_return_pct",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.percentage),
+    ),
+]
+
 performance_fmt = [
     dict(id="ticker", name="ticker"),
     dict(id="date", name="date"),

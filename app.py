@@ -874,6 +874,7 @@ def initialize_ManagerTable(n_clicks, lookback):
     else:
         personal_tx_file = constants.aws_tx_file
         manager_task_id = q.enqueue(worker.manager_query, personal_tx_file, lookback).id
+        print(f"initializing manager table - {manager_task_id}")
     return manager_task_id
 
 
@@ -948,9 +949,7 @@ def update_ManagerTable(manager_status, manager_df):
     """Provide personal performance table."""
     if manager_status == "ready":
         manager_df = pd.read_json(manager_df).reset_index()
-        manager_table = [
-            {"name": i, "id": i} for i in manager_df.columns
-        ], manager_df.to_dict("records")
+        manager_table = layouts.manager_fmt, manager_df.to_dict("records")
     else:
         manager_table = (None, None)
 
