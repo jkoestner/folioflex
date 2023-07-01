@@ -1,3 +1,4 @@
+celery>=5.3.1
 dash>=1.0.2
 dash-core-components>=1.0.0
 dash-html-components>=1.0.0
@@ -6,6 +7,7 @@ dash-table>=4.0.2
 ipywidgets
 Flask>=1.1.1
 Flask-Compress>=1.4.0
+flower>=2.0.0
 gunicorn>=19.9.0
 jupyter-dash
 jupyterlab

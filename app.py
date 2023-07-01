@@ -20,19 +20,16 @@ import pandas_market_calendars as mcal
 import plotly.express as px
 import plotly.graph_objs as go
 
+from celery.result import AsyncResult
 from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
 from dateutil.relativedelta import relativedelta
-from rq import Queue
-from rq.job import Job
-from rq.exceptions import NoSuchJobError
 
 from iex.pages import stocks, sectors, ideas, macro, tracker, crypto, personal
-from iex.util import constants, layouts, page_constants, utils, worker
+from iex.util import constants, cq, layouts, page_constants, utils
 from iex.portfolio import heatmap
 
-q = Queue(connection=worker.conn)
 
 #      _    ____  ____
 #     / \  |  _ \|  _ \
@@ -351,7 +348,8 @@ def initialize_SectorGraph(n_clicks):
     if n_clicks == 0:
         task_id = "none"
     else:
-        task_id = q.enqueue(worker.sector_query).id
+        task = cq.sector_query.delay()
+        task_id = task.id
 
     return task_id
 
@@ -364,11 +362,8 @@ def initialize_SectorGraph(n_clicks):
 def status_check(n_intervals, task_id, task_status):
     """Provide status check."""
     if task_id != "none":
-        try:
-            job = Job.fetch(task_id, connection=worker.conn)
-            task_status = job.get_status()
-        except NoSuchJobError:
-            task_status = "standby"
+        task = AsyncResult(task_id, app=cq.celery_app)
+        task_status = task.status
     else:
         task_status = "waiting"
     return task_status, task_status
@@ -381,10 +376,9 @@ def status_check(n_intervals, task_id, task_status):
 )
 def get_results(task_status, task_id):
     """Provide status results."""
-    if task_status == "finished":
-        job = Job.fetch(task_id, connection=worker.conn)
-        sector_close = job.result
-        job.delete()
+    if task_status == "SUCCESS":
+        task = AsyncResult(task_id, app=cq.celery_app)
+        sector_close = task.result
         sector_status = "ready"
         sector_close = sector_close.to_json()
     else:
@@ -687,9 +681,8 @@ def initialize_PersonalGraph(n_clicks, dropdown):
             broker = [dropdown]
 
         personal_tx_file = constants.aws_tx_file
-        personal_task_id = q.enqueue(
-            worker.portfolio_query, personal_tx_file, filter_broker=broker
-        ).id
+        personal_task = cq.portfolio_query.delay(personal_tx_file, filter_broker=broker)
+        personal_task_id = personal_task.id
 
     return personal_task_id
 
@@ -717,11 +710,8 @@ def personal_refresh_text(personal_task_status):
 def personal_status_check(n_intervals, personal_task_id, personal_task_status):
     """Provide status check."""
     if personal_task_id != "none":
-        try:
-            job = Job.fetch(personal_task_id, connection=worker.conn)
-            personal_task_status = job.get_status()
-        except NoSuchJobError:
-            personal_task_status = "standby"
+        personal_task = AsyncResult(personal_task_id, app=cq.celery_app)
+        personal_task_status = personal_task.status
 
     else:
         personal_task_status = "waiting"
@@ -738,10 +728,9 @@ def personal_status_check(n_intervals, personal_task_id, personal_task_status):
 )
 def personal_get_results(personal_task_status, personal_task_id):
     """Provide status results."""
-    if personal_task_status == "finished":
-        job = Job.fetch(personal_task_id, connection=worker.conn)
-        personal_portfolio_tx = job.result
-        job.delete()
+    if personal_task_status == "SUCCESS":
+        personal_task = AsyncResult(personal_task_id, app=cq.celery_app)
+        personal_portfolio_tx = personal_task.result
         personal_portfolio_tx = personal_portfolio_tx.to_json()
         personal_status = "ready"
     else:
@@ -873,7 +862,8 @@ def initialize_ManagerTable(n_clicks, lookback):
         manager_task_id = "none"
     else:
         personal_tx_file = constants.aws_tx_file
-        manager_task_id = q.enqueue(worker.manager_query, personal_tx_file, lookback).id
+        task = cq.manager_query.delay(personal_tx_file, lookback)
+        manager_task_id = task.id
         print(f"initializing manager table - {manager_task_id}")
     return manager_task_id
 
@@ -901,11 +891,8 @@ def manager_refresh_text(manager_task_status):
 def manager_status_check(n_intervals, manager_task_id, manager_task_status):
     """Provide status check."""
     if manager_task_id != "none":
-        try:
-            job = Job.fetch(manager_task_id, connection=worker.conn)
-            manager_task_status = job.get_status()
-        except NoSuchJobError:
-            manager_task_status = "standby"
+        task = AsyncResult(manager_task_id, app=cq.celery_app)
+        manager_task_status = task.status
 
     else:
         manager_task_status = "waiting"
@@ -919,10 +906,9 @@ def manager_status_check(n_intervals, manager_task_id, manager_task_status):
 )
 def manager_get_results(manager_task_status, manager_task_id):
     """Provide status results."""
-    if manager_task_status == "finished":
-        job = Job.fetch(manager_task_id, connection=worker.conn)
-        manager_df = job.result
-        job.delete()
+    if manager_task_status == "SUCCESS":
+        task = AsyncResult(manager_task_id, app=cq.celery_app)
+        manager_df = task.result
         manager_df = manager_df.to_json()
         manager_status = "ready"
     else:
@@ -988,12 +974,12 @@ def toggle_interval_speed(
     pending or complete.
     """
     if (
-        (task_id != "none" and task_status in ["started", "waiting"])
+        (task_id != "none" and task_status in ["started", "PENDING"])
         or (
             personal_task_id != "none"
-            and personal_task_status in ["started", "waiting"]
+            and personal_task_status in ["started", "PENDING"]
         )
-        or (manager_task_id != "none" and manager_task_status in ["started", "waiting"])
+        or (manager_task_id != "none" and manager_task_status in ["started", "PENDING"])
     ):
         return 1000
     else:
