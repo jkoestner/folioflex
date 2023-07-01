@@ -974,12 +974,12 @@ def toggle_interval_speed(
     pending or complete.
     """
     if (
-        (task_id != "none" and task_status in ["started", "PENDING"])
+        (task_id != "none" and task_status in ["waiting", "PENDING"])
         or (
             personal_task_id != "none"
-            and personal_task_status in ["started", "PENDING"]
+            and personal_task_status in ["waiting", "PENDING"]
         )
-        or (manager_task_id != "none" and manager_task_status in ["started", "PENDING"])
+        or (manager_task_id != "none" and manager_task_status in ["waiting", "PENDING"])
     ):
         return 1000
     else:
