@@ -52,16 +52,17 @@ def sector_query(start="2023-01-01"):
 
     Returns
     -------
-    sector_close : series
+    cq_sector_close : json
        provides the list of prices for historical prices
     """
     sector_close = yf.download(layouts.list_sector, start=start)
+    cq_sector_close = sector_close["Adj Close"].to_json()
 
-    return sector_close["Adj Close"]
+    return cq_sector_close
 
 
 @celery_app.task
-def portfolio_query(tx_file, filter_broker=None):
+def portfolio_query(tx_file, filter_broker=None, lookback=None):
     """Query for worker to generate portfolio.
 
     Parameters
@@ -70,55 +71,44 @@ def portfolio_query(tx_file, filter_broker=None):
        file to create
     filter_broker : list (optional)
         the brokers to include in analysis
+    lookback : int (optional)
+        amount of days to lookback
 
     Returns
     -------
-    personal_portfolio_tx : dataframe
-       provides the portfolio transaction history
+    cq_portfolio_dict : dict
+       provides a dict of portfolio objects
     """
     personal_portfolio = portfolio.Portfolio(
         tx_file,
         filter_type=["Dividend"],
         filter_broker=filter_broker,
-        funds=[
-            "BLKEQIX",
-            "BLKRGIX",
-            "BLKRVIX",
-            "HLIEIX",
-            "LIPIX",
-            "TRPILCG",
-            "TRPSV",
-            "DODIX",
-        ],
-        delisted=[
-            "CCIV",
-            "CGRO",
-            "DCRB",
-            "DMYD",
-            "FIII",
-            "HZON",
-            "KCAC",
-            "LGVW",
-            "NGAC",
-            "PRPB",
-            "PSTH",
-            "SNPR",
-            "SRNGU",
-            "STPK",
-            "SVFA",
-            "RBAC",
-            "RKLY",
-            "THCA",
-            "TWTR",
-            "TVIX",
-            "XIV",
-        ],
+        funds=layouts.funds,
+        delisted=layouts.delisted,
         other_fields=["broker"],
         benchmarks=["IVV"],
     )
-    personal_portfolio_tx = personal_portfolio.transactions_history
 
-    return personal_portfolio_tx
+    # get transactions that have portfolio informaiton as well
+    transactions = personal_portfolio.transactions_history
+    transactions = transactions[
+        (transactions["units"] != 0) & (transactions["units"].notnull())
+    ].sort_values(by="date", ascending=False)
+
+    # provide results in dictionary
+    cq_portfolio_dict = {}
+    cq_portfolio_dict["transactions"] = transactions.to_json()
+    cq_portfolio_dict["performance"] = (
+        personal_portfolio.get_performance(lookback=lookback).reset_index().to_json()
+    )
+    cq_portfolio_dict["view_return"] = personal_portfolio.get_view(
+        view="return"
+    ).to_json()
+    cq_portfolio_dict["view_cost"] = personal_portfolio.get_view(
+        view="cumulative_cost"
+    ).to_json()
+
+    return cq_portfolio_dict
 
 
 @celery_app.task
@@ -134,44 +124,13 @@ def manager_query(tx_file, lookback=None):
 
     Returns
     -------
-    pm_df : dataframe
-       provides the portfolio manager performance dataframe
+    cq_pm : json
+       provides the portfolio manager performance
     """
     # constant variables used in program
     filter_type = ["Dividend"]
-    funds = [
-        "BLKEQIX",
-        "BLKRGIX",
-        "BLKRVIX",
-        "HLIEIX",
-        "LIPIX",
-        "TRPILCG",
-        "TRPSV",
-        "DODIX",
-    ]
-    delisted = [
-        "CCIV",
-        "CGRO",
-        "DCRB",
-        "DMYD",
-        "FIII",
-        "HZON",
-        "KCAC",
-        "LGVW",
-        "NGAC",
-        "PRPB",
-        "PSTH",
-        "SNPR",
-        "SRNGU",
-        "STPK",
-        "SVFA",
-        "RBAC",
-        "RKLY",
-        "THCA",
-        "TWTR",
-        "TVIX",
-        "XIV",
-    ]
+    funds = layouts.funds
+    delisted = layouts.delisted
     other_fields = ["broker"]
     benchmarks = ["IVV"]
 
@@ -237,6 +196,6 @@ def manager_query(tx_file, lookback=None):
     )
     portfolios = [pf, fidelity, ib, eiten, roth, company]
     pm = portfolio.Manager(portfolios)
-    pm_df = pm.get_summary(lookback=lookback)
+    cq_pm = pm.get_summary(lookback=lookback).to_json()
 
-    return pm_df
+    return cq_pm

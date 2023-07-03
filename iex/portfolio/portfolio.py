@@ -288,16 +288,21 @@ class Portfolio:
 
         # sale price to be based on units bought and not sold (resolves same day sales)
         transactions["date"] = pd.to_datetime(transactions["date"], format="%d/%m/%Y")
-        transactions["sale_cost"] = np.where(
-            transactions["units"] <= 0,
-            0,
-            transactions["cost"],
-        )
-        transactions["sale_units"] = np.where(
-            transactions["units"] <= 0,
-            0,
-            transactions["units"],
-        )
+        transactions["sale_cost"] = transactions["cost"]
+
+        #  TODO this is also in benchmark and price history
+        # np.where(
+        #     transactions["units"] <= 0,
+        #     0,
+        #     transactions["cost"],
+        # )
+        transactions["sale_units"] = transactions["units"]
+
+        # np.where(
+        #     transactions["units"] <= 0,
+        #     0,
+        #     transactions["units"],
+        # )
 
         transactions["sale_price"] = (
             transactions["sale_cost"] / transactions["sale_units"]
@@ -537,16 +542,8 @@ class Portfolio:
             )
 
         # sale price to be based on units bought and not sold (resolves same day sales)
-        tx_df["sale_cost"] = np.where(
-            tx_df["units"] <= 0,
-            0,
-            tx_df["cost"],
-        )
-        tx_df["sale_units"] = np.where(
-            tx_df["units"] <= 0,
-            0,
-            tx_df["units"],
-        )
+        tx_df["sale_cost"] = tx_df["cost"]
+        tx_df["sale_units"] = tx_df["units"]
 
         tx_df = (
             tx_df.groupby(by=["date", "ticker"] + other_fields)
@@ -688,16 +685,8 @@ class Portfolio:
         benchmark_tx["cost"] = -benchmark_tx["cost"]
 
         # sale price to be based on units bought and not sold (resolves same day sales)
-        benchmark_tx["sale_cost"] = np.where(
-            benchmark_tx["units"] <= 0,
-            0,
-            benchmark_tx["cost"],
-        )
-        benchmark_tx["sale_units"] = np.where(
-            benchmark_tx["units"] <= 0,
-            0,
-            benchmark_tx["units"],
-        )
+        benchmark_tx["sale_cost"] = benchmark_tx["cost"]
+        benchmark_tx["sale_units"] = benchmark_tx["units"]
 
         benchmark_tx = (
             benchmark_tx.groupby(by=["date", "ticker"] + other_fields)

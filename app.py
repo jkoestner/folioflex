@@ -378,13 +378,12 @@ def get_results(task_status, task_id):
     """Provide status results."""
     if task_status == "SUCCESS":
         task = AsyncResult(task_id, app=cq.celery_app)
-        sector_close = task.result
+        cq_sector_close = task.result
         sector_status = "ready"
-        sector_close = sector_close.to_json()
     else:
         sector_status = "none"
-        sector_close = None
-    return sector_close, sector_status
+        cq_sector_close = None
+    return cq_sector_close, sector_status
 
 
 @app.callback(
@@ -400,8 +399,8 @@ def get_results(task_status, task_id):
 def update_SectorData(sector_status, yf_data):
     """Provide sector data table."""
     if sector_status == "ready":
-        sector_close = pd.read_json(yf_data)
-        min, max, value, marks = utils.get_slider_values(sector_close.index)
+        cq_sector_close = pd.read_json(yf_data)
+        min, max, value, marks = utils.get_slider_values(cq_sector_close.index)
     else:
         min = 0
         max = 10
@@ -422,10 +421,10 @@ def update_SectorGraph(slide_value, yf_data, sector_status):
     layout = go.Layout(hovermode="closest")
 
     if sector_status == "ready" and slide_value != 0:
-        sector_close = pd.read_json(yf_data)
-        sector_data = sector_close[
-            (utils.unix_time_millis(sector_close.index) > slide_value[0])
-            & (utils.unix_time_millis(sector_close.index) <= slide_value[1])
+        cq_sector_close = pd.read_json(yf_data)
+        sector_data = cq_sector_close[
+            (utils.unix_time_millis(cq_sector_close.index) > slide_value[0])
+            & (utils.unix_time_millis(cq_sector_close.index) <= slide_value[1])
         ].copy()
         for col in sector_data.columns:
             sector_data["change"] = sector_data[col] / sector_data[col].iat[0] - 1
@@ -668,9 +667,12 @@ def update_cryptoquoteanalysis(n_clicks, input_value):
 @app.callback(
     Output("personal-task-id", "children"),
     Input("personal-initialize", "n_clicks"),
-    State("personal-dropdown", "value"),
+    [
+        State("personal-dropdown", "value"),
+        State("lookback-input", "value"),
+    ],
 )
-def initialize_PersonalGraph(n_clicks, dropdown):
+def initialize_PersonalGraph(n_clicks, dropdown, lookback):
     """Provide sector analysis graph."""
     if n_clicks == 0:
         personal_task_id = "none"
@@ -681,7 +683,9 @@ def initialize_PersonalGraph(n_clicks, dropdown):
             broker = [dropdown]
 
         personal_tx_file = constants.aws_tx_file
-        personal_task = cq.portfolio_query.delay(personal_tx_file, filter_broker=broker)
+        personal_task = cq.portfolio_query.delay(
+            personal_tx_file, filter_broker=broker, lookback=lookback
+        )
         personal_task_id = personal_task.id
 
     return personal_task_id
@@ -731,7 +735,6 @@ def personal_get_results(personal_task_status, personal_task_id):
     if personal_task_status == "SUCCESS":
         personal_task = AsyncResult(personal_task_id, app=cq.celery_app)
         personal_portfolio_tx = personal_task.result
-        personal_portfolio_tx = personal_portfolio_tx.to_json()
         personal_status = "ready"
     else:
         personal_status = "none"
@@ -751,11 +754,14 @@ def personal_get_results(personal_task_status, personal_task_id):
         State("personal-portfolio-tx", "children"),
     ],
 )
-def update_PersonalGraph(slide_value, personal_status, personal_portfolio_tx):
+def update_PersonalGraph(slide_value, personal_status, cq_portfolio_dict):
     """Provide personal graph."""
     if personal_status == "ready":
-        tx_hist_df = pd.read_json(personal_portfolio_tx)
-        fig = utils.update_graph(slide_value, tracker_portfolio, tx_hist_df)
+        fig = utils.update_graph(
+            slide_value,
+            pd.read_json(cq_portfolio_dict["view_return"]),
+            pd.read_json(cq_portfolio_dict["view_cost"]),
+        )
     else:
         "could not load"
         fig = dict(data=[], layout=go.Layout(hovermode="closest"))
@@ -773,11 +779,10 @@ def update_PersonalGraph(slide_value, personal_status, personal_portfolio_tx):
     [Input("personal-status", "children")],
     [State("personal-portfolio-tx", "children")],
 )
-def update_PersonalSlider(personal_status, personal_portfolio_tx):
+def update_PersonalSlider(personal_status, cq_portfolio_dict):
     """Provide sector data table."""
     if personal_status == "ready":
-        tx_hist_df = pd.read_json(personal_portfolio_tx)
-        return_view = tracker_portfolio.get_view(view="return", tx_hist_df=tx_hist_df)
+        return_view = pd.read_json(cq_portfolio_dict["view_return"])
         min, max, value, marks = utils.get_slider_values(return_view.index)
     else:
         min = 0
@@ -801,13 +806,10 @@ def update_PersonalSlider(personal_status, personal_portfolio_tx):
         State("personal-portfolio-tx", "children"),
     ],
 )
-def update_PersonalPerformance(personal_status, personal_portfolio_tx):
+def update_PersonalPerformance(personal_status, cq_portfolio_dict):
     """Provide personal performance table."""
     if personal_status == "ready":
-        tx_hist_df = pd.read_json(personal_portfolio_tx)
-        performance = tracker_portfolio.get_performance(
-            date=tx_hist_df["date"].max(), tx_hist_df=tx_hist_df
-        ).reset_index()
+        performance = pd.read_json(cq_portfolio_dict["performance"])
         performance = performance[performance["market_value"] != 0].sort_values(
             "return", ascending=False
         )
@@ -832,16 +834,11 @@ def update_PersonalPerformance(personal_status, personal_portfolio_tx):
         State("personal-portfolio-tx", "children"),
     ],
 )
-def update_PersonalTransaction(personal_status, personal_portfolio_tx):
+def update_PersonalTransaction(personal_status, cq_portfolio_dict):
     """Provide personal transaction table."""
     if personal_status == "ready":
-        tx_hist_df = pd.read_json(personal_portfolio_tx)
-        tx_hist_df = tx_hist_df[tx_hist_df["units"] != 0]
-        tx_hist_df = tx_hist_df[tx_hist_df["ticker"] != "Cash"].sort_values(
-            "date", ascending=False
-        )
-
-        transaction_table = layouts.transactions_fmt, tx_hist_df.to_dict("records")
+        transactions = pd.read_json(cq_portfolio_dict["transactions"])
+        transaction_table = layouts.transactions_fmt, transactions.to_dict("records")
     else:
         transaction_table = (None, None)
 
@@ -908,14 +905,13 @@ def manager_get_results(manager_task_status, manager_task_id):
     """Provide status results."""
     if manager_task_status == "SUCCESS":
         task = AsyncResult(manager_task_id, app=cq.celery_app)
-        manager_df = task.result
-        manager_df = manager_df.to_json()
+        cq_pm = task.result
         manager_status = "ready"
     else:
+        cq_pm = None
         manager_status = "none"
-        manager_df = None
 
-    return manager_status, manager_df
+    return manager_status, cq_pm
 
 
 # manager table
@@ -931,11 +927,11 @@ def manager_get_results(manager_task_status, manager_task_id):
         State("manager-df", "children"),
     ],
 )
-def update_ManagerTable(manager_status, manager_df):
+def update_ManagerTable(manager_status, cq_pm):
     """Provide personal performance table."""
     if manager_status == "ready":
-        manager_df = pd.read_json(manager_df).reset_index()
-        manager_table = layouts.manager_fmt, manager_df.to_dict("records")
+        cq_pm = pd.read_json(cq_pm).reset_index()
+        manager_table = layouts.manager_fmt, cq_pm.to_dict("records")
     else:
         manager_table = (None, None)
 

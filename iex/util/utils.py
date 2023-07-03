@@ -153,16 +153,16 @@ def get_remote_path():
     return remote_path
 
 
-def update_graph(slide_value, portfolio, tx_hist_df=None):
+def update_graph(slide_value, view_return, view_cost):
     """Create a performance return graph.
 
     Parameters
     ----------
     slide_value : rangeslider objet
        Dash rangeslider object
-    portfolio : portfolio object
+    view_return : portfolio object
        the portfolio DataFrame to create figure on
-    tx_hist_df : portfolio object (optional)
+    view_cost : portfolio object
        the transaction history portfolio DataFrame to create figure on
 
     Returns
@@ -173,17 +173,16 @@ def update_graph(slide_value, portfolio, tx_hist_df=None):
     res = []
     layout = go.Layout(hovermode="closest")
 
-    portfolio_view = portfolio.get_view(view="return", tx_hist_df=tx_hist_df)
-    cost_view = portfolio.get_view(view="cumulative_cost", tx_hist_df=tx_hist_df) * -1
+    view_cost = view_cost * -1
 
-    return_grph = portfolio_view[
-        (unix_time_millis(portfolio_view.index) > slide_value[0])
-        & (unix_time_millis(portfolio_view.index) <= slide_value[1])
+    return_grph = view_return[
+        (unix_time_millis(view_return.index) > slide_value[0])
+        & (unix_time_millis(view_return.index) <= slide_value[1])
     ].copy()
 
-    cost_grph = cost_view[
-        (unix_time_millis(cost_view.index) > slide_value[0])
-        & (unix_time_millis(cost_view.index) <= slide_value[1])
+    cost_grph = view_cost[
+        (unix_time_millis(view_cost.index) > slide_value[0])
+        & (unix_time_millis(view_cost.index) <= slide_value[1])
     ].copy()
 
     for col in return_grph.columns:

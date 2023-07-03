@@ -52,6 +52,26 @@ def test_calc_cumulative_units():
     ), "Expected cumulative_units to be sum of units"
 
 
+def test_calc_sale_price():
+    """Checks calculations of performance - sale price."""
+    transactions = pf.transactions_history
+    transactions = transactions[
+        (transactions["units"] != 0)
+        & (transactions["units"].notnull())
+        & (~transactions["ticker"].str.contains("benchmark"))
+        & (~transactions["ticker"].str.contains("Cash"))
+    ]
+    sale_price = transactions["sale_price"].sum()
+
+    test_df = pd.read_excel(tx_file)
+    test_df = test_df[(~test_df["ticker"].str.contains("Cash"))]
+    test_sale_price = test_df["price"].sum()
+
+    assert (
+        sale_price == test_sale_price
+    ), "Expected sale price to match transaction file"
+
+
 def test_calc_average_price():
     """Checks calculations of performance - average price."""
     performance = pf.get_performance(date=date)

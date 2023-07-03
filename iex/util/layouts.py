@@ -24,6 +24,41 @@ list_sector = [
     "SPY",
 ]
 
+funds = [
+    "BLKEQIX",
+    "BLKRGIX",
+    "BLKRVIX",
+    "DODIX",
+    "HLIEIX",
+    "LIPIX",
+    "TRPILCG",
+    "TRPSV",
+]
+
+delisted = [
+    "CCIV",
+    "CGRO",
+    "DCRB",
+    "DMYD",
+    "FIII",
+    "HZON",
+    "KCAC",
+    "LGVW",
+    "NGAC",
+    "PRPB",
+    "PSTH",
+    "SNPR",
+    "SRNGU",
+    "STPK",
+    "SVFA",
+    "RBAC",
+    "RKLY",
+    "THCA",
+    "TWTR",
+    "TVIX",
+    "XIV",
+]
+
 # set up columns
 cols_col = [
     "symbol",
@@ -202,7 +237,7 @@ active_fmt = [
 ]
 
 manager_fmt = [
-    dict(id="ticker", name="ticker"),
+    dict(id="index", name="index"),
     dict(id="date", name="date"),
     dict(id="average_price", name="average_price"),
     dict(id="last_price", name="last_price"),
