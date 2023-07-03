@@ -436,7 +436,9 @@ class Portfolio:
 
         if self.benchmarks:
             logger.info(f"Adding {self.benchmarks} as a benchmark")
-        price_history = yf.download(tickers, start=datetime(self._min_year, 1, 1))
+        price_history = yf.download(
+            tickers, start=datetime(self._min_year, 1, 1), period="max"
+        )
         self._clean_index(clean_df=price_history, lvl=0, tickers=tickers)
         price_history.index.rename("date", inplace=True)
         price_history.columns.rename("measure", level=0, inplace=True)

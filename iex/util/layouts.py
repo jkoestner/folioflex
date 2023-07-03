@@ -371,24 +371,16 @@ performance_fmt = [
 
 transactions_fmt = [
     dict(
-        id="ticker",
-        name="ticker",
-    ),
-    dict(
         id="date",
         name="date",
     ),
     dict(
-        id="last_price",
-        name="last_price",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+        id="ticker",
+        name="ticker",
     ),
     dict(
-        id="sale_price",
-        name="sale_price",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
+        id="type",
+        name="type",
     ),
     dict(
         id="units",
@@ -407,44 +399,8 @@ transactions_fmt = [
         name="broker",
     ),
     dict(
-        id="cumulative_units",
-        name="cumulative_units",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="cumulative_cost",
-        name="cumulative_cost",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="average_price",
-        name="average_price",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="market_value",
-        name="market_value",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="return",
-        name="return",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="unrealized",
-        name="unrealized",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="realized",
-        name="realized",
+        id="sale_price",
+        name="sale_price",
         type="numeric",
         format=Format(precision=2, scheme=Scheme.fixed).group(True),
     ),

@@ -55,7 +55,7 @@ def sector_query(start="2023-01-01"):
     cq_sector_close : json
        provides the list of prices for historical prices
     """
-    sector_close = yf.download(layouts.list_sector, start=start)
+    sector_close = yf.download(layouts.list_sector, start=start, period="max")
     cq_sector_close = sector_close["Adj Close"].to_json()
 
     return cq_sector_close
@@ -90,10 +90,7 @@ def portfolio_query(tx_file, filter_broker=None, lookback=None):
     )
 
     # get transactions that have portfolio informaiton as well
-    transactions = personal_portfolio.transactions_history
-    transactions = transactions[
-        (transactions["units"] != 0) & (transactions["units"].notnull())
-    ].sort_values(by="date", ascending=False)
+    transactions = personal_portfolio.transactions
 
     # provide results in dictionary
     cq_portfolio_dict = {}
