@@ -36,11 +36,13 @@ funds = [
 ]
 
 delisted = [
+    "AQUA",
     "CCIV",
     "CGRO",
     "DCRB",
     "DMYD",
     "FIII",
+    "GAHC",
     "HZON",
     "KCAC",
     "LGVW",
@@ -239,6 +241,7 @@ active_fmt = [
 manager_fmt = [
     dict(id="index", name="index"),
     dict(id="date", name="date"),
+    dict(id="lookback_date", name="lookback_date"),
     dict(id="average_price", name="average_price"),
     dict(id="last_price", name="last_price"),
     dict(
@@ -266,14 +269,14 @@ manager_fmt = [
         format=Format(precision=0, scheme=Scheme.fixed).group(True),
     ),
     dict(
-        id="return_pct",
-        name="return_pct",
+        id="dwrr_pct",
+        name="dwrr_pct",
         type="numeric",
         format=Format(precision=2, scheme=Scheme.percentage),
     ),
     dict(
-        id="simple_return_pct",
-        name="simple_return_pct",
+        id="dwrr_ann_pct",
+        name="dwrr_ann_pct",
         type="numeric",
         format=Format(precision=2, scheme=Scheme.percentage),
     ),
@@ -303,8 +306,8 @@ manager_fmt = [
     ),
     dict(id="benchmark", name="benchmark"),
     dict(
-        id="benchmark_simple_return_pct",
-        name="benchmark_simple_return_pct",
+        id="benchmark_dwrr_pct",
+        name="benchmark_dwrr_pct",
         type="numeric",
         format=Format(precision=2, scheme=Scheme.percentage),
     ),
@@ -313,6 +316,7 @@ manager_fmt = [
 performance_fmt = [
     dict(id="ticker", name="ticker"),
     dict(id="date", name="date"),
+    dict(id="lookback_date", name="lookback_date"),
     dict(
         id="average_price",
         name="average_price",
@@ -350,8 +354,14 @@ performance_fmt = [
         format=Format(precision=2, scheme=Scheme.fixed).group(True),
     ),
     dict(
-        id="return_pct",
-        name="return_pct",
+        id="dwrr_pct",
+        name="dwrr_pct",
+        type="numeric",
+        format=Format(precision=2, scheme=Scheme.percentage),
+    ),
+    dict(
+        id="dwrr_ann_pct",
+        name="dwrr_ann_pct",
         type="numeric",
         format=Format(precision=2, scheme=Scheme.percentage),
     ),

@@ -810,6 +810,9 @@ def update_PersonalPerformance(personal_status, cq_portfolio_dict):
     """Provide personal performance table."""
     if personal_status == "ready":
         performance = pd.read_json(cq_portfolio_dict["performance"])
+        performance["lookback_date"] = pd.to_datetime(
+            performance["lookback_date"], unit="ms"
+        )
         performance = performance[performance["market_value"] != 0].sort_values(
             "return", ascending=False
         )
@@ -931,6 +934,7 @@ def update_ManagerTable(manager_status, cq_pm):
     """Provide personal performance table."""
     if manager_status == "ready":
         cq_pm = pd.read_json(cq_pm).reset_index()
+        cq_pm["lookback_date"] = pd.to_datetime(cq_pm["lookback_date"], unit="ms")
         manager_table = layouts.manager_fmt, cq_pm.to_dict("records")
     else:
         manager_table = (None, None)

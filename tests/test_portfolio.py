@@ -97,7 +97,7 @@ def test_calc_return_pct():
     return_pct = xirr(ticker_transactions["date"], ticker_transactions["market_value"])
     return_pct
 
-    assert round(performance.loc["AMD", "return_pct"], 4) == round(
+    assert round(performance.loc["AMD", "dwrr_ann_pct"], 4) == round(
         return_pct, 4
     ), "Expected return percentage to match dollar weight"
 

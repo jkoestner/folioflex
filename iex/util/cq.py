@@ -90,7 +90,7 @@ def portfolio_query(tx_file, filter_broker=None, lookback=None):
     )
 
     # get transactions that have portfolio informaiton as well
-    transactions = personal_portfolio.transactions
+    transactions = personal_portfolio.transactions.head(10)
 
     # provide results in dictionary
     cq_portfolio_dict = {}

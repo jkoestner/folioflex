@@ -25,7 +25,7 @@ import pandas as pd
 import pandas_market_calendars as mcal
 import yfinance as yf
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from pyxirr import xirr
 
 pd.options.display.float_format = "{:,.2f}".format
@@ -171,8 +171,8 @@ class Portfolio:
                 - cumulative cost
                 - market value
                 - return
-                - return percentage
-                - simple return percentage
+                - dwrr return percentage
+                - annualized dwrr return percentage
                 - realized
                 - unrealized
 
@@ -186,10 +186,10 @@ class Portfolio:
             tx_hist_df = self._filter_lookback(
                 lookback=lookback, adjust_vars=True, tx_hist_df=tx_hist_df
             )
+        lookback_date = tx_hist_df["date"].min()
+        tx_hist_df["lookback_date"] = lookback_date
 
-        dwrr_return_pcts = self._get_return_pcts(
-            date=date, tx_hist_df=tx_hist_df, lookback=lookback
-        )
+        return_pcts = self._get_return_pcts(date=date, tx_hist_df=tx_hist_df)
 
         performance = tx_hist_df.copy()
         performance = performance[performance["date"] == date]
@@ -210,15 +210,19 @@ class Portfolio:
 
         duplicates = performance[performance.index.duplicated()].index
         if len(duplicates) > 0:
-            logger.info(
+            logger.warning(
                 f"found {len(duplicates)} duplicate tickers in performance such as {duplicates[0]} on {date}"
             )
 
-        performance = pd.concat([performance, dwrr_return_pcts], axis=1, join="inner")
+        performance = pd.concat([performance, return_pcts], axis=1, join="inner")
 
         # add in simple return percentage
-        performance["simple_return_pct"] = np.where(
-            (performance["cumulative_cost"] - performance["realized"]) == 0,
+        # reference to difference between simple and time weighted return
+        # https://study.com/learn/lesson/time-weighted-rate-return-formula-steps-examples
+        #   formula used: simple return = return / (cost - realized)
+        #   cost is reduced by realized which is why we add it back in
+        performance["simple_pct"] = np.where(
+            (-performance["cumulative_cost"] + performance["realized"]) == 0,
             np.nan,
             performance["return"]
             / (-performance["cumulative_cost"] + performance["realized"]),
@@ -227,14 +231,15 @@ class Portfolio:
         performance = performance[
             [
                 "date",
+                "lookback_date",
                 "average_price",
                 "last_price",
                 "cumulative_units",
                 "cumulative_cost",
                 "market_value",
                 "return",
-                "return_pct",
-                "simple_return_pct",
+                "dwrr_pct",
+                "dwrr_ann_pct",
                 "realized",
                 "unrealized",
                 "cash",
@@ -289,20 +294,7 @@ class Portfolio:
         # sale price to be based on units bought and not sold (resolves same day sales)
         transactions["date"] = pd.to_datetime(transactions["date"], format="%d/%m/%Y")
         transactions["sale_cost"] = transactions["cost"]
-
-        #  TODO this is also in benchmark and price history
-        # np.where(
-        #     transactions["units"] <= 0,
-        #     0,
-        #     transactions["cost"],
-        # )
         transactions["sale_units"] = transactions["units"]
-
-        # np.where(
-        #     transactions["units"] <= 0,
-        #     0,
-        #     transactions["units"],
-        # )
 
         transactions["sale_price"] = (
             transactions["sale_cost"] / transactions["sale_units"]
@@ -506,6 +498,20 @@ class Portfolio:
 
         # sort values descending
         price_history = price_history.sort_values(["ticker", "date"], ascending=False)
+
+        # check if there are any missing values for a ticker in price history
+        pivot = price_history.pivot(index="date", columns="ticker", values="last_price")
+        for tick in tickers:
+            check = pivot[tick]
+            check = check[check.index >= check.first_valid_index()]
+            missing_dates = check[check.isnull()].index
+            if not missing_dates.empty:
+                logger.warning(
+                    f"Missing price history for {tick},"
+                    f" first noticed on {missing_dates[0]}."
+                    " Most likely the ticker is delisted or not available in"
+                    " stock exchanges."
+                )
 
         return price_history
 
@@ -856,8 +862,35 @@ class Portfolio:
         df.loc[df["cumulative_units"] == 0, "average_price"] = 0
         return df
 
-    def _get_dwrr_return_pct(self, ticker, date, tx_hist_df=None, lookback=None):
-        """Get the dollar weighted return of a ticker.
+    def _get_return_pct(self, ticker, date, tx_hist_df=None, lookback=None):
+        """Get the dollar and time weighted return of a ticker.
+
+        TODO same day transactions do mess up the calculation of returns
+
+        Notes:
+        ------
+           Dollar Weighted Return (DWRR)
+             This is annualized
+             Using the xirr function to calculate dwrr
+             https://anexen.github.io/pyxirr/functions.html#xirr
+             https://www.investopedia.com/terms/m/money-weighted-return.asp
+             Formula is:
+             CF0 + CF1 / (1 + r)^1 + CF2 / (1 + r)^2 + ... + CFn / (1 + r)^n = 0
+
+           Modified Dietz Return (MDRR)
+              This is non-annualized
+              Using the formula from wikipedia
+              https://en.wikipedia.org/wiki/Modified_Dietz_method
+              Formula is:
+              (end_value - start_value - cash_flows) / (start_value + time_weighted_cash_flows)
+
+           Time Weighted Return (TWRR)
+              TODO - although not a big fan as it doesn't take into account cash flows
+              This is non-annualized
+              Using the formula from investopedia
+              https://www.investopedia.com/terms/t/time-weightedror.asp
+              Formula is:
+              (1 + r1) * (1 + r2) * ... * (1 + rn) - 1
 
         Parameters
         ----------
@@ -871,8 +904,8 @@ class Portfolio:
             number of days to lookback
         Returns
         ----------
-        return_pct : float
-            the dollar weighted return of ticker
+        return_dict : dict
+            dictionary of returns
         """
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
@@ -920,29 +953,79 @@ class Portfolio:
         ].replace(np.nan, 0)
 
         # makes sure that ticker had transactions both negative
-        # and positive to calculate IRR
+        # and positive to calculate return
+        dwrr_return_pct = np.NaN
+        dwrr_ann_return_pct = np.NaN
+        mdrr_return_pct = np.NaN
+        mdrr_ann_return_pct = np.NaN
         if ticker_transactions.empty:
-            return_pct = np.NaN
+            logger.debug(
+                f"There were no transactions for {ticker} to calculate the return"
+            )
+
+        elif (
+            len(ticker_transactions) == 1
+            and ticker_transactions["market_value"].iloc[0] == 0
+        ):
+            logger.debug(
+                f"The ticker {ticker} is in portfolio but has no transactions"
+                " to calculate the return"
+            )
 
         elif (
             not min(ticker_transactions["market_value"])
             < 0
             < max(ticker_transactions["market_value"])
         ):
-            return_pct = np.NaN
-
-        else:
-            return_pct = xirr(
-                ticker_transactions["date"], ticker_transactions["market_value"]
+            logger.warning(
+                f"The transactions for {ticker} did not have positive and negatives"
             )
 
-            # where IRR can't be calculated
-            if return_pct is None:
-                return_pct = np.NaN
-            elif return_pct > 1000:
-                return_pct = np.NaN
+        else:
+            # for annualizing returns need the days
+            start_date = ticker_transactions["date"].iloc[-1]
+            end_date = ticker_transactions["date"].iloc[0]
+            days = (end_date - start_date).days
 
-        return return_pct
+            # calculating the dwrr return
+            dwrr_ann_return_pct = xirr(
+                ticker_transactions["date"], ticker_transactions["market_value"]
+            )
+            # where dwrr can't be calculated
+            if dwrr_ann_return_pct is None:
+                pass
+            elif dwrr_ann_return_pct > 1000:
+                pass
+            else:
+                dwrr_return_pct = (1 + dwrr_ann_return_pct) ** (days / 365) - 1
+
+            # calculating the dietz return
+            ticker_transactions["weight"] = (
+                days - (ticker_transactions["date"] - start_date).dt.days
+            ) / (days)
+            ticker_transactions["weighted_value"] = (
+                ticker_transactions["market_value"] * ticker_transactions["weight"]
+            )
+            mdrr_return_pct = ticker_transactions["market_value"].sum() / (
+                ticker_transactions["weighted_value"].sum() * -1
+            )
+            # where mdrr can't be calculated
+            if mdrr_return_pct is None:
+                pass
+            elif mdrr_return_pct > 1000:
+                pass
+            elif mdrr_return_pct < -1:
+                pass
+            else:
+                mdrr_ann_return_pct = (1 + mdrr_return_pct) ** (365 / days) - 1
+
+        return_dict = {}
+        return_dict["dwrr_return_pct"] = dwrr_return_pct
+        return_dict["dwrr_ann_return_pct"] = dwrr_ann_return_pct
+        return_dict["mdrr_return_pct"] = mdrr_return_pct
+        return_dict["mdrr_ann_return_pct"] = mdrr_ann_return_pct
+
+        return return_dict
 
     def _get_return_pcts(self, date=None, tx_hist_df=None, lookback=None):
         """Get the dollar weighted return of transactions.
@@ -967,13 +1050,12 @@ class Portfolio:
             tx_hist_df = self.transactions_history
 
         tickers = list(tx_hist_df["ticker"].unique())
-        return_pcts_col = "return_pct"
 
         return_pcts = pd.DataFrame()
 
         # get return of each ticker
         for ticker in tickers:
-            ticker_return = self._get_dwrr_return_pct(
+            return_dict = self._get_return_pct(
                 ticker=ticker,
                 date=date,
                 tx_hist_df=tx_hist_df,
@@ -983,7 +1065,13 @@ class Portfolio:
             return_pcts = pd.concat(
                 [
                     return_pcts,
-                    pd.DataFrame({"ticker": [ticker], return_pcts_col: ticker_return}),
+                    pd.DataFrame(
+                        {
+                            "ticker": [ticker],
+                            "dwrr_pct": return_dict["dwrr_return_pct"],
+                            "dwrr_ann_pct": return_dict["dwrr_ann_return_pct"],
+                        }
+                    ),
                 ]
             )
 
@@ -1074,9 +1162,17 @@ class Portfolio:
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
         lookback_df = tx_hist_df.copy()
-        date = lookback_df["date"].max()
-        date = pd.to_datetime(date)
-        start_date = date - pd.Timedelta(days=lookback)
+
+        # Using calendar lookback, but getting closest trading day
+        end_date = lookback_df["date"].max()
+        cal_start_date = end_date - timedelta(days=lookback)
+        buffer_date = cal_start_date - timedelta(days=7)
+        stock_dates = (
+            mcal.get_calendar("NYSE")
+            .schedule(start_date=buffer_date, end_date=end_date)
+            .index
+        )
+        start_date = max([date for date in stock_dates if date <= cal_start_date])
         lookback_df = lookback_df[lookback_df["date"] >= start_date]
 
         if adjust_vars:
@@ -1282,9 +1378,7 @@ class Manager:
             benchmark_dict = {}
             if not benchmark.empty:
                 benchmark_dict["benchmark"] = benchmark.index.values[0].split("-")[1]
-                benchmark_dict["benchmark_simple_return_pct"] = benchmark[
-                    "simple_return_pct"
-                ].values[0]
+                benchmark_dict["benchmark_dwrr_pct"] = benchmark["dwrr_pct"].values[0]
 
             df = df.assign(**benchmark_dict)
             dfs.append(df)

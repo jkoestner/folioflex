@@ -9,5 +9,6 @@ tracker_portfolio = portfolio.Portfolio(
     tracker_tx_file,
     filter_type=["Dividend"],
     funds=["BLKRK"],
+    delisted=["AQUA"],
     benchmarks=["IVV"],
 )
