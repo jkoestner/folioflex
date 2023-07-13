@@ -20,6 +20,7 @@ import os
 import yfinance as yf
 
 from celery import Celery
+from datetime import datetime
 
 from iex.util import layouts
 from iex.portfolio import portfolio
@@ -34,9 +35,9 @@ celery_app = Celery(
     "tasks",
     broker=redis_url,
     backend=redis_url,
-    task_serializer="pickle",
-    result_serializer="pickle",
-    accept_content=["pickle"],
+    task_serializer="json",
+    result_serializer="json",
+    accept_content=["json"],
     result_expires=3600,
 )
 
@@ -55,7 +56,9 @@ def sector_query(start="2023-01-01"):
     cq_sector_close : json
        provides the list of prices for historical prices
     """
-    sector_close = yf.download(layouts.list_sector, start=start, period="max")
+    sector_close = yf.download(
+        layouts.list_sector, start=start, end=datetime(2100, 1, 1)
+    )
     cq_sector_close = sector_close["Adj Close"].to_json()
 
     return cq_sector_close

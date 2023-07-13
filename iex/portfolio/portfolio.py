@@ -429,7 +429,7 @@ class Portfolio:
         if self.benchmarks:
             logger.info(f"Adding {self.benchmarks} as a benchmark")
         price_history = yf.download(
-            tickers, start=datetime(self._min_year, 1, 1), period="max"
+            tickers, start=datetime(self._min_year, 1, 1), end=datetime(2100, 1, 1)
         )
         self._clean_index(clean_df=price_history, lvl=0, tickers=tickers)
         price_history.index.rename("date", inplace=True)
@@ -687,6 +687,10 @@ class Portfolio:
         tx_df = tx_df.copy()
         transactions = tx_df[(tx_df["cost"] != 0) | (tx_df["units"] != 0)]
         benchmark_tx = transactions[transactions["ticker"] == "Cash"].copy()
+        if benchmark_tx.empty:
+            logger.warning(
+                "There were no transactions in benchmark. Please include cash transactions"
+            )
 
         # add benchmark from cash transactions
         benchmark_tx["ticker"] = ticker
@@ -995,7 +999,8 @@ class Portfolio:
             if dwrr_ann_return_pct is None:
                 pass
             elif dwrr_ann_return_pct > 1000:
-                pass
+                dwrr_return_pct = (1 + dwrr_ann_return_pct) ** (days / 365) - 1
+                dwrr_ann_return_pct = np.NaN
             else:
                 dwrr_return_pct = (1 + dwrr_ann_return_pct) ** (days / 365) - 1
 
