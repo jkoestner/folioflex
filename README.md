@@ -3,7 +3,7 @@ Simple investment portfolio tool that will track stock and provide returns and o
 contains a web dashboard to view the data.
 
 ![workflow badge](https://github.com/jkoestner/iex/actions/workflows/main.yml/badge.svg)
-![license badge](https://img.shields.io/github/license/jkoestner/iex)
+[![license badge](https://img.shields.io/github/license/jkoestner/iex)](https://github.com/jkoestner/IEX/blob/main/LICENSE.md)
 ![coverage badge](https://img.shields.io/codecov/c/github/jkoestner/iex)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
