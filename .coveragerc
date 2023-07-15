@@ -4,8 +4,8 @@
 [run]
 data_file = docs/coverage/.coverage
 omit =
-    # omit everything in /pages
-    iex/pages/*
+    # omit everything in /dashboard
+    iex/dashboard/*
     # omit init files
     __init__.py
 

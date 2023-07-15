@@ -1,6 +1,6 @@
 """Stores pages constants."""
 
-from iex.util import constants
+from iex import constants
 from iex.portfolio import portfolio
 
 # tracker vars

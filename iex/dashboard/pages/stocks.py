@@ -6,7 +6,7 @@ from dash import dash_table
 from dash import dcc
 from dash import html
 
-from iex.util import utils
+from iex.dashboard import utils
 
 # Creating the dash app
 

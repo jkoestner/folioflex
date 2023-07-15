@@ -9,7 +9,7 @@ import ssl
 
 from urllib import request
 
-from iex.util import constants
+from iex import constants
 
 
 def get_heatmap(portfolio=None, lookback=None):

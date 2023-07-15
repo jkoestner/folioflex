@@ -19,12 +19,14 @@ The Manager class has a number of objects, such as:
 
 """
 
+import argparse
 import logging
 import numpy as np
 import pandas as pd
 import pandas_market_calendars as mcal
 import yfinance as yf
 
+from argparse import RawTextHelpFormatter
 from datetime import datetime, timedelta
 from pyxirr import xirr
 
@@ -1418,3 +1420,71 @@ class Manager:
         view_df = pd.concat(dfs, axis=1)
 
         return view_df
+
+
+#
+# https://patorjk.com/software/taag/ using BIG
+#    _____ _      _____
+#   / ____| |    |_   _|
+#  | |    | |      | |
+#  | |    | |      | |
+#  | |____| |____ _| |_
+#   \_____|______|_____|
+#
+
+
+def _create_argparser():
+    description = """Provides a portfolio tracker."""
+    _parser = argparse.ArgumentParser(description=description)
+
+    # add the command-line arguments
+    _parser.add_argument(
+        "command",
+        choices=["portfolio", "manager"],
+        help="The command to run (portfolio or manager)",
+    )
+    _parser.add_argument(
+        "--date",
+        type=str,
+        help="The date to use for performance calculations (YYYY-MM-DD)",
+    )
+    _parser.add_argument(
+        "--lookback",
+        type=int,
+        default=30,
+        help="The number of days to look back for performance calculations",
+    )
+
+    return _parser
+
+
+parser = _create_argparser()
+
+
+def cli():
+    """Portfolio command line interface."""
+    args = parser.parse_args()
+
+    if args.command == "portfolio":
+        # create a Portfolio object
+        portfolio = Portfolio()
+
+        # get the performance data
+        performance = portfolio.get_performance(date=args.date, lookback=args.lookback)
+
+        # print the performance data
+        print(performance)
+
+    elif args.command == "manager":
+        # create a Manager object
+        manager = Manager()
+
+        # get the summary data
+        summary = manager.get_summary(date=args.date, lookback=args.lookback)
+
+        # print the summary data
+        print(summary)
+
+
+if __name__ == "__main__":
+    cli()

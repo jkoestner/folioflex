@@ -3,8 +3,9 @@
 from dash import dash_table
 from dash import dcc
 from dash import html
+from iex.dashboard import page_constants, utils
 
-from iex.util import page_constants, layouts, utils
+from iex.dashboard import layouts
 
 tracker_portfolio = page_constants.tracker_portfolio
 

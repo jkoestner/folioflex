@@ -9,11 +9,11 @@ worker and the main process.
 will be listening to the redis server for tasks to execute.
 
 To run the worker process locally from the root directory, use the following command:
-   celery -A iex.util.cq worker --pool=solo -l info
+   celery -A iex.cq worker --pool=solo -l info
 
 If wanting to look at monitoring celery, use the following command which will be
 available at http://localhost:5555:
-    celery -A iex.util.cq flower
+    celery -A iex.cq flower
 """
 
 import os
@@ -22,7 +22,7 @@ import yfinance as yf
 from celery import Celery
 from datetime import datetime
 
-from iex.util import layouts
+from iex.dashboard import layouts
 from iex.portfolio import portfolio
 
 if os.path.isfile(r"/app/files/transactions.xlsx"):

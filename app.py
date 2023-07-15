@@ -2,7 +2,7 @@
 Building plotly dashboard.
 
 Builds plotly pages with call backs. There are 2 options the user has for running code.
-1. Heroku build set up
+1. Fly.io build set up
 2. Local running
 
 To run locally:
@@ -25,9 +25,11 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
 from dateutil.relativedelta import relativedelta
+from iex import constants
+from iex.dashboard import layouts, page_constants, utils
 
-from iex.pages import stocks, sectors, ideas, macro, tracker, crypto, personal
-from iex.util import constants, cq, layouts, page_constants, utils
+from iex.dashboard.pages import stocks, sectors, ideas, macro, tracker, crypto, personal
+from iex import cq
 from iex.portfolio import heatmap
 
 

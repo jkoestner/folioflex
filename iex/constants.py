@@ -2,7 +2,7 @@
 
 import os
 
-from iex.util import utils
+from iex.dashboard import utils
 
 iex_api_live = os.environ["IEX_API_LIVE"]
 iex_api_sandbox = os.environ["IEX_API_SANDBOX"]

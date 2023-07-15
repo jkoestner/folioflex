@@ -4,12 +4,12 @@ contains a web dashboard to view the data.
 
 ![workflow badge](https://github.com/jkoestner/iex/actions/workflows/main.yml/badge.svg)
 [![license badge](https://img.shields.io/github/license/jkoestner/iex)](https://github.com/jkoestner/IEX/blob/main/LICENSE.md)
-![coverage badge](https://img.shields.io/codecov/c/github/jkoestner/iex)
+[![codecov](https://codecov.io/gh/jkoestner/IEX/branch/main/graph/badge.svg?token=K4RS9LX4UG)](https://codecov.io/gh/jkoestner/IEX)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ## Overview
 
-The tool has 2 functions with 1 being a web dashboard and the other the portfolio class. The web dashboard is built with plotly dash and can be run locally or deployed to a server. The portfolio class is used to track the returns of a portfolio and can be used to track the returns of a portfolio.
+The tool has 2 functions with 1 being a web dashboard and the other the portfolio class. The web dashboard is built with plotly dash and can be run locally or deployed to a server. The portfolio class is used to track the returns of a portfolio.
 
 Full documentation can be seen here: https://jkoestner.github.io/IEX
 

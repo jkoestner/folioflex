@@ -5,7 +5,7 @@ from datetime import datetime
 try:
     import utils
 except (ImportError, ModuleNotFoundError):
-    from iex.util import utils
+    from iex.dashboard import utils
 
 
 def test_datetime_to_unix():

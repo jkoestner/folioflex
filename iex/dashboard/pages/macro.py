@@ -3,8 +3,9 @@
 from dash import dcc
 from dash import html
 from urllib import request
+from iex import constants
 
-from iex.util import constants, utils
+from iex.dashboard import utils
 
 # Creating the dash app
 recession = (

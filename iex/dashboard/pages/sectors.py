@@ -5,8 +5,9 @@ import pandas as pd
 from dash import dash_table
 from dash import dcc
 from dash import html
+from iex import constants
 
-from iex.util import constants, utils
+from iex.dashboard import utils
 
 # Sector URL
 urlsec = (
