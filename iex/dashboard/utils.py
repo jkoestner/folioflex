@@ -4,7 +4,6 @@ Provides functions for common used functions in app.
 """
 
 import datetime
-import os
 import pandas as pd
 import plotly.graph_objs as go
 
@@ -131,26 +130,6 @@ def get_slider_values(daterange):
     marks = getMarks(daterange.min(), daterange.max())
 
     return min, max, value, marks
-
-
-def get_remote_path():
-    """Provide the remote path.
-
-    Returns
-    -------
-    remote_path : str
-       path that should be used depending on local or heroku
-    """
-    if os.path.isfile(r"/app/files/transactions.xlsx"):
-        remote_path = r"/app/files/"
-
-    elif os.path.isfile(r"files/transactions.xlsx"):
-        remote_path = r"files/"
-
-    else:
-        remote_path = "No files found"
-
-    return remote_path
 
 
 def update_graph(slide_value, view_return, view_cost):
