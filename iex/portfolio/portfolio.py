@@ -1435,7 +1435,10 @@ class Manager:
 
 def _create_argparser():
     description = """Provides a portfolio tracker."""
-    _parser = argparse.ArgumentParser(description=description)
+    _parser = argparse.ArgumentParser(
+        description=description,
+        formatter_class=RawTextHelpFormatter,
+    )
 
     # add the command-line arguments
     _parser.add_argument(
