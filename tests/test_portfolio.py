@@ -16,7 +16,7 @@ tx_file = PROJECT_PATH / pathlib.Path("tests") / "files" / "test_transactions.xl
 
 filter_type = ["Dividend"]
 funds = ["BLKRK"]
-delisted = ["CCIV"]
+delisted = ["CCIV", "AQUA"]
 date = "05-02-2022"
 benchmarks = ["IVV"]
 

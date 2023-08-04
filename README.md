@@ -38,32 +38,17 @@ When using the portfolio class, the following code can be used to get the return
 CLI coming shortly
 
 ```python
-import os
-os.chdir("../")
-os.getcwd()
-from datetime import datetime
-import pandas as pd
-import yfinance as yf
-from iex.portfolio import portfolio, heatmap
-pd.options.display.float_format = "{:,.2f}".format
-pd.set_option("display.max_rows", 500)
-pd.set_option("display.max_columns", 500)
-# constant variables used in program
-filter_type=["Dividend"]
-funds=["BLKRK"]
-delisted=["AQUA", "CCIV"] 
-other_fields=["broker"]
-benchmarks=["IVV"]
-tx_file = r"tests/files/test_transactions.xlsx"
+import iex
 pf = portfolio.Portfolio(
-    tx_file, 
-    filter_type=filter_type, 
-    funds=funds, 
-    delisted=delisted, 
-    other_fields=other_fields,
-    benchmarks=benchmarks,
+    tx_file="tests/files/test_transactions.xlsx", 
+    filter_type=["Dividend"], 
+    funds=["BLKRK"], 
+    delisted=["AQUA", "CCIV"], 
+    other_fields=["broker"],
+    benchmarks=["IVV"],
     name='all'
 )
+pf.get_performance()
 ```
 
 ### Web Dashboard

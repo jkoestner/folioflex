@@ -24,11 +24,12 @@ import logging
 import numpy as np
 import pandas as pd
 import pandas_market_calendars as mcal
-import yfinance as yf
 
 from argparse import RawTextHelpFormatter
 from datetime import datetime, timedelta
 from pyxirr import xirr
+
+from iex.portfolio.wrappers import Yahoo
 
 pd.options.display.float_format = "{:,.2f}".format
 
@@ -40,6 +41,7 @@ if logger.hasHandlers():
 
 formatter = logging.Formatter(fmt="%(levelname)s: %(message)s")
 
+# provides the logging to the console
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.DEBUG)
 console_handler.setFormatter(formatter)
@@ -109,7 +111,7 @@ class Portfolio:
             other_fields = []
 
         logger.info(f"creating '{name}' portfolio")
-        self.file = tx_file
+        self.file = str(tx_file)
         self.name = name
         self.filter_type = filter_type
         self.filter_broker = filter_broker
@@ -277,8 +279,23 @@ class Portfolio:
         if other_fields is None:
             other_fields = []
 
+        try:
+            if self.file.endswith(".csv"):
+                transactions = pd.read_csv(self.file)
+            elif self.file.endswith(".xlsx"):
+                transactions = pd.read_excel(self.file, engine="openpyxl")
+            else:
+                raise ValueError("Unsupported file format")
+        except FileNotFoundError:
+            raise ValueError(f"File not found: {self.file}")
+        except Exception as e:
+            raise ValueError(f"Error loading file: {e}")
+
         cols = ["date", "ticker", "type", "units", "cost"] + other_fields
-        transactions = pd.read_excel(self.file, engine="openpyxl")
+        missing_cols = set(cols) - set(transactions.columns)
+        if missing_cols:
+            raise ValueError(f"Missing columns in file: {missing_cols}")
+
         transactions = transactions[cols]
         transactions = transactions[~transactions["type"].isin(filter_type)]
         if filter_broker:
@@ -294,7 +311,7 @@ class Portfolio:
         )
 
         # sale price to be based on units bought and not sold (resolves same day sales)
-        transactions["date"] = pd.to_datetime(transactions["date"], format="%d/%m/%Y")
+        transactions["date"] = pd.to_datetime(transactions["date"], format="%m/%d/%Y")
         transactions["sale_cost"] = transactions["cost"]
         transactions["sale_units"] = transactions["units"]
 
@@ -430,21 +447,9 @@ class Portfolio:
 
         if self.benchmarks:
             logger.info(f"Adding {self.benchmarks} as a benchmark")
-        price_history = yf.download(
-            tickers, start=datetime(self._min_year, 1, 1), end=datetime(2100, 1, 1)
-        )
-        self._clean_index(clean_df=price_history, lvl=0, tickers=tickers)
-        price_history.index.rename("date", inplace=True)
-        price_history.columns.rename("measure", level=0, inplace=True)
-        price_history.columns.rename("ticker", level=1, inplace=True)
 
-        price_history = price_history.stack(level="ticker")
-        price_history.index = price_history.index.swaplevel("date", "ticker")
-        price_history.sort_index(axis=0, level="ticker", inplace=True)
-        price_history = price_history.reset_index()
-        cols = ["ticker", "date", "adj_close"]
-        price_history = price_history[cols]
-        price_history.rename(columns={"adj_close": "last_price"}, inplace=True)
+        wrapper = Yahoo()
+        price_history = wrapper.stock_history(tickers=tickers, min_year=self._min_year)
 
         # adding fund price history
         transactions = self.transactions
@@ -1085,39 +1090,6 @@ class Portfolio:
         return_pcts = return_pcts.set_index(["ticker"])
 
         return return_pcts
-
-    def _clean_index(self, clean_df, lvl, tickers):
-        """Clean the index of DataFrame.
-
-        Parameters
-        ----------
-        clean_df : DataFrame
-            the dataframe on which to clean
-        lvl : int
-            the level of index to clean
-        tickers : list (optional)
-            when only using 1 ticker that ticker needs to be passed to create a multiIndex column
-
-        Returns
-        ----------
-        clean_df : DataFrame
-            a clean DataFrame
-        """
-        if clean_df.columns.nlevels == 1:
-            clean_df.columns = pd.MultiIndex.from_product([clean_df.columns, tickers])
-
-        idx = clean_df.columns.levels[lvl]
-        idx = (
-            idx.str.lower()
-            .str.replace(".", "", regex=False)
-            .str.replace("(", "", regex=False)
-            .str.replace(")", "", regex=False)
-            .str.replace(" ", "_", regex=False)
-            .str.replace("_/_", "/", regex=False)
-        )
-        clean_df.columns = clean_df.columns.set_levels(idx, level=lvl)
-
-        return clean_df
 
     def get_view(self, view="market_value", tx_hist_df=None):
         """Get the a specific view of the portfolio.

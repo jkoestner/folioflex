@@ -33,9 +33,6 @@ layout = html.Div(
                 html.Button(
                     "Insider Summary Submit", id="insider-summary-button", n_clicks=0
                 ),
-                html.Button(
-                    "Insider Transactions Submit", id="insider-tx-button", n_clicks=0
-                ),
             ],
             className="row",
         ),
@@ -126,22 +123,6 @@ layout = html.Div(
                         html.P(),
                         dash_table.DataTable(
                             id="insider-summary-table",
-                            page_action="native",
-                        ),
-                    ],
-                    className="three columns",
-                ),
-            ],
-            className="row",
-        ),
-        html.Div(
-            [
-                html.Div(
-                    [
-                        # creating insider transactions
-                        html.P(),
-                        dash_table.DataTable(
-                            id="insider-tx-table",
                             page_action="native",
                         ),
                     ],

@@ -28,9 +28,10 @@ from dateutil.relativedelta import relativedelta
 from iex import constants
 from iex.dashboard import layouts, page_constants, utils
 
-from iex.dashboard.pages import stocks, sectors, ideas, macro, tracker, crypto, personal
+from iex.dashboard.pages import stocks, sectors, ideas, macro, tracker, personal
 from iex import cq
-from iex.portfolio import heatmap
+from iex.portfolio import heatmap, wrappers
+from iex.market import screener
 
 
 #      _    ____  ____
@@ -92,8 +93,6 @@ def display_page(pathname):
         return macro.layout
     elif pathname == "/tracker":
         return tracker.layout
-    elif pathname == "/crypto":
-        return crypto.layout
     elif pathname == "/personal":
         return personal.layout
     else:
@@ -116,21 +115,16 @@ def display_page(pathname):
     [State("stock-input", "value")],
 )
 def update_stockanalysis(n_clicks, input_value):
-    """Provide stock analysis table."""
+    """Provide stock info table."""
     if n_clicks == 0:
         stock_table = (None, None)
     else:
-        urlstock = (
-            "https://cloud.iexapis.com/stable/stock/"
-            + format(input_value)
-            + "/stats?token="
-            + constants.iex_api_live
-        )
-
-        stock = pd.read_json(urlstock, orient="index", typ="frame")
+        stock = wrappers.Yahoo().info(input_value)
         stock = stock.reset_index()
         stock.columns = ["Variable", "Value"]
-        stock = stock.round(2)
+        stock = stock[stock["Variable"].isin(layouts.yahoo_info["info"])]
+
+        print(stock.shape)
 
         stock_table = [{"name": i, "id": i} for i in stock.columns], stock.to_dict(
             "records"
@@ -152,34 +146,8 @@ def update_quoteanalysis(n_clicks, input_value):
     if n_clicks == 0:
         quote_table = (None, None)
     else:
-        urlquote = (
-            "https://cloud.iexapis.com/stable/stock/"
-            + format(input_value)
-            + "/quote?token="
-            + constants.iex_api_live
-        )
-        quote = pd.read_json(urlquote, orient="index", typ="frame")
-
-        quote.loc["closeTime"].values[0] = pd.to_datetime(
-            quote.loc["closeTime"].values[0], unit="ms"
-        )
-        quote.loc["iexLastUpdated"].values[0] = pd.to_datetime(
-            quote.loc["iexLastUpdated"].values[0], unit="ms"
-        )
-        quote.loc["lastTradeTime"].values[0] = pd.to_datetime(
-            quote.loc["lastTradeTime"].values[0], unit="ms"
-        )
-        quote.loc["latestUpdate"].values[0] = pd.to_datetime(
-            quote.loc["latestUpdate"].values[0], unit="ms"
-        )
-        quote.loc["extendedPriceTime"].values[0] = pd.to_datetime(
-            quote.loc["extendedPriceTime"].values[0], unit="ms"
-        )
-
-        quote = quote.loc[layouts.quote_col]
+        quote = wrappers.Yahoo().quote(input_value)
         quote = quote.reset_index()
-        quote.columns = ["Variable", "Value"]
-        quote = quote.round(2)
 
         quote_table = [{"name": i, "id": i} for i in quote.columns], quote.to_dict(
             "records"
@@ -230,13 +198,8 @@ def update_newsanalysis(n_clicks, input_value):
     if n_clicks == 0:
         news_table = (None, None)
     else:
-        urlnews = (
-            "https://cloud.iexapis.com/stable/stock/"
-            + format(input_value)
-            + "/news/last/5?token="
-            + constants.iex_api_live
-        )
-        news = pd.read_json(urlnews, orient="columns")
+        news = wrappers.Yahoo().news(input_value)
+        news = news.reset_index()
 
         news_table = [{"name": i, "id": i} for i in news.columns], news.to_dict(
             "records"
@@ -257,20 +220,8 @@ def update_activeanalysis(n_clicks):
     if n_clicks == 0:
         active_table = (None, None)
     else:
-        urlactive = (
-            "https://cloud.iexapis.com/stable/stock/market/list/mostactive?listLimit=60&token="
-            + constants.iex_api_live
-        )
-        active = pd.read_json(urlactive, orient="columns")
-        active["vol_delta"] = active["volume"] / active["avgTotalVolume"]
-        active["vol_price"] = active["volume"] * active["latestPrice"]
-        active = active.sort_values("vol_price", ascending=False)
-        active = active.head(20)
-        active = active[layouts.active_col]
-        active = active.round(2)
-
-        active["changePercent"] = active["changePercent"].astype(float)
-        active["ytdChange"] = active["ytdChange"].astype(float)
+        active = screener.most_active(count=25)
+        active = active.reset_index()
 
         active_table = layouts.active_fmt, active.to_dict("records")
 
@@ -290,47 +241,15 @@ def update_insidersummaryanalysis(n_clicks, input_value):
     if n_clicks == 0:
         insider_summary_table = (None, None)
     else:
-        url_insider_summary = (
-            "https://cloud.iexapis.com/stable/stock/"
-            + format(input_value)
-            + "/insider-roster?token="
-            + constants.iex_api_live
-        )
-        insider = pd.read_json(url_insider_summary, orient="columns")
+        insider = screener.insider_activity(input_value)
+        insider = insider.reset_index()
+        insider = insider.head(10)
 
         insider_summary_table = [
             {"name": i, "id": i} for i in insider.columns
         ], insider.to_dict("records")
 
     return insider_summary_table
-
-
-@app.callback(
-    [
-        Output("insider-tx-table", "columns"),
-        Output("insider-tx-table", "data"),
-    ],
-    [Input("insider-tx-button", "n_clicks")],
-    [State("stock-input", "value")],
-)
-def update_insidertransactionsanalysis(n_clicks, input_value):
-    """Provide insider transactions table."""
-    if n_clicks == 0:
-        insider_transactions_table = (None, None)
-    else:
-        url_insider_transactions = (
-            "https://cloud.iexapis.com/stable/stock/"
-            + format(input_value)
-            + "/insider-transactions?token="
-            + constants.iex_api_live
-        )
-        insider = pd.read_json(url_insider_transactions, orient="columns")
-
-        insider_transactions_table = [
-            {"name": i, "id": i} for i in insider.columns
-        ], insider.to_dict("records")
-
-    return insider_transactions_table
 
 
 #   ____  _____ ____ _____ ___  ____
@@ -612,50 +531,6 @@ def update_TrackerGraph(dropdown):
     )
 
     return px_line
-
-
-#    ____ ______   ______ _____ ___
-#   / ___|  _ \ \ / /  _ \_   _/ _ \
-#  | |   | |_) \ V /| |_) || || | | |
-#  | |___|  _ < | | |  __/ | || |_| |
-#   \____|_| \_\|_| |_|    |_| \___/
-
-
-@app.callback(
-    [
-        Output(component_id="crypto-quote-table", component_property="columns"),
-        Output(component_id="crypto-quote-table", component_property="data"),
-    ],
-    [Input(component_id="crypto-quote-button", component_property="n_clicks")],
-    [State(component_id="crypto-input", component_property="value")],
-)
-def update_cryptoquoteanalysis(n_clicks, input_value):
-    """Provide crypto analysis table."""
-    if n_clicks == 0:
-        crypto_table = (None, None)
-    else:
-        urlquote = (
-            "https://cloud.iexapis.com/stable/crypto/"
-            + format(input_value)
-            + "/quote?token="
-            + constants.iex_api_live
-        )
-        quote = pd.read_json(urlquote, orient="index", typ="frame")
-
-        quote.loc["latestUpdate"].values[0] = pd.to_datetime(
-            quote.loc["latestUpdate"].values[0], unit="ms"
-        )
-
-        quote = quote.loc[layouts.crypto_quote_col]
-        quote = quote.reset_index()
-        quote.columns = ["Variable", "Value"]
-        quote = quote.round(2)
-
-        crypto_table = [{"name": i, "id": i} for i in quote.columns], quote.to_dict(
-            "records"
-        )
-
-    return crypto_table
 
 
 #   ____  _____ ____  ____   ___  _   _    _    _

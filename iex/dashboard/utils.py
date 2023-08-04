@@ -40,11 +40,6 @@ def get_menu():
                 href="/tracker",
                 style={"padding": 10},
             ),
-            dcc.Link(
-                "Crypto   ",
-                href="/crypto",
-                style={"padding": 10},
-            ),
         ]
     )
     return menu
