@@ -39,14 +39,11 @@ CLI coming shortly
 
 ```python
 import iex
+from iex import constants
+config_path = str(constants.ROOT_PATH / "iex" / "configs" / "portfolio.ini")
 pf = portfolio.Portfolio(
-    tx_file="tests/files/test_transactions.xlsx", 
-    filter_type=["Dividend"], 
-    funds=["BLKRK"], 
-    delisted=["AQUA", "CCIV"], 
-    other_fields=["broker"],
-    benchmarks=["IVV"],
-    name='all'
+    config_path=config_path, 
+    portfolio='all'
 )
 pf.get_performance()
 ```

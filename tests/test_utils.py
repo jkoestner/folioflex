@@ -5,7 +5,7 @@ from datetime import datetime
 from iex import constants, utils
 from iex.dashboard import dashboard_helper
 
-config_path = constants.PROJECT_PATH / "tests" / "files" / "test_portfolio.ini"
+config_path = str(constants.ROOT_PATH / "tests" / "files" / "test_portfolio.ini")
 config = utils.load_config(config_path, "test")
 
 

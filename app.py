@@ -438,7 +438,7 @@ def initialize_trackerGraph(n_clicks):
     if n_clicks == 0:
         tracker_task_id = "none"
     else:
-        config_path = str(constants.PROJECT_PATH / "files" / "portfolio.ini")
+        config_path = str(constants.ROOT_PATH / "iex" / "configs" / "portfolio.ini")
         broker = "tracker"
         tracker_task = cq.portfolio_query.delay(config_path=config_path, broker=broker)
         tracker_task_id = tracker_task.id
@@ -614,7 +614,9 @@ def initialize_PersonalGraph(n_clicks, dropdown, lookback):
     if n_clicks == 0:
         personal_task_id = "none"
     else:
-        config_path = str(constants.PROJECT_PATH / "files" / "portfolio_personal.ini")
+        config_path = str(
+            constants.ROOT_PATH / "iex" / "configs" / "portfolio_personal.ini"
+        )
 
         personal_task = cq.portfolio_query.delay(
             config_path=config_path, broker=dropdown, lookback=lookback
@@ -794,7 +796,9 @@ def initialize_ManagerTable(n_clicks, lookback):
     if n_clicks == 0:
         manager_task_id = "none"
     else:
-        config_path = str(constants.PROJECT_PATH / "files" / "portfolio_personal.ini")
+        config_path = str(
+            constants.ROOT_PATH / "iex" / "configs" / "portfolio_personal.ini"
+        )
         task = cq.manager_query.delay(config_path, lookback)
         manager_task_id = task.id
         print(f"initializing manager table - {manager_task_id}")

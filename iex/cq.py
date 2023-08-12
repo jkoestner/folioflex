@@ -27,7 +27,7 @@ from iex.dashboard import layouts
 from iex.portfolio import portfolio
 from iex import constants
 
-config_path = constants.PROJECT_PATH / "files" / "portfolio_personal.ini"
+config_path = str(constants.ROOT_PATH / "iex" / "configs" / "portfolio_personal.ini")
 
 celery_app = Celery(
     "tasks",

@@ -5,8 +5,8 @@ from pathlib import Path
 
 from iex import utils
 
-PROJECT_PATH = Path(__file__).resolve().parent.parent
-config_path = PROJECT_PATH / "files" / "config.ini"
+ROOT_PATH = Path(__file__).resolve().parent.parent
+config_path = str(ROOT_PATH / "iex" / "configs" / "config.ini")
 
 # credentials
 FFX_USERNAME = utils.load_config(config_path, "credentials")["ffx_username"]
@@ -18,7 +18,7 @@ IEX_API_SANDBOX = os.getenv("IEX_API_SANDBOX")
 FRED_API = utils.load_config(config_path, "api")["fred_api"]
 
 # other
-if os.path.isfile(r"/app/files/transactions.xlsx"):
+if os.path.exists(r"/app/tests"):
     REDIS_URL = utils.load_config(config_path, "other")["redis_url"]
 else:
     # if debugging locally will need a redis

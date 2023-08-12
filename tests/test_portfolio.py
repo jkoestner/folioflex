@@ -8,7 +8,7 @@ from iex import constants, utils
 from iex.portfolio import portfolio
 
 date = "05-02-2022"  # date to test for performance
-config_path = constants.PROJECT_PATH / "tests" / "files" / "test_portfolio.ini"
+config_path = str(constants.ROOT_PATH / "tests" / "files" / "test_portfolio.ini")
 
 pf = portfolio.Portfolio(config_path=config_path, portfolio="test")
 config = utils.load_config(config_path, "test")
