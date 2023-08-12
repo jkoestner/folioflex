@@ -5,7 +5,7 @@ from pathlib import Path
 
 from iex import utils
 
-ROOT_PATH = Path(__file__).resolve().parent.parent
+ROOT_PATH = str(Path(__file__).resolve().parent.parent)
 config_path = str(ROOT_PATH / "iex" / "configs" / "config.ini")
 
 # credentials
