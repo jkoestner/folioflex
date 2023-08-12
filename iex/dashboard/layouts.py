@@ -24,43 +24,6 @@ list_sector = [
     "SPY",
 ]
 
-funds = [
-    "BLKEQIX",
-    "BLKRGIX",
-    "BLKRVIX",
-    "DODIX",
-    "HLIEIX",
-    "LIPIX",
-    "TRPILCG",
-    "TRPSV",
-]
-
-delisted = [
-    "AQUA",
-    "CCIV",
-    "CGRO",
-    "DCRB",
-    "DMYD",
-    "FIII",
-    "GAHC",
-    "HZON",
-    "KCAC",
-    "LGVW",
-    "NGAC",
-    "PRPB",
-    "PSTH",
-    "SNPR",
-    "SRNGU",
-    "STPK",
-    "SVFA",
-    "RBAC",
-    "RKLY",
-    "THCA",
-    "TWTR",
-    "TVIX",
-    "XIV",
-]
-
 # set up columns
 
 quote_col = [

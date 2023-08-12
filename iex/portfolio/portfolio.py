@@ -29,6 +29,7 @@ from argparse import RawTextHelpFormatter
 from datetime import datetime, timedelta
 from pyxirr import xirr
 
+from iex import utils
 from iex.portfolio.wrappers import Yahoo
 
 pd.options.display.float_format = "{:,.2f}".format
@@ -64,75 +65,45 @@ class Portfolio:
 
     Parameters
     ----------
-    tx_file : str
-        the location of the transaction file
-    filter_type : list (optional)
-        the transaction types to exclude from analysis
-        e.g. dividends, cash
-    filter_broker : list (optional)
-        the brokers to include in analysis
-        e.g. company_a, company_b
-    funds : list (optional)
-        the symbols that should be analyzed as funds. These symbols won't have any
-        yahoo finance reference, so we use transaction prices to fill in blank values
-    delisted : list (optional)
-        similar to funds. These symbols won't have any yahoo finance reference, so we
-        use transaction prices to fill in blank values
-    benchmarks : list (optional)
-        the symbols to use as a benchmark to compare against.
-    other_fields : list (optional)
-        additional fields to include
-    name : str (optional)
-        name of portfolio
+    config_path : str
+        the location of the config file
+    portfolio : str
+        the name of the portfolio to analyze
     """
 
     def __init__(
         self,
-        tx_file,
-        filter_type=None,
-        filter_broker=None,
-        funds=None,
-        delisted=None,
-        benchmarks=None,
-        other_fields=None,
-        name="portfolio",
+        config_path,
+        portfolio,
     ):
-        if filter_type is None:
-            filter_type = []
-        if filter_broker is None:
-            filter_broker = []
-        if funds is None:
-            funds = []
-        if delisted is None:
-            delisted = []
-        if benchmarks is None:
-            benchmarks = []
-        if other_fields is None:
-            other_fields = []
+        """Initialize the Portfolio class."""
+        config = utils.load_config(config_path, portfolio)
 
-        logger.info(f"creating '{name}' portfolio")
-        self.file = str(tx_file)
-        self.name = name
-        self.filter_type = filter_type
-        self.filter_broker = filter_broker
-        self.funds = funds
-        self.delisted = delisted
-        self.benchmarks = benchmarks
-        self.other_fields = other_fields
+        self.file = str(config["tx_file"])
+        self.name = config["name"]
+        logger.info(f"creating '{self.name}' portfolio")
+        self.filter_type = config["filter_type"]
+        self.filter_broker = config["filter_broker"]
+        self.funds = config["funds"]
+        self.delisted = config["delisted"]
+        self.benchmarks = config["benchmarks"]
+        self.other_fields = config["other_fields"]
         self.transactions = self.get_transactions(
-            filter_type=filter_type,
-            filter_broker=filter_broker,
-            other_fields=other_fields,
+            filter_type=self.filter_type,
+            filter_broker=self.filter_broker,
+            other_fields=self.other_fields,
         )
-        logger.info(f"read {tx_file}")
+        logger.info(f"read {self.file}")
 
         self._min_year = self.transactions["date"].min().year
         self.tickers = list(self.transactions["ticker"].unique())
-        logger.info(f"You had {len(self.transactions)} transactions")
         self.check_tx()
+        logger.info(f"You had {len(self.transactions)} transactions")
         self.price_history = self._get_price_history()
         self.transactions_history = self.get_transactions_history(
-            tx_df=self.transactions, other_fields=other_fields, benchmarks=benchmarks
+            tx_df=self.transactions,
+            other_fields=self.other_fields,
+            benchmarks=self.benchmarks,
         )
         self._max_date = self.transactions_history["date"].max()
         self.return_view = self.get_view(view="return")
@@ -281,7 +252,7 @@ class Portfolio:
 
         try:
             if self.file.endswith(".csv"):
-                transactions = pd.read_csv(self.file)
+                transactions = pd.read_csv(self.file, parse_dates=["date"])
             elif self.file.endswith(".xlsx"):
                 transactions = pd.read_excel(self.file, engine="openpyxl")
             else:

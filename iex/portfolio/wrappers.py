@@ -6,11 +6,18 @@ from the larger portfolio project, and allows easier integration.
 
 """
 
+import fredapi
 import logging
 import pandas as pd
 import yfinance as yf
+import requests
+import ssl
 
+from bs4 import BeautifulSoup
 from datetime import datetime
+from urllib import request
+
+from iex import constants
 
 pd.options.display.float_format = "{:,.2f}".format
 
@@ -138,6 +145,62 @@ class Yahoo:
 
         return quote
 
+    def most_active(count=25):
+        """Provide a dataframe of the most active stocks for the most recent trading day.
+
+        [Source: Yahoo]
+
+        Parameters
+        ----------
+        count : int (default=25)
+            portfolio to get heatmap for, if None use sp500
+
+        Returns
+        -------
+        most_active : DataFrame
+        DataFrame of most active stocks
+        """
+        if count <= 0 or count >= 101:
+            logger.warning("Count should be between 1 and 100")
+
+        url = "https://finance.yahoo.com/screener/predefined/most_actives?count=50"
+
+        response = requests.get(url, headers=_get_header())
+        most_active = pd.read_html(response.text)[0]
+
+        # lower and use underscores for column names
+        most_active.columns = (
+            most_active.columns.str.lower()
+            .str.replace(".", "", regex=False)
+            .str.replace("(", "", regex=False)
+            .str.replace(")", "", regex=False)
+            .str.replace(" ", "_", regex=False)
+            .str.replace("_/_", "/", regex=False)
+        )
+        cols_keep = [
+            "symbol",
+            "name",
+            "price_intraday",
+            "change",
+            "%_change",
+            "volume",
+            "avg_vol_3_month",
+            "market_cap",
+        ]
+        most_active = most_active[cols_keep]
+
+        # update columns
+        for var in ["%_change", "volume", "avg_vol_3_month", "market_cap"]:
+            most_active[var] = most_active[var].apply(_convert_to_number)
+
+        most_active["vol_delta"] = (
+            most_active["volume"] / most_active["avg_vol_3_month"]
+        )
+        most_active["vol_price"] = most_active["volume"] * most_active["price_intraday"]
+        most_active = most_active.sort_values("vol_price", ascending=False)
+
+        return most_active
+
     def _clean_index(self, clean_df, lvl, tickers):
         """Clean the index of DataFrame.
 
@@ -170,3 +233,248 @@ class Yahoo:
         clean_df.columns = clean_df.columns.set_levels(idx, level=lvl)
 
         return clean_df
+
+
+class Fred:
+    """Wrapper for federal reserve data.
+
+    Class that provides functions that use data from federal reserve.
+
+    The api documentation can be found here:
+    https://fred.stlouisfed.org/docs/api/fred/
+    """
+
+    def __init__(self):
+        pass
+
+    def get_summary(self):
+        """Get a summary of FRED data.
+
+        Returns
+        ----------
+        fred_summary : dict
+            provides dictionary of FRED data
+        """
+        fred = fredapi.Fred(api_key=constants.FRED_API)
+        fred_dict = {
+            "recession": "RECPROUSM156N",
+            "unemployment": "UNRATE",
+            "inflation": "CPIAUCSL",
+            "fed_funds": "FEDFUNDS",
+            "housing_starts": "HOUST",
+        }
+        fred_summary = {}
+        for key, value in fred_dict.items():
+            fred_summary[key] = fred.get_series(value)[-1]
+
+        return fred_summary
+
+
+class Finviz:
+    """Wrapper for FinViz data.
+
+    Class that provides functions that use data from FinViz data.
+
+    """
+
+    def get_heatmap_data(timeframe="day"):
+        """Get heatmap data from finviz.
+
+        [Source: FinViz]
+        [Snippet Source: OpenBB - function `get_heatmap_data`]
+
+        Parameters
+        ----------
+        timeframe: str
+            Timeframe to get performance for
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe of tickers, changes and sectors
+        """
+        # dict of valid timeframes
+        timeframe_map = {
+            "day": "",
+            "week": "w1",
+            "month": "w4",
+            "3month": "w13",
+            "6month": "w26",
+            "year": "w52",
+            "ytd": "ytd",
+        }
+
+        if timeframe not in timeframe_map:
+            logger.warning("{timeframe} is an invalid timeframe")
+            return pd.DataFrame()
+
+        # get change percent data
+        r = requests.get(
+            f"https://finviz.com/api/map_perf.ashx?t=sec&st={timeframe_map[timeframe]}",
+            headers=_get_header(),
+        )
+        r.raise_for_status()
+
+        df_change = pd.DataFrame.from_dict(r.json()["nodes"], orient="index")
+        df_change.columns = ["return_pct"]
+        df_change["return_pct"] = df_change["return_pct"] / 100
+
+        # get sector and market cap data
+        r2 = requests.get(
+            "https://finviz.com/maps/sec.json?rev=316",
+            headers=_get_header(),
+        )
+        r2.raise_for_status()
+
+        dfs_list = []
+        for sector_dict in r2.json()["children"]:
+            for industry_dict in sector_dict["children"]:
+                temp = pd.DataFrame(industry_dict["children"])
+                temp["sector"] = sector_dict["name"]
+                temp["industry"] = industry_dict["name"]
+                dfs_list.append(temp)
+        dfs = pd.concat(dfs_list, axis=0).reset_index(drop=True)
+
+        # merge dataframes
+        dfs = pd.merge(dfs, df_change, left_on="name", right_index=True)
+        dfs = dfs.rename(
+            columns={
+                "name": "ticker",
+                "value": "market_value",
+                "sector": "sector",
+                "industry": "industry",
+                "return_pct": "return_pct",
+            }
+        )
+        return dfs
+
+
+class Web:
+    """Wrapper for web data.
+
+    Class that provides functions that use data from web data.
+
+    """
+
+    def __init__(self):
+        pass
+
+    def get_sp500_tickers():
+        """Provide sp500 tickers with sectors.
+
+        Returns
+        -------
+        sp500_tickers : DataFrame
+        sp500 tickers and sectors
+        """
+        url = r"https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+        context = ssl._create_unverified_context()
+        response = request.urlopen(url, context=context)
+        html = response.read()
+
+        sp500_tickers = pd.read_html(html)[0][["Symbol", "GICS Sector"]]
+
+        sp500_tickers.rename(
+            columns={
+                "GICS Sector": "sector",
+                "Symbol": "ticker",
+            },
+            inplace=True,
+        )
+
+        return sp500_tickers
+
+    def insider_activity(ticker):
+        """Get insider activity.
+
+        [Source: Business Insider]
+        [Snippet Source: OpenBB - function `get_insider_activity`]
+
+        Parameters
+        ----------
+        ticker : str
+            The ticker to get insider activity for
+
+        Returns
+        -------
+        df_insider : DataFrame
+            Insider activity data
+        """
+        url = f"https://markets.businessinsider.com/stocks/{ticker.lower()}-stock"
+        response = requests.get(url, headers=_get_header())
+        soup = BeautifulSoup(response.content, "html.parser")
+
+        d_insider = dict()
+        l_insider_vals = list()
+        for idx, insider_val in enumerate(
+            soup.findAll("td", {"class": "table__td text-center"})
+        ):
+            l_insider_vals.append(insider_val.text.strip())
+
+            # Add value to dictionary
+            if (idx + 1) % 6 == 0:
+                # Check if we are still parsing insider trading activity
+                if "/" not in l_insider_vals[0]:
+                    break
+                d_insider[(idx + 1) // 6] = l_insider_vals
+                l_insider_vals = list()
+
+        df_insider = pd.DataFrame.from_dict(
+            d_insider,
+            orient="index",
+            columns=["Date", "Shares Traded", "Shares Held", "Price", "Type", "Option"],
+        )
+
+        df_insider["Date"] = pd.to_datetime(df_insider["Date"])
+
+        l_names = list()
+        # get name
+        for s_name in soup.findAll("a", {"onclick": "silentTrackPI()"}):
+            l_names.append(s_name.text.strip())
+        df_insider["Insider"] = l_names
+
+        df_insider = df_insider.set_index("Date")
+        df_insider = df_insider.sort_index(ascending=False)
+        return df_insider
+
+
+def _get_header():
+    """Get header for requests.
+
+    Returns
+    -------
+    headers : str
+        header for requests
+    """
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/58.0.3029.110 Safari/537.3"
+    }
+    return headers
+
+
+def _convert_to_number(s):
+    """Convert string to number.
+
+    Parameters
+    ----------
+    s : str
+        string to convert to number
+
+    Returns
+    -------
+    s : float
+        float value of string
+    """
+    s = str(s).strip()
+    if s[-1] == "M":  # for million values
+        return float(s[:-1]) * 10**6
+    elif s[-1] == "B":  # for billion values
+        return float(s[:-1]) * 10**9
+    elif s[-1] == "T":  # for trillion values
+        return float(s[:-1]) * 10**12
+    elif s[-1] == "%":  # for percentage values
+        return float(s[:-1]) / 100
+    else:  # if there's no M, B, or %, then we can simply convert to float
+        return float(s)

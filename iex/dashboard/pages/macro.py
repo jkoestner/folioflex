@@ -2,112 +2,84 @@
 
 from dash import dcc
 from dash import html
-from urllib import request
-from iex import constants
 
-from iex.dashboard import utils
+from iex.dashboard import dashboard_helper
+from iex.portfolio.wrappers import Fred
 
 # Creating the dash app
-recession = (
-    request.urlopen(
-        "https://cloud.iexapis.com/stable/data-points/market/RECPROUSM156N?token="
-        + constants.iex_api_live
-    )
-    .read()
-    .decode("utf8")
-)
-housing = (
-    request.urlopen(
-        "https://cloud.iexapis.com/stable/data-points/market/HOUST?token="
-        + constants.iex_api_live
-    )
-    .read()
-    .decode("utf8")
-)
-unemployment = (
-    request.urlopen(
-        "https://cloud.iexapis.com/stable/data-points/market/UNRATE?token="
-        + constants.iex_api_live
-    )
-    .read()
-    .decode("utf8")
-)
-fedfunds = (
-    request.urlopen(
-        "https://cloud.iexapis.com/stable/data-points/market/FEDFUNDS?token="
-        + constants.iex_api_live
-    )
-    .read()
-    .decode("utf8")
-)
-cpiaucsl = (
-    request.urlopen(
-        "https://cloud.iexapis.com/stable/data-points/market/CPIAUCSL?token="
-        + constants.iex_api_live
-    )
-    .read()
-    .decode("utf8")
-)
+fred_summary = Fred().get_summary()
+recession = fred_summary["recession"]
+housing = fred_summary["housing_starts"]
+unemployment = fred_summary["unemployment"]
+fedfunds = fred_summary["fed_funds"]
+cpiaucsl = fred_summary["inflation"]
 
 
-layout = html.Div(
-    [
-        html.Div(
-            [
-                utils.get_menu(),
-                dcc.Markdown(
-                    """
-        Macro indicators
-        """
-                ),
-                html.P(),
-            ],
-            className="row",
-        ),
-        html.Div(
-            [
-                html.Div(
-                    [
-                        # creating recession
-                        html.A(
-                            "US Recession Probability",
-                            href="https://fred.stlouisfed.org/series/RECPROUSM156N",
-                            target="_blank",
-                        ),
-                        html.Label(recession),
-                        # creating housing starts
-                        html.A(
-                            "US Housing Starts",
-                            href="https://fred.stlouisfed.org/series/HOUST",
-                            target="_blank",
-                        ),
-                        html.Label(housing),
-                        # creating unemployment rate
-                        html.A(
-                            "US Unemployment Rate",
-                            href="https://fred.stlouisfed.org/series/UNRATE",
-                            target="_blank",
-                        ),
-                        html.Label(unemployment),
-                        # creating fed fund rate
-                        html.A(
-                            "US Federal Fund Rate",
-                            href="https://fred.stlouisfed.org/series/FEDFUNDS",
-                            target="_blank",
-                        ),
-                        html.Label(fedfunds),
-                        # creating cpi
-                        html.A(
-                            "US Inflation",
-                            href="https://fred.stlouisfed.org/series/CPIAUCSL",
-                            target="_blank",
-                        ),
-                        html.Label(cpiaucsl),
-                    ],
-                    className="three columns",
-                ),
-            ],
-            className="row",
-        ),
-    ]
-)
+def layout(login_status, login_alert):
+    """Macro layout."""
+    return html.Div(
+        [
+            # adding variables needed that are used in callbacks.
+            *dashboard_helper.get_defaults(),
+            dcc.Store(id="login-status", data=login_status),
+            html.Div(id="login-alert", children=login_alert, style={"display": "none"}),
+            # ---------------------------------------------------------------
+            html.Div(
+                [
+                    dashboard_helper.get_menu(),
+                    dcc.Markdown(
+                        """
+                        Macro indicators
+                        """
+                    ),
+                    html.P(),
+                ],
+                className="row",
+            ),
+            html.Div(
+                [
+                    html.Div(
+                        [
+                            # creating recession
+                            html.A(
+                                "US Recession Probability",
+                                href="https://fred.stlouisfed.org/series/RECPROUSM156N",
+                                target="_blank",
+                            ),
+                            html.Label(recession),
+                            # creating housing starts
+                            html.A(
+                                "US Housing Starts",
+                                href="https://fred.stlouisfed.org/series/HOUST",
+                                target="_blank",
+                            ),
+                            html.Label(housing),
+                            # creating unemployment rate
+                            html.A(
+                                "US Unemployment Rate",
+                                href="https://fred.stlouisfed.org/series/UNRATE",
+                                target="_blank",
+                            ),
+                            html.Label(unemployment),
+                            # creating fed fund rate
+                            html.A(
+                                "US Federal Fund Rate",
+                                href="https://fred.stlouisfed.org/series/FEDFUNDS",
+                                target="_blank",
+                            ),
+                            html.Label(fedfunds),
+                            # creating cpi
+                            html.A(
+                                "US Inflation",
+                                href="https://fred.stlouisfed.org/series/CPIAUCSL",
+                                target="_blank",
+                            ),
+                            html.Label(cpiaucsl),
+                        ],
+                        className="three columns",
+                    ),
+                ],
+                className="row",
+            ),
+        ]
+    )

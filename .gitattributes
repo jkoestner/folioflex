@@ -1,0 +1,5 @@
+# removing the following files from github's language stats
+
+docs/* linguist-vendored
+notebook/* linguist-vendored
+files/* linguist-vendored

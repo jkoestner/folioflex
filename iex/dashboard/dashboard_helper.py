@@ -40,9 +40,44 @@ def get_menu():
                 href="/tracker",
                 style={"padding": 10},
             ),
+            dcc.Link(
+                "Personal   ",
+                href="/personal",
+                style={"padding": 10},
+            ),
         ]
     )
     return menu
+
+
+def get_defaults():
+    """Provide default initializations for pages."""
+    # TODO
+    # These are needed so that the variable can be none. With some work this could probably
+    # be removed and put in individual pages.
+    defaults = (
+        html.Div(id="task-status", children="none", style={"display": "none"}),
+        html.Div(id="refresh_text", children="none", style={"display": "none"}),
+        html.Div(id="task-id", children="none", style={"display": "none"}),
+        html.Div(id="sector-status", children="none", style={"display": "none"}),
+        html.Div(id="yf-data", children="none", style={"display": "none"}),
+        html.Div(id="tracker-task-status", children="none", style={"display": "none"}),
+        html.Div(id="tracker-task-id", children="none", style={"display": "none"}),
+        html.Div(id="tracker-status", children="none", style={"display": "none"}),
+        dcc.Store(id="tracker-portfolio-tx"),
+        html.Div(id="personal-task-status", children="none", style={"display": "none"}),
+        html.Div(id="personal-task-id", children="none", style={"display": "none"}),
+        html.Div(id="personal-status", children="none", style={"display": "none"}),
+        dcc.Store(id="personal-portfolio-tx"),
+        html.Div(id="manager-df", children="none", style={"display": "none"}),
+        html.Div(id="manager-task-status", children="none", style={"display": "none"}),
+        html.Div(id="manager-task-id", children="none", style={"display": "none"}),
+        html.Div(id="manager-status", children="none", style={"display": "none"}),
+        dcc.Interval(
+            id="interval-component", interval=24 * 60 * 60 * 1000, n_intervals=0
+        ),
+    )
+    return defaults
 
 
 def make_dash_table(df):

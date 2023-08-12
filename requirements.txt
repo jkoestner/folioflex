@@ -8,6 +8,7 @@ ipywidgets
 Flask>=1.1.1
 Flask-Compress>=1.4.0
 flower>=2.0.0
+fredapi>=0.4.3
 gunicorn>=19.9.0
 jupyter-dash
 jupyterlab

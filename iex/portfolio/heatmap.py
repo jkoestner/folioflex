@@ -5,11 +5,8 @@ Provides the heatmap
 
 import pandas as pd
 import plotly.express as px
-import ssl
 
-from urllib import request
-
-from iex import constants
+from iex.portfolio.wrappers import Finviz, Web
 
 
 def get_heatmap(portfolio=None, lookback=None):
@@ -28,7 +25,7 @@ def get_heatmap(portfolio=None, lookback=None):
        heatmap figure
     """
     if portfolio is None:
-        returns = get_sp500_returns()
+        returns = Finviz.get_heatmap_data()
         color = "return_pct"
     else:
         returns = portfolio.get_performance(lookback=lookback)
@@ -41,7 +38,7 @@ def get_heatmap(portfolio=None, lookback=None):
         color = "simple_return_pct"
 
     returns = returns[[color, "market_value", "ticker"]]
-    sp500_tickers = get_sp500_tickers()
+    sp500_tickers = Web.get_sp500_tickers()
     returns = pd.merge(
         returns,
         sp500_tickers,
@@ -62,75 +59,3 @@ def get_heatmap(portfolio=None, lookback=None):
     )
 
     return fig
-
-
-def get_sp500_tickers():
-    """Provide sp500 tickers with sectors.
-
-    Returns
-    -------
-    sp500_tickers : DataFrame
-       sp500 tickers and sectors
-    """
-    url = r"https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-    context = ssl._create_unverified_context()
-    response = request.urlopen(url, context=context)
-    html = response.read()
-
-    sp500_tickers = pd.read_html(html)[0][["Symbol", "GICS Sector"]]
-
-    sp500_tickers.rename(
-        columns={
-            "GICS Sector": "sector",
-            "Symbol": "ticker",
-        },
-        inplace=True,
-    )
-
-    return sp500_tickers
-
-
-def get_sp500_returns():
-    """Get the sp500 returns used in heatmap.
-
-    Returns
-    -------
-    sp500_returns : DataFrame
-       sp500 returns
-    """
-    sp500_tickers = get_sp500_tickers()
-
-    # iterate through ticker list. iex restricts results to 100
-    sp500_returns = pd.DataFrame()
-    temp_df = pd.DataFrame()
-    for i in [100, 200, 300, 400, 500, 600]:
-        start = i - 100
-        iex_query = (
-            "https://cloud.iexapis.com/stable/stock/market/batch?symbols="
-            + ",".join(sp500_tickers.iloc[start:i]["ticker"])
-            + "&types=quote&token="
-            + constants.iex_api_live
-        )
-        temp_df = pd.read_json(iex_query, orient="index")
-        temp_df = pd.json_normalize(temp_df["quote"])
-        sp500_returns = pd.concat([sp500_returns, temp_df])
-
-    sp500_returns["changePercent"] = (
-        sp500_returns["changePercent"].replace("[\\$,]", "", regex=True).astype(float)
-    )
-    # nulls/zero in market cap will not allow aggregation, replacing with 1
-    sp500_returns["marketCap"] = sp500_returns["marketCap"].fillna(1)
-    sp500_returns["marketCap"] = sp500_returns["marketCap"].replace(
-        to_replace=0, value=1
-    )
-
-    sp500_returns.rename(
-        columns={
-            "changePercent": "return_pct",
-            "marketCap": "market_value",
-            "symbol": "ticker",
-        },
-        inplace=True,
-    )
-
-    return sp500_returns

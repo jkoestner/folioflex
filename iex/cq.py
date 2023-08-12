@@ -3,7 +3,9 @@
 note: there are two resources that are needed to use the worker processes.
 
 1. redis server - this is the message broker that is used to communicate between the
-worker and the main process.
+worker and the main process. The redis server is referenced using environment variables
+`REDIS_URL` and `LOCAL_REDIS`.  The `REDIS_URL` is used when the application is
+deployed on web and the `LOCAL_REDIS` is used when debugging locally.
 
 2. worker - this is the process that will be used to execute the tasks.  The worker
 will be listening to the redis server for tasks to execute.
@@ -16,7 +18,6 @@ available at http://localhost:5555:
     celery -A iex.cq flower
 """
 
-import os
 import yfinance as yf
 
 from celery import Celery
@@ -24,17 +25,14 @@ from datetime import datetime
 
 from iex.dashboard import layouts
 from iex.portfolio import portfolio
+from iex import constants
 
-if os.path.isfile(r"/app/files/transactions.xlsx"):
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-else:
-    # if debugging locally will need a redis
-    redis_url = os.getenv("LOCAL_REDIS")
+config_path = constants.PROJECT_PATH / "files" / "portfolio_personal.ini"
 
 celery_app = Celery(
     "tasks",
-    broker=redis_url,
-    backend=redis_url,
+    broker=constants.REDIS_URL,
+    backend=constants.REDIS_URL,
     task_serializer="json",
     result_serializer="json",
     accept_content=["json"],
@@ -65,14 +63,14 @@ def sector_query(start="2023-01-01"):
 
 
 @celery_app.task
-def portfolio_query(tx_file, filter_broker=None, lookback=None):
+def portfolio_query(config_path, broker="all", lookback=None):
     """Query for worker to generate portfolio.
 
     Parameters
     ----------
-    tx_file : str
-       file to create
-    filter_broker : list (optional)
+    config_path : str
+       path to config file
+    broker : str
         the brokers to include in analysis
     lookback : int (optional)
         amount of days to lookback
@@ -82,17 +80,9 @@ def portfolio_query(tx_file, filter_broker=None, lookback=None):
     cq_portfolio_dict : dict
        provides a dict of portfolio objects
     """
-    personal_portfolio = portfolio.Portfolio(
-        tx_file,
-        filter_type=["Dividend"],
-        filter_broker=filter_broker,
-        funds=layouts.funds,
-        delisted=layouts.delisted,
-        other_fields=["broker"],
-        benchmarks=["IVV"],
-    )
+    personal_portfolio = portfolio.Portfolio(config_path=config_path, portfolio=broker)
 
-    # get transactions that have portfolio informaiton as well
+    # get transactions that have portfolio information as well
     transactions = personal_portfolio.transactions.head(10)
 
     # provide results in dictionary
@@ -107,18 +97,21 @@ def portfolio_query(tx_file, filter_broker=None, lookback=None):
     cq_portfolio_dict["view_cost"] = personal_portfolio.get_view(
         view="cumulative_cost"
     ).to_json()
+    cq_portfolio_dict["view_market_value"] = personal_portfolio.get_view(
+        view="market_value"
+    ).to_json()
 
     return cq_portfolio_dict
 
 
 @celery_app.task
-def manager_query(tx_file, lookback=None):
+def manager_query(config_path, lookback=None):
     """Query for worker to generate manager.
 
     Parameters
     ----------
-    tx_file : str
-       file to create
+    config_path : str
+       path to config file
     lookback : int (optional)
         amount of days to lookback
 
@@ -127,73 +120,13 @@ def manager_query(tx_file, lookback=None):
     cq_pm : json
        provides the portfolio manager performance
     """
-    # constant variables used in program
-    filter_type = ["Dividend"]
-    funds = layouts.funds
-    delisted = layouts.delisted
-    other_fields = ["broker"]
-    benchmarks = ["IVV"]
-
     # create portfolio objects
-    pf = portfolio.Portfolio(
-        tx_file,
-        filter_type=filter_type,
-        funds=funds,
-        delisted=delisted,
-        other_fields=other_fields,
-        benchmarks=benchmarks,
-        name="all",
-    )
-    fidelity = portfolio.Portfolio(
-        tx_file,
-        filter_type=filter_type,
-        funds=funds,
-        delisted=delisted,
-        other_fields=other_fields,
-        benchmarks=benchmarks,
-        name="fidelity",
-        filter_broker=["Fidelity"],
-    )
-    ib = portfolio.Portfolio(
-        tx_file,
-        filter_type=filter_type,
-        funds=funds,
-        delisted=delisted,
-        other_fields=other_fields,
-        benchmarks=benchmarks,
-        name="ib",
-        filter_broker=["IB"],
-    )
-    eiten = portfolio.Portfolio(
-        tx_file,
-        filter_type=filter_type,
-        funds=funds,
-        delisted=delisted,
-        other_fields=other_fields,
-        benchmarks=benchmarks,
-        name="eiten",
-        filter_broker=["IB-eiten"],
-    )
-    roth = portfolio.Portfolio(
-        tx_file,
-        filter_type=filter_type,
-        funds=funds,
-        delisted=delisted,
-        other_fields=other_fields,
-        benchmarks=benchmarks,
-        name="roth",
-        filter_broker=["Ally_Roth"],
-    )
-    company = portfolio.Portfolio(
-        tx_file,
-        filter_type=filter_type,
-        funds=funds,
-        delisted=delisted,
-        other_fields=other_fields,
-        benchmarks=benchmarks,
-        name="company",
-        filter_broker=["Company"],
-    )
+    pf = portfolio.Portfolio(config_path=config_path, portfolio="all")
+    fidelity = portfolio.Portfolio(config_path=config_path, portfolio="fidelity")
+    ib = portfolio.Portfolio(config_path=config_path, portfolio="ib")
+    eiten = portfolio.Portfolio(config_path=config_path, portfolio="eiten")
+    roth = portfolio.Portfolio(config_path=config_path, portfolio="roth")
+    company = portfolio.Portfolio(config_path=config_path, portfolio="company")
     portfolios = [pf, fidelity, ib, eiten, roth, company]
     pm = portfolio.Manager(portfolios)
     cq_pm = pm.get_summary(lookback=lookback).to_json()

@@ -1,81 +1,62 @@
 """Sector dashboard."""
 
-import pandas as pd
-
-from dash import dash_table
 from dash import dcc
 from dash import html
-from iex import constants
 
-from iex.dashboard import utils
+from iex.dashboard import dashboard_helper
 
-# Sector URL
-urlsec = (
-    "https://cloud.iexapis.com/stable/ref-data/sectors?token=" + constants.iex_api_live
-)
-sectors = pd.read_json(urlsec, orient="columns")
-sectors["name"] = sectors["name"].str.replace(" ", "%20")
 
-# Creating the dash app
-
-layout = html.Div(
-    [
-        html.Div(
-            [
-                utils.get_menu(),
-                html.Button("Sector initialize", id="sector-initialize", n_clicks=0),
-                html.Div(id="refresh_text", children="none"),
-                # graph
-                dcc.Graph(
-                    id="Sector-Graph",
-                ),
-                # range slider
-                html.P(
-                    [
-                        html.Label("Time Period"),
-                        dcc.RangeSlider(
-                            id="slider",
-                            tooltip="always_visible",
-                            min=0,
-                            max=10,
-                            value=[0, 10],
-                            marks=1,
-                        ),
-                    ],
-                    style={
-                        "width": "80%",
-                        "fontSize": "20px",
-                        "padding-left": "100px",
-                        "display": "inline-block",
-                    },
-                ),
-                html.P(),
-                html.P(),
-                # heatmap graph
-                html.Button("Heatmap initialize", id="heatmap-initialize", n_clicks=0),
-                dcc.Graph(
-                    id="Heatmap-Graph",
-                ),
-                html.P(),
-                # creating dropdown menu
-                html.Label("Sectors Dropdown"),
-                dcc.Dropdown(
-                    id="sector-dropdown",
-                    options=[{"label": i, "value": i} for i in sectors.name.unique()],
-                    multi=False,
-                    placeholder="Select Sector...",
-                ),
-                # creating table that is based on dropdown menu
-                html.P(),
-                html.Label("Sector Table"),
-                dash_table.DataTable(
-                    id="sector-table",
-                    filter_action="native",
-                    sort_action="native",
-                    page_action="native",
-                ),
-            ],
-            className="row",
-        ),
-    ]
-)
+def layout(login_status, login_alert):
+    """Sectors layout."""
+    return html.Div(
+        [
+            # adding variables needed that are used in callbacks.
+            *dashboard_helper.get_defaults(),
+            dcc.Store(id="login-status", data=login_status),
+            html.Div(id="login-alert", children=login_alert, style={"display": "none"}),
+            # ---------------------------------------------------------------
+            html.Div(
+                [
+                    dashboard_helper.get_menu(),
+                    html.Button(
+                        "Sector initialize", id="sector-initialize", n_clicks=0
+                    ),
+                    html.Div(id="refresh_text", children="none"),
+                    # graph
+                    dcc.Graph(
+                        id="Sector-Graph",
+                    ),
+                    # range slider
+                    html.P(
+                        [
+                            html.Label("Time Period"),
+                            dcc.RangeSlider(
+                                id="slider",
+                                tooltip={"always_visible": True, "placement": "bottom"},
+                                min=0,
+                                max=10,
+                                value=[0, 100],
+                                marks={i: str(i) for i in range(0, 101, 10)},
+                            ),
+                        ],
+                        style={
+                            "width": "80%",
+                            "fontSize": "20px",
+                            "padding-left": "100px",
+                            "display": "inline-block",
+                        },
+                    ),
+                    html.P(),
+                    html.P(),
+                    # heatmap graph
+                    html.Button(
+                        "Heatmap initialize", id="heatmap-initialize", n_clicks=0
+                    ),
+                    dcc.Graph(
+                        id="Heatmap-Graph",
+                    ),
+                ],
+                className="row",
+            ),
+        ]
+    )

@@ -25,13 +25,12 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
 from dateutil.relativedelta import relativedelta
-from iex import constants
-from iex.dashboard import layouts, page_constants, utils
 
-from iex.dashboard.pages import stocks, sectors, ideas, macro, tracker, personal
+from iex import constants
+from iex.dashboard import dashboard_helper, layouts
+from iex.dashboard.pages import stocks, sectors, ideas, macro, tracker, personal, login
 from iex import cq
 from iex.portfolio import heatmap, wrappers
-from iex.market import screener
 
 
 #      _    ____  ____
@@ -50,24 +49,8 @@ app.layout = html.Div(
     [
         dcc.Location(id="url", refresh=False),
         html.Div(id="page-content"),
-        html.Div(id="task-status", children="none", style={"display": "none"}),
-        html.Div(id="refresh_text", children="none", style={"display": "none"}),
-        html.Div(id="task-id", children="none", style={"display": "none"}),
-        html.Div(id="sector-status", children="none", style={"display": "none"}),
-        html.Div(id="yf-data", children="none", style={"display": "none"}),
-        html.Div(id="personal-task-status", children="none", style={"display": "none"}),
-        html.Div(id="personal-task-id", children="none", style={"display": "none"}),
-        html.Div(id="personal-status", children="none", style={"display": "none"}),
-        html.Div(id="manager-df", children="none", style={"display": "none"}),
-        html.Div(id="manager-task-status", children="none", style={"display": "none"}),
-        html.Div(id="manager-task-id", children="none", style={"display": "none"}),
-        html.Div(id="manager-status", children="none", style={"display": "none"}),
-        html.Div(
-            id="personal-portfolio-tx", children="none", style={"display": "none"}
-        ),
-        dcc.Interval(
-            id="interval-component", interval=24 * 60 * 60 * 1000, n_intervals=0
-        ),
+        dcc.Store(id="login-status", storage_type="session"),
+        html.Div(id="login-alert", children="", style={"display": "none"}),
     ]
 )
 
@@ -78,23 +61,30 @@ app.layout = html.Div(
 #  |___|_| \_|____/|_____/_/\_\
 
 
-@app.callback(Output("page-content", "children"), [Input("url", "pathname")])
-def display_page(pathname):
+@app.callback(
+    Output("page-content", "children"),
+    [Input("url", "pathname"), Input("login-alert", "children")],
+    State("login-status", "data"),
+)
+def display_page(pathname, login_alert, login_status):
     """Create navigation for app."""
     if pathname == "/":
-        return stocks.layout
+        return stocks.layout(login_status=login_status, login_alert=login_alert)
     elif pathname == "/stocks":
-        return stocks.layout
+        return stocks.layout(login_status=login_status, login_alert=login_alert)
     elif pathname == "/sectors":
-        return sectors.layout
+        return sectors.layout(login_status=login_status, login_alert=login_alert)
     elif pathname == "/ideas":
-        return ideas.layout
+        return ideas.layout(login_status=login_status, login_alert=login_alert)
     elif pathname == "/macro":
-        return macro.layout
+        return macro.layout(login_status=login_status, login_alert=login_alert)
     elif pathname == "/tracker":
-        return tracker.layout
+        return tracker.layout(login_status=login_status, login_alert=login_alert)
     elif pathname == "/personal":
-        return personal.layout
+        if not login_status or not login_status.get("logged_in"):
+            return login.layout(login_status=login_status, login_alert=login_alert)
+        else:
+            return personal.layout(login_status=login_status, login_alert=login_alert)
     else:
         return "404"
 
@@ -123,8 +113,6 @@ def update_stockanalysis(n_clicks, input_value):
         stock = stock.reset_index()
         stock.columns = ["Variable", "Value"]
         stock = stock[stock["Variable"].isin(layouts.yahoo_info["info"])]
-
-        print(stock.shape)
 
         stock_table = [{"name": i, "id": i} for i in stock.columns], stock.to_dict(
             "records"
@@ -158,35 +146,6 @@ def update_quoteanalysis(n_clicks, input_value):
 
 @app.callback(
     [
-        Output("peer-table", "columns"),
-        Output("peer-table", "data"),
-    ],
-    [Input("peer-button", "n_clicks")],
-    [State("stock-input", "value")],
-)
-def update_peeranalysis(n_clicks, input_value):
-    """Provide peer analysis table."""
-    if n_clicks == 0:
-        peer_table = (None, None)
-    else:
-        urlpeer = (
-            "https://cloud.iexapis.com/stable/stock/"
-            + format(input_value)
-            + "/peers?token="
-            + constants.iex_api_live
-        )
-        peer = pd.read_json(urlpeer, orient="columns", typ="series")
-        peer = peer.reset_index()
-        peer.columns = ["Index", "Peer"]
-        peer_table = [{"name": i, "id": i} for i in peer.columns], peer.to_dict(
-            "records"
-        )
-
-    return peer_table
-
-
-@app.callback(
-    [
         Output("news-table", "columns"),
         Output("news-table", "data"),
     ],
@@ -198,12 +157,13 @@ def update_newsanalysis(n_clicks, input_value):
     if n_clicks == 0:
         news_table = (None, None)
     else:
-        news = wrappers.Yahoo().news(input_value)
-        news = news.reset_index()
+        news_table = wrappers.Yahoo().news(input_value)
+        news_table.drop(columns=["relatedTickers"], inplace=True)
+        news_table = news_table.reset_index()
 
-        news_table = [{"name": i, "id": i} for i in news.columns], news.to_dict(
-            "records"
-        )
+        news_table = [
+            {"name": i, "id": i} for i in news_table.columns
+        ], news_table.to_dict("records")
 
     return news_table
 
@@ -220,7 +180,7 @@ def update_activeanalysis(n_clicks):
     if n_clicks == 0:
         active_table = (None, None)
     else:
-        active = screener.most_active(count=25)
+        active = wrappers.Yahoo.most_active(count=25)
         active = active.reset_index()
 
         active_table = layouts.active_fmt, active.to_dict("records")
@@ -241,7 +201,7 @@ def update_insidersummaryanalysis(n_clicks, input_value):
     if n_clicks == 0:
         insider_summary_table = (None, None)
     else:
-        insider = screener.insider_activity(input_value)
+        insider = wrappers.Web.insider_activity(input_value)
         insider = insider.reset_index()
         insider = insider.head(10)
 
@@ -321,12 +281,14 @@ def update_SectorData(sector_status, yf_data):
     """Provide sector data table."""
     if sector_status == "ready":
         cq_sector_close = pd.read_json(yf_data)
-        min, max, value, marks = utils.get_slider_values(cq_sector_close.index)
+        min, max, value, marks = dashboard_helper.get_slider_values(
+            cq_sector_close.index
+        )
     else:
         min = 0
-        max = 10
-        value = 0
-        marks = 0
+        max = 100
+        value = [0, 100]
+        marks = {i: str(i) for i in range(0, 101, 10)}
 
     return min, max, value, marks
 
@@ -344,8 +306,11 @@ def update_SectorGraph(slide_value, yf_data, sector_status):
     if sector_status == "ready" and slide_value != 0:
         cq_sector_close = pd.read_json(yf_data)
         sector_data = cq_sector_close[
-            (utils.unix_time_millis(cq_sector_close.index) > slide_value[0])
-            & (utils.unix_time_millis(cq_sector_close.index) <= slide_value[1])
+            (dashboard_helper.unix_time_millis(cq_sector_close.index) > slide_value[0])
+            & (
+                dashboard_helper.unix_time_millis(cq_sector_close.index)
+                <= slide_value[1]
+            )
         ].copy()
         for col in sector_data.columns:
             sector_data["change"] = sector_data[col] / sector_data[col].iat[0] - 1
@@ -378,44 +343,6 @@ def initialize_HeatmapGraph(n_clicks):
         fig = heatmap.get_heatmap()
 
     return fig
-
-
-# Table
-@app.callback(
-    [
-        Output("sector-table", "columns"),
-        Output("sector-table", "data"),
-    ],
-    [Input("sector-dropdown", "value")],
-)
-def update_table(dropdown_value):
-    """Provide sector analysis table."""
-    if dropdown_value is None:
-        sector_table = (None, None)
-    else:
-        urlcol = (
-            "https://cloud.iexapis.com/stable/stock/market/collection/sector?collectionName="
-            + format(dropdown_value)
-            + "&token="
-            + constants.iex_api_live
-        )
-        collection_all = pd.read_json(urlcol, orient="columns")
-        collection = collection_all[
-            collection_all["primaryExchange"].isin(layouts.USexchanges)
-        ].copy()
-
-        collection["cap*perc"] = collection["marketCap"] * collection["changePercent"]
-        collection["latestUpdate"] = pd.to_datetime(
-            collection["latestUpdate"], unit="ms"
-        )
-        collection = collection[layouts.cols_col]
-        collection = collection.sort_values(by=["cap*perc"], ascending=False)
-
-        sector_table = [
-            {"name": i, "id": i} for i in collection.columns
-        ], collection.to_dict("records")
-
-    return sector_table
 
 
 #   ___ ____  _____    _    ____
@@ -455,7 +382,7 @@ def sma_value(n_clicks, input_value):
             + "/indicator/sma?range=1y&input1=12&sort=asc&chartCloseOnly=True&chartInterval="
             + days
             + "&token="
-            + constants.iex_api_live
+            + constants.IEX_API_LIVE
         )
         sma = pd.read_json(urlsma, orient="index", typ="frame")
         sma_val = sma.loc["indicator"].values[0][-1]
@@ -463,7 +390,7 @@ def sma_value(n_clicks, input_value):
             "https://cloud.iexapis.com/stable/stock/"
             + format(input_value)
             + "/quote?token="
-            + constants.iex_api_live
+            + constants.IEX_API_LIVE
         )
         quote = pd.read_json(urlquote, orient="index", typ="frame")
         latest_price = quote.loc["latestPrice"].values[0]
@@ -471,7 +398,7 @@ def sma_value(n_clicks, input_value):
             "https://cloud.iexapis.com/stable/stock/"
             + format(input_value)
             + "/stats?token="
-            + constants.iex_api_live
+            + constants.IEX_API_LIVE
         )
         stock = pd.read_json(urlstock, orient="index", typ="frame")
         return_12mo = stock.loc["year1ChangePercent"].values[0]
@@ -500,37 +427,170 @@ def sma_value(n_clicks, input_value):
 #    | | |  _ <  / ___ \ |___| . \| |___|  _ <
 #    |_| |_| \_\/_/   \_\____|_|\_\_____|_| \_\
 
-tracker_portfolio = page_constants.tracker_portfolio
 
-
-@app.callback(Output("Tracker-Graph", "figure"), [Input("Tracker-Dropdown", "value")])
-def update_TrackerGraph(dropdown):
+# initializing tracker
+@app.callback(
+    Output("tracker-task-id", "children"),
+    Input("tracker-initialize", "n_clicks"),
+)
+def initialize_trackerGraph(n_clicks):
     """Provide tracker graph."""
-    px_df = tracker_portfolio.get_view(view=dropdown)
-    px_line = px.line(px_df, title="tracker")
-    px_line.update_xaxes(
-        title_text="Date",
-        rangeslider_visible=True,
-        rangeselector=dict(
-            buttons=list(
-                [
-                    dict(count=5, label="5D", step="day", stepmode="backward"),
-                    dict(count=1, label="1M", step="month", stepmode="backward"),
-                    dict(count=6, label="6M", step="month", stepmode="backward"),
-                    dict(count=1, label="YTD", step="year", stepmode="todate"),
-                    dict(count=1, label="1Y", step="year", stepmode="backward"),
-                    dict(step="all"),
-                ]
-            )
-        ),
-    )
+    if n_clicks == 0:
+        tracker_task_id = "none"
+    else:
+        config_path = str(constants.PROJECT_PATH / "files" / "portfolio.ini")
+        broker = "tracker"
+        tracker_task = cq.portfolio_query.delay(config_path=config_path, broker=broker)
+        tracker_task_id = tracker_task.id
 
-    px_line.update_yaxes(title_text=dropdown, autorange=True, fixedrange=False)
-    px_line.update_traces(
-        visible="legendonly", selector=lambda t: t.name not in ["portfolio"]
-    )
+    return tracker_task_id
+
+
+# text
+@app.callback(
+    Output("tracker_refresh_text", "children"),
+    Input("tracker-task-status", "children"),
+)
+def tracker_refresh_text(tracker_task_status):
+    """Provide text for tracker graph."""
+    return tracker_task_status
+
+
+@app.callback(
+    Output("tracker-task-status", "children"),
+    [
+        Input("interval-component", "n_intervals"),
+        Input("tracker-task-id", "children"),
+    ],
+    [
+        State("tracker-task-status", "children"),
+    ],
+)
+def tracker_status_check(n_intervals, tracker_task_id, tracker_task_status):
+    """Provide status check."""
+    if tracker_task_id != "none":
+        tracker_task = AsyncResult(tracker_task_id, app=cq.celery_app)
+        tracker_task_status = tracker_task.status
+
+    else:
+        tracker_task_status = "waiting"
+    return tracker_task_status
+
+
+@app.callback(
+    [
+        Output("tracker-portfolio-tx", "data"),
+        Output("tracker-status", "children"),
+    ],
+    Input("tracker-task-status", "children"),
+    State("tracker-task-id", "children"),
+)
+def tracker_get_results(tracker_task_status, tracker_task_id):
+    """Provide status results."""
+    if tracker_task_status == "SUCCESS":
+        tracker_task = AsyncResult(tracker_task_id, app=cq.celery_app)
+        tracker_portfolio_tx = tracker_task.result
+        tracker_status = "ready"
+    else:
+        tracker_status = "none"
+        tracker_portfolio_tx = None
+
+    return tracker_portfolio_tx, tracker_status
+
+
+@app.callback(
+    Output("tracker-graph", "figure"),
+    [
+        Input("tracker-dropdown", "value"),
+        Input("tracker-status", "children"),
+    ],
+    State("tracker-portfolio-tx", "data"),
+)
+def update_TrackerGraph(dropdown, tracker_status, cq_portfolio_dict):
+    """Provide tracker graph."""
+    if tracker_status == "ready":
+        px_df = pd.read_json(cq_portfolio_dict[dropdown])
+        px_line = px.line(px_df, title="tracker")
+        px_line.update_xaxes(
+            title_text="Date",
+            rangeslider_visible=True,
+            rangeselector=dict(
+                buttons=list(
+                    [
+                        dict(count=5, label="5D", step="day", stepmode="backward"),
+                        dict(count=1, label="1M", step="month", stepmode="backward"),
+                        dict(count=6, label="6M", step="month", stepmode="backward"),
+                        dict(count=1, label="YTD", step="year", stepmode="todate"),
+                        dict(count=1, label="1Y", step="year", stepmode="backward"),
+                        dict(step="all"),
+                    ]
+                )
+            ),
+        )
+
+        px_line.update_yaxes(title_text=dropdown, autorange=True, fixedrange=False)
+        px_line.update_traces(
+            visible="legendonly", selector=lambda t: t.name not in ["portfolio"]
+        )
+    else:
+        px_line = px.line(title="tracker")
 
     return px_line
+
+
+# performance table
+@app.callback(
+    [
+        Output("tracker_perfomance_table", "columns"),
+        Output("tracker_perfomance_table", "data"),
+    ],
+    [
+        Input("tracker-status", "children"),
+    ],
+    [
+        State("tracker-portfolio-tx", "data"),
+    ],
+)
+def update_trackerPerformance(tracker_status, cq_portfolio_dict):
+    """Provide tracker performance table."""
+    if tracker_status == "ready":
+        performance = pd.read_json(cq_portfolio_dict["performance"])
+        performance["lookback_date"] = pd.to_datetime(
+            performance["lookback_date"], unit="ms"
+        )
+        performance = performance[performance["market_value"] != 0].sort_values(
+            "return", ascending=False
+        )
+
+        performance_table = layouts.performance_fmt, performance.to_dict("records")
+    else:
+        performance_table = (None, None)
+
+    return performance_table
+
+
+# transactions table
+@app.callback(
+    [
+        Output("tracker_transaction_table", "columns"),
+        Output("tracker_transaction_table", "data"),
+    ],
+    [
+        Input("tracker-status", "children"),
+    ],
+    [
+        State("tracker-portfolio-tx", "data"),
+    ],
+)
+def update_trackerTransaction(tracker_status, cq_portfolio_dict):
+    """Provide tracker transaction table."""
+    if tracker_status == "ready":
+        transactions = pd.read_json(cq_portfolio_dict["transactions"])
+        transaction_table = layouts.transactions_fmt, transactions.to_dict("records")
+    else:
+        transaction_table = (None, None)
+
+    return transaction_table
 
 
 #   ____  _____ ____  ____   ___  _   _    _    _
@@ -550,18 +610,14 @@ def update_TrackerGraph(dropdown):
     ],
 )
 def initialize_PersonalGraph(n_clicks, dropdown, lookback):
-    """Provide sector analysis graph."""
+    """Provide personal graph."""
     if n_clicks == 0:
         personal_task_id = "none"
     else:
-        if dropdown == "Total":
-            broker = None
-        else:
-            broker = [dropdown]
+        config_path = str(constants.PROJECT_PATH / "files" / "portfolio_personal.ini")
 
-        personal_tx_file = constants.aws_tx_file
         personal_task = cq.portfolio_query.delay(
-            personal_tx_file, filter_broker=broker, lookback=lookback
+            config_path=config_path, broker=dropdown, lookback=lookback
         )
         personal_task_id = personal_task.id
 
@@ -601,7 +657,7 @@ def personal_status_check(n_intervals, personal_task_id, personal_task_status):
 
 @app.callback(
     [
-        Output("personal-portfolio-tx", "children"),
+        Output("personal-portfolio-tx", "data"),
         Output("personal-status", "children"),
     ],
     Input("personal-task-status", "children"),
@@ -628,13 +684,13 @@ def personal_get_results(personal_task_status, personal_task_id):
     ],
     [
         State("personal-status", "children"),
-        State("personal-portfolio-tx", "children"),
+        State("personal-portfolio-tx", "data"),
     ],
 )
 def update_PersonalGraph(slide_value, personal_status, cq_portfolio_dict):
     """Provide personal graph."""
     if personal_status == "ready":
-        fig = utils.update_graph(
+        fig = dashboard_helper.update_graph(
             slide_value,
             pd.read_json(cq_portfolio_dict["view_return"]),
             pd.read_json(cq_portfolio_dict["view_cost"]),
@@ -654,18 +710,18 @@ def update_PersonalGraph(slide_value, personal_status, cq_portfolio_dict):
         Output("personal_slider", "marks"),
     ],
     [Input("personal-status", "children")],
-    [State("personal-portfolio-tx", "children")],
+    [State("personal-portfolio-tx", "data")],
 )
 def update_PersonalSlider(personal_status, cq_portfolio_dict):
     """Provide sector data table."""
     if personal_status == "ready":
         return_view = pd.read_json(cq_portfolio_dict["view_return"])
-        min, max, value, marks = utils.get_slider_values(return_view.index)
+        min, max, value, marks = dashboard_helper.get_slider_values(return_view.index)
     else:
         min = 0
-        max = 10
-        value = 0
-        marks = 0
+        max = 100
+        value = [0, 100]
+        marks = {i: str(i) for i in range(0, 101, 10)}
 
     return min, max, value, marks
 
@@ -680,7 +736,7 @@ def update_PersonalSlider(personal_status, cq_portfolio_dict):
         Input("personal-status", "children"),
     ],
     [
-        State("personal-portfolio-tx", "children"),
+        State("personal-portfolio-tx", "data"),
     ],
 )
 def update_PersonalPerformance(personal_status, cq_portfolio_dict):
@@ -711,7 +767,7 @@ def update_PersonalPerformance(personal_status, cq_portfolio_dict):
         Input("personal-status", "children"),
     ],
     [
-        State("personal-portfolio-tx", "children"),
+        State("personal-portfolio-tx", "data"),
     ],
 )
 def update_PersonalTransaction(personal_status, cq_portfolio_dict):
@@ -738,8 +794,8 @@ def initialize_ManagerTable(n_clicks, lookback):
     if n_clicks == 0:
         manager_task_id = "none"
     else:
-        personal_tx_file = constants.aws_tx_file
-        task = cq.manager_query.delay(personal_tx_file, lookback)
+        config_path = str(constants.PROJECT_PATH / "files" / "portfolio_personal.ini")
+        task = cq.manager_query.delay(config_path, lookback)
         manager_task_id = task.id
         print(f"initializing manager table - {manager_task_id}")
     return manager_task_id
@@ -819,6 +875,55 @@ def update_ManagerTable(manager_status, cq_pm):
     return manager_table
 
 
+#   _                 _
+#  | |               (_)
+#  | |     ___   __ _ _ _ __
+#  | |    / _ \ / _` | | '_ \
+#  | |___| (_) | (_| | | | | |
+#  |______\___/ \__, |_|_| |_|
+#                __/ |
+#               |___/
+
+
+# User credentials
+# dictionary of username and password
+# e.g. {"username": "password"}
+credentials = {constants.FFX_USERNAME: constants.FFX_PASSWORD}
+
+
+@app.callback(
+    [
+        Output("login-status", "data"),
+        Output("login-alert", "children"),
+    ],
+    Input("login-button", "n_clicks"),
+    [State("username", "value"), State("password", "value")],
+    prevent_initial_call=True,
+)
+def validate_login(n_clicks, username, password):
+    """Validate login credentials."""
+    if not n_clicks:
+        # Return empty values if the button has not been clicked yet
+        return (
+            dash.no_update,
+            dash.no_update,
+        )
+    elif (
+        username is not None
+        and password is not None
+        and (username, password) in credentials.items()
+    ):
+        return (
+            {"logged_in": True},
+            "Success (switch pages to see the change)",
+        )
+    else:
+        return (
+            {"logged_in": False},
+            "Invalid Credentials",
+        )
+
+
 #  __        _____  ____  _  _______ ____
 #  \ \      / / _ \|  _ \| |/ / ____|  _ \
 #   \ \ /\ / / | | | |_) | ' /|  _| | |_) |
@@ -835,6 +940,8 @@ def update_ManagerTable(manager_status, cq_pm):
         Input("personal-task-id", "children"),
         Input("manager-task-status", "children"),
         Input("manager-task-id", "children"),
+        Input("tracker-task-status", "children"),
+        Input("tracker-task-id", "children"),
     ],
 )
 def toggle_interval_speed(
@@ -844,6 +951,8 @@ def toggle_interval_speed(
     personal_task_id,
     manager_task_status,
     manager_task_id,
+    tracker_task_status,
+    tracker_task_id,
 ):
     """Triggered by changes in task-id and task-status divs.
 
@@ -857,6 +966,7 @@ def toggle_interval_speed(
             and personal_task_status in ["waiting", "PENDING"]
         )
         or (manager_task_id != "none" and manager_task_status in ["waiting", "PENDING"])
+        or (tracker_task_id != "none" and tracker_task_status in ["waiting", "PENDING"])
     ):
         return 1000
     else:

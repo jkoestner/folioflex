@@ -1,32 +1,17 @@
 """Tests the portfolio tracker."""
 import numpy as np
-import pathlib
 import pandas as pd
 
 from pyxirr import xirr
 
-try:
-    import portfolio
-except (ImportError, ModuleNotFoundError):
-    from iex.portfolio import portfolio
+from iex import constants, utils
+from iex.portfolio import portfolio
 
-PROJECT_PATH = pathlib.Path(__file__).resolve().parent.parent
+date = "05-02-2022"  # date to test for performance
+config_path = constants.PROJECT_PATH / "tests" / "files" / "test_portfolio.ini"
 
-tx_file = PROJECT_PATH / pathlib.Path("tests") / "files" / "test_transactions.xlsx"
-
-filter_type = ["Dividend"]
-funds = ["BLKRK"]
-delisted = ["CCIV", "AQUA"]
-date = "05-02-2022"
-benchmarks = ["IVV"]
-
-pf = portfolio.Portfolio(
-    tx_file,
-    filter_type=filter_type,
-    funds=funds,
-    delisted=delisted,
-    benchmarks=benchmarks,
-)
+pf = portfolio.Portfolio(config_path=config_path, portfolio="test")
+config = utils.load_config(config_path, "test")
 
 
 def test_portfolio_load():
@@ -37,14 +22,14 @@ def test_portfolio_load():
 def test_transactions_load():
     """Checks if transactions load correctly."""
     assert len(pf.transactions) == len(
-        pd.read_excel(tx_file)
+        pd.read_csv(config["tx_file"], parse_dates=["date"])
     ), "Expected to have no differences in loading file."
 
 
 def test_calc_cumulative_units():
     """Checks calculations of performance - cumulative units."""
     performance = pf.get_performance(date=date)
-    test_df = pd.read_excel(tx_file)
+    test_df = pd.read_csv(config["tx_file"], parse_dates=["date"])
     test_sum = test_df[test_df["ticker"] == "AMD"]["units"].sum()
 
     assert (
@@ -63,12 +48,12 @@ def test_calc_sale_price():
     ]
     sale_price = transactions["sale_price"].sum()
 
-    test_df = pd.read_excel(tx_file)
+    test_df = pd.read_csv(config["tx_file"], parse_dates=["date"])
     test_df = test_df[(~test_df["ticker"].str.contains("Cash"))]
     test_sale_price = test_df["price"].sum()
 
     assert (
-        sale_price == test_sale_price
+        round(sale_price, 2) == test_sale_price
     ), "Expected sale price to match transaction file"
 
 
@@ -121,7 +106,7 @@ def test_calc_market_value():
 def test_calc_cumulative_cost():
     """Checks calculations of performance - cumulative cost."""
     performance = pf.get_performance(date=date)
-    test_df = pd.read_excel(tx_file)
+    test_df = pd.read_csv(config["tx_file"], parse_dates=["date"])
     test_cost = (
         test_df[(test_df["ticker"] == "Cash") & (test_df["date"] <= date)]["cost"].sum()
     ) * -1
@@ -209,7 +194,7 @@ def test_benchmark():
     performance = pf.get_performance(date=date)
     cash_tx = pf.transactions[pf.transactions["ticker"] == "Cash"].copy()
     cash_tx = cash_tx[cash_tx["date"] <= date]
-    cash_tx["ticker"] = benchmarks[0]
+    cash_tx["ticker"] = config["benchmarks"][0]
 
     price_history = pf.price_history
 
@@ -223,7 +208,7 @@ def test_benchmark():
         .fillna(0)
         .sort_values(by=["ticker", "date"], ignore_index=True)
     )
-    cash_tx_hist = cash_tx_hist[cash_tx_hist["ticker"] == benchmarks[0]]
+    cash_tx_hist = cash_tx_hist[cash_tx_hist["ticker"] == config["benchmarks"][0]]
     cash_tx_hist["sale_price"] = np.where(
         cash_tx_hist["units"] == 0,
         0,
