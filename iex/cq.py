@@ -63,13 +63,13 @@ def sector_query(start="2023-01-01"):
 
 
 @celery_app.task
-def portfolio_query(config_path, broker="all", lookback=None):
+def portfolio_query(config_file, broker="all", lookback=None):
     """Query for worker to generate portfolio.
 
     Parameters
     ----------
-    config_path : str
-       path to config file
+    config_file : str
+       config file name
     broker : str
         the brokers to include in analysis
     lookback : int (optional)
@@ -80,6 +80,7 @@ def portfolio_query(config_path, broker="all", lookback=None):
     cq_portfolio_dict : dict
        provides a dict of portfolio objects
     """
+    config_path = str(constants.ROOT_PATH / "iex" / "configs" / config_file)
     personal_portfolio = portfolio.Portfolio(config_path=config_path, portfolio=broker)
 
     # get transactions that have portfolio information as well
@@ -105,13 +106,13 @@ def portfolio_query(config_path, broker="all", lookback=None):
 
 
 @celery_app.task
-def manager_query(config_path, lookback=None):
+def manager_query(config_file, lookback=None):
     """Query for worker to generate manager.
 
     Parameters
     ----------
-    config_path : str
-       path to config file
+    config_file : str
+       config file name
     lookback : int (optional)
         amount of days to lookback
 
@@ -120,6 +121,7 @@ def manager_query(config_path, lookback=None):
     cq_pm : json
        provides the portfolio manager performance
     """
+    config_path = str(constants.ROOT_PATH / "iex" / "configs" / config_file)
     # create portfolio objects
     pf = portfolio.Portfolio(config_path=config_path, portfolio="all")
     fidelity = portfolio.Portfolio(config_path=config_path, portfolio="fidelity")
