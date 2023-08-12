@@ -27,6 +27,7 @@ setup(
     author_email="johnkoestner@outlook.com",
     packages=find_packages(exclude=["tests*"]),
     include_package_data=True,
+    package_data={"iex": ["configs/*"]},
     license="MIT",
     description=("A collection of portfolio tracking capabilities"),
     long_description=readme(),
