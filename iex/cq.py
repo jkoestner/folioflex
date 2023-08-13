@@ -27,7 +27,7 @@ from iex.dashboard import layouts
 from iex.portfolio import portfolio
 from iex import constants
 
-config_path = constants.ROOT_PATH / "iex" / "configs" / "portfolio_personal.ini"
+config_path = constants.CONFIG_PATH / "portfolio_personal.ini"
 
 celery_app = Celery(
     "tasks",
@@ -80,7 +80,7 @@ def portfolio_query(config_file, broker="all", lookback=None):
     cq_portfolio_dict : dict
        provides a dict of portfolio objects
     """
-    config_path = constants.ROOT_PATH / "iex" / "configs" / config_file
+    config_path = constants.CONFIG_PATH / config_file
     personal_portfolio = portfolio.Portfolio(config_path=config_path, portfolio=broker)
 
     # get transactions that have portfolio information as well
@@ -121,7 +121,7 @@ def manager_query(config_file, lookback=None):
     cq_pm : json
        provides the portfolio manager performance
     """
-    config_path = constants.ROOT_PATH / "iex" / "configs" / config_file
+    config_path = constants.CONFIG_PATH / config_file
     # create portfolio objects
     pf = portfolio.Portfolio(config_path=config_path, portfolio="all")
     fidelity = portfolio.Portfolio(config_path=config_path, portfolio="fidelity")

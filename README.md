@@ -35,30 +35,20 @@ pip install -r requirements.txt
 
 When using the portfolio class, the following code can be used to get the returns of a portfolio.
 
-CLI coming shortly
-
 ```python
-import iex
-from iex import constants
-config_path = constants.ROOT_PATH / "iex" / "configs" / "portfolio.ini"
+from iex import constants, portfolio
+config_path = constants.CONFIG_PATH / "portfolio.ini"
 pf = portfolio.Portfolio(
     config_path=config_path, 
-    portfolio='all'
+    portfolio='tracker'
 )
 pf.get_performance()
 ```
 
 ### Web Dashboard
 
-A demo of the app can be seen at https://koestner.fly.dev/ and was built with https://fly.io/ as the host
+A demo of the app can be seen at https://koestner.fly.dev/.
 
-Pages includes:
-- stocks
-- sectors
-- ideas
-- macros
-- trackers
-- crypto
 
 It also can be run locally by going to the project root folder and running below.
 There are a number of environment variables listed in constants to be able to run locally. 

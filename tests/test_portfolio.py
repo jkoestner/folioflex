@@ -22,14 +22,14 @@ def test_portfolio_load():
 def test_transactions_load():
     """Checks if transactions load correctly."""
     assert len(pf.transactions) == len(
-        pd.read_csv(config["tx_file"], parse_dates=["date"])
+        pd.read_csv(pf.file, parse_dates=["date"])
     ), "Expected to have no differences in loading file."
 
 
 def test_calc_cumulative_units():
     """Checks calculations of performance - cumulative units."""
     performance = pf.get_performance(date=date)
-    test_df = pd.read_csv(config["tx_file"], parse_dates=["date"])
+    test_df = pd.read_csv(pf.file, parse_dates=["date"])
     test_sum = test_df[test_df["ticker"] == "AMD"]["units"].sum()
 
     assert (
@@ -48,7 +48,7 @@ def test_calc_sale_price():
     ]
     sale_price = transactions["sale_price"].sum()
 
-    test_df = pd.read_csv(config["tx_file"], parse_dates=["date"])
+    test_df = pd.read_csv(pf.file, parse_dates=["date"])
     test_df = test_df[(~test_df["ticker"].str.contains("Cash"))]
     test_sale_price = test_df["price"].sum()
 
@@ -106,7 +106,7 @@ def test_calc_market_value():
 def test_calc_cumulative_cost():
     """Checks calculations of performance - cumulative cost."""
     performance = pf.get_performance(date=date)
-    test_df = pd.read_csv(config["tx_file"], parse_dates=["date"])
+    test_df = pd.read_csv(pf.file, parse_dates=["date"])
     test_cost = (
         test_df[(test_df["ticker"] == "Cash") & (test_df["date"] <= date)]["cost"].sum()
     ) * -1

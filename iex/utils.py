@@ -1,4 +1,4 @@
-"""Stores constants."""
+"""Load config."""
 
 import ast
 import configparser
@@ -6,41 +6,19 @@ import os
 
 
 def load_config(path, section):
-    """Load the configuration options for the Portfolio class.
+    """Load the configuration options.
 
      Parameters
      ----------
      path : str
-         column to sum over on the portfolio dataframe
+        path to the config file
     section : str
         the section of the config file to load
 
      Returns
      ----------
      options : dict
-         dictionary of options for the Portfolio class
-
-     Notes
-     ----------
-    The following are options for the config file:
-         tx_file : str
-             the location of the transaction file
-         filter_type : list (optional)
-             the transaction types to exclude from analysis
-             e.g. dividends, cash
-         filter_broker : list (optional)
-             the brokers to include in analysis
-             e.g. company_a, company_b
-         funds : list (optional)
-             the symbols that should be analyzed as funds. These symbols won't have any
-             yahoo finance reference, so we use transaction prices to fill in blank values
-         delisted : list (optional)
-             similar to funds. These symbols won't have any yahoo finance reference, so we
-             use transaction prices to fill in blank values
-         benchmarks : list (optional)
-             the symbols to use as a benchmark to compare against.
-         other_fields : list (optional)
-             additional fields to include
+         dictionary of options
 
     """
     config = configparser.ConfigParser()
@@ -85,9 +63,9 @@ def _config_reference(config, section, option, **kwargs):
 
     Notes
     ----------
-    If the value of the option is a reference to another option, then the value of that
-    option will be returned instead.
-
+    There are certain special characters
+    `.`: reference to another section
+    `$`: reference to an environment variable
     """
     value = config.get(section, option, **kwargs)
     if "." in value:  # If value is a reference
@@ -99,5 +77,5 @@ def _config_reference(config, section, option, **kwargs):
             return ast.literal_eval(value)
     elif value.startswith("$"):  # If value is an environment variable
         return os.getenv(value[1:])
-    else:  # If value is not a reference
+    else:
         return ast.literal_eval(value)

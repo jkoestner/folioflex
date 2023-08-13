@@ -22,6 +22,7 @@ The Manager class has a number of objects, such as:
 import argparse
 import logging
 import numpy as np
+import os
 import pandas as pd
 import pandas_market_calendars as mcal
 
@@ -29,7 +30,7 @@ from argparse import RawTextHelpFormatter
 from datetime import datetime, timedelta
 from pyxirr import xirr
 
-from iex import utils
+from iex import utils, constants
 from iex.portfolio.wrappers import Yahoo
 
 pd.options.display.float_format = "{:,.2f}".format
@@ -78,8 +79,7 @@ class Portfolio:
     ):
         """Initialize the Portfolio class."""
         config = utils.load_config(config_path, portfolio)
-
-        self.file = str(config["tx_file"])
+        self.file = self.load_file(config["tx_file"])
         self.name = config["name"]
         logger.info(f"creating '{self.name}' portfolio")
         self.filter_type = config["filter_type"]
@@ -224,6 +224,39 @@ class Portfolio:
 
         return performance
 
+    def load_file(self, tx_file):
+        """Load transaction file.
+
+        Parameters
+        ----------
+        tx_file : dict
+            the config dictionary
+
+        Returns
+        -------
+        file_path : str
+            the path to the transactions file
+
+        Raises
+        ----------
+        KeyError
+            if the config dictionary doesn't have a key called "tx_file"
+        FileNotFoundError
+            if the transactions file is not found
+        """
+        try:
+            file_path = tx_file
+            if os.path.isfile(tx_file):
+                return file_path
+            # If the first file path doesn't work, try CONFIG_PATH
+            file_path = os.path.join(constants.CONFIG_PATH, tx_file)
+            if os.path.isfile(file_path):
+                return file_path
+        except FileNotFoundError:
+            raise ValueError(f"File not found {tx_file}")
+        except Exception as e:  # This catches all exceptions
+            raise ValueError(f"Error loading file: {e}")
+
     def get_transactions(self, filter_type=None, filter_broker=None, other_fields=None):
         """Get the transactions made.
 
@@ -257,8 +290,6 @@ class Portfolio:
                 transactions = pd.read_excel(self.file, engine="openpyxl")
             else:
                 raise ValueError("Unsupported file format")
-        except FileNotFoundError:
-            raise ValueError(f"File not found: {self.file}")
         except Exception as e:
             raise ValueError(f"Error loading file: {e}")
 
