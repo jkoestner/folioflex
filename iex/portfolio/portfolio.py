@@ -79,7 +79,7 @@ class Portfolio:
     ):
         """Initialize the Portfolio class."""
         config = utils.load_config(config_path, portfolio)
-        self.file = self.load_file(config["tx_file"])
+        self.file = self.load_filename(config["tx_file"])
         self.name = config["name"]
         logger.info(f"creating '{self.name}' portfolio")
         self.filter_type = config["filter_type"]
@@ -224,38 +224,27 @@ class Portfolio:
 
         return performance
 
-    def load_file(self, tx_file):
+    def load_filename(self, tx_file):
         """Load transaction file.
 
         Parameters
         ----------
-        tx_file : dict
-            the config dictionary
+        tx_file : str
+            the value to the transactions file
 
         Returns
         -------
         file_path : str
             the path to the transactions file
 
-        Raises
-        ----------
-        KeyError
-            if the config dictionary doesn't have a key called "tx_file"
-        FileNotFoundError
-            if the transactions file is not found
         """
-        try:
+        if os.path.isfile(tx_file):
             file_path = tx_file
-            if os.path.isfile(tx_file):
-                return file_path
-            # If the first file path doesn't work, try CONFIG_PATH
+        elif os.path.isfile(os.path.join(constants.CONFIG_PATH, tx_file)):
             file_path = os.path.join(constants.CONFIG_PATH, tx_file)
-            if os.path.isfile(file_path):
-                return file_path
-        except FileNotFoundError:
-            raise ValueError(f"File not found {tx_file}")
-        except Exception as e:  # This catches all exceptions
-            raise ValueError(f"Error loading file: {e}")
+        else:
+            file_path = tx_file
+        return file_path
 
     def get_transactions(self, filter_type=None, filter_broker=None, other_fields=None):
         """Get the transactions made.
