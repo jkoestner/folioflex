@@ -438,9 +438,9 @@ def initialize_trackerGraph(n_clicks):
     if n_clicks == 0:
         tracker_task_id = "none"
     else:
-        config_path = str(constants.ROOT_PATH / "iex" / "configs" / "portfolio.ini")
+        config_file = "portfolio.ini"
         broker = "tracker"
-        tracker_task = cq.portfolio_query.delay(config_path=config_path, broker=broker)
+        tracker_task = cq.portfolio_query.delay(config_file=config_file, broker=broker)
         tracker_task_id = tracker_task.id
 
     return tracker_task_id
@@ -617,7 +617,7 @@ def initialize_PersonalGraph(n_clicks, dropdown, lookback):
         config_file = "portfolio_personal.ini"
 
         personal_task = cq.portfolio_query.delay(
-            config_path=config_file, broker=dropdown, lookback=lookback
+            config_file=config_file, broker=dropdown, lookback=lookback
         )
         personal_task_id = personal_task.id
 
