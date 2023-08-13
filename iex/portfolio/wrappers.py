@@ -136,7 +136,7 @@ class Yahoo:
         quote : DataFrame
             provides quote on ticker
         """
-        d = yf.Ticker(ticker).get_fast_info
+        d = yf.Ticker(ticker).fast_info
         keys = list(d.keys())
         values = list(d.values())
 

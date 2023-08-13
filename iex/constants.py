@@ -6,7 +6,7 @@ from pathlib import Path
 from iex import utils
 
 ROOT_PATH = Path(__file__).resolve().parent.parent
-config_path = str(ROOT_PATH / "iex" / "configs" / "config.ini")
+config_path = ROOT_PATH / "iex" / "configs" / "config.ini"
 
 # credentials
 FFX_USERNAME = utils.load_config(config_path, "credentials")["ffx_username"]

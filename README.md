@@ -40,7 +40,7 @@ CLI coming shortly
 ```python
 import iex
 from iex import constants
-config_path = str(constants.ROOT_PATH / "iex" / "configs" / "portfolio.ini")
+config_path = constants.ROOT_PATH / "iex" / "configs" / "portfolio.ini"
 pf = portfolio.Portfolio(
     config_path=config_path, 
     portfolio='all'
