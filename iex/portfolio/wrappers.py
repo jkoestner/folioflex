@@ -164,7 +164,7 @@ class Yahoo:
 
         return quote
 
-    def most_active(self, count=25):
+    def most_active(count=25):
         """Provide a dataframe of the most active stocks for the most recent trading day.
 
         Parameters

@@ -17,5 +17,5 @@ openpyxl>=3.0.7
 pandas>=0.25.0
 pyxirr>=0.7.2
 redis>=3.3.8
-yfinance>=0.1.63
+yfinance>=0.2.28
 pandas_market_calendars>=1.2
