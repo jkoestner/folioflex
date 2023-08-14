@@ -238,12 +238,21 @@ class Portfolio:
             the path to the transactions file
 
         """
+        # create path if it exists
         if os.path.isfile(tx_file):
             file_path = tx_file
         elif os.path.isfile(os.path.join(constants.CONFIG_PATH, tx_file)):
             file_path = os.path.join(constants.CONFIG_PATH, tx_file)
         else:
             file_path = tx_file
+
+        # test if path exists
+        try:
+            with open(file_path):
+                pass
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Config file not found at {file_path}")
+
         return file_path
 
     def get_transactions(self, filter_type=None, filter_broker=None, other_fields=None):

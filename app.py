@@ -13,10 +13,7 @@ The ascii text is generated using https://patorjk.com/software/taag/ with "stand
 """
 
 import dash
-import datetime
-import math
 import pandas as pd
-import pandas_market_calendars as mcal
 import plotly.express as px
 import plotly.graph_objs as go
 
@@ -24,7 +21,6 @@ from celery.result import AsyncResult
 from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
-from dateutil.relativedelta import relativedelta
 
 from iex import constants
 from iex.dashboard import dashboard_helper, layouts
@@ -201,7 +197,7 @@ def update_insidersummaryanalysis(n_clicks, input_value):
     if n_clicks == 0:
         insider_summary_table = (None, None)
     else:
-        insider = wrappers.Web.insider_activity(input_value)
+        insider = wrappers.Web.insider_activity(ticker=input_value)
         insider = insider.reset_index()
         insider = insider.head(10)
 
@@ -365,48 +361,16 @@ def sma_value(n_clicks, input_value):
     if n_clicks == 0:
         sma_table = (None, None)
     else:
-        nyse = mcal.get_calendar("NYSE")
-        days = math.floor(
-            len(
-                nyse.valid_days(
-                    start_date=(datetime.datetime.now() - relativedelta(years=1)),
-                    end_date=datetime.datetime.now(),
-                )
-            )
-            / 12
+        sma = wrappers.Yahoo().get_sma(ticker=input_value, days=365)
+        latest_price = wrappers.Yahoo().fast_info(ticker=input_value)["lastPrice"]
+        change_percent = wrappers.Yahoo().get_change_percent(
+            ticker=input_value, days=365
         )
-        days = str(days)
-        urlsma = (
-            "https://cloud.iexapis.com/stable/stock/"
-            + format(input_value)
-            + "/indicator/sma?range=1y&input1=12&sort=asc&chartCloseOnly=True&chartInterval="
-            + days
-            + "&token="
-            + constants.IEX_API_LIVE
-        )
-        sma = pd.read_json(urlsma, orient="index", typ="frame")
-        sma_val = sma.loc["indicator"].values[0][-1]
-        urlquote = (
-            "https://cloud.iexapis.com/stable/stock/"
-            + format(input_value)
-            + "/quote?token="
-            + constants.IEX_API_LIVE
-        )
-        quote = pd.read_json(urlquote, orient="index", typ="frame")
-        latest_price = quote.loc["latestPrice"].values[0]
-        urlstock = (
-            "https://cloud.iexapis.com/stable/stock/"
-            + format(input_value)
-            + "/stats?token="
-            + constants.IEX_API_LIVE
-        )
-        stock = pd.read_json(urlstock, orient="index", typ="frame")
-        return_12mo = stock.loc["year1ChangePercent"].values[0]
 
         # build table
-        stock_data = [[input_value, sma_val, latest_price, return_12mo]]
+        sma_table = [input_value, sma, latest_price, change_percent]
         df = pd.DataFrame(
-            stock_data, columns=["Stock", "12mo SMA", "Latest Price", "12mo Return"]
+            [sma_table], columns=["stock", "sma", "latest_price", "change_percent"]
         )
 
         sma_table = [{"name": i, "id": i} for i in df.columns], df.to_dict("records")

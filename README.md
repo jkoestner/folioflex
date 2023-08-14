@@ -14,8 +14,12 @@ The tool has 2 functions with 1 being a web dashboard and the other the portfoli
 Full documentation can be seen here: https://jkoestner.github.io/IEX
 
 Data sources:
-- https://iexcloud.io/
 - https://pypi.org/project/yahoo-finance/
+- https://fred.stlouisfed.org/docs/api/fred/ (need an API key)
+- https://finviz.com/api
+
+Inspiration:
+- https://openbb.co/
 
 ### Install packages
 To install, this repository can be installed by running the following command in 

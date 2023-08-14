@@ -14,7 +14,7 @@ import requests
 import ssl
 
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib import request
 
 from iex import constants
@@ -120,8 +120,26 @@ class Yahoo:
         yf_ticker = yf.Ticker(ticker)
         info = pd.DataFrame([yf_ticker.info])
         info = info.T
+        info = info.rename(columns={0: "value"})
 
         return info
+
+    def fast_info(self, ticker):
+        """Get the info for ticker.
+
+        Parameters
+        ----------
+        ticker : str
+            symbol to get data for
+
+        Returns
+        ----------
+        fast_info : dict
+            provides dictionary of info on ticker
+        """
+        fast_info = yf.Ticker(ticker).fast_info
+
+        return fast_info
 
     def quote(self, ticker):
         """Get the quote for ticker.
@@ -142,13 +160,12 @@ class Yahoo:
 
         # Create a DataFrame from these lists
         quote = pd.DataFrame({"Keys": keys, "Values": values})
+        quote.set_index("Keys", inplace=True)
 
         return quote
 
-    def most_active(count=25):
+    def most_active(self, count=25):
         """Provide a dataframe of the most active stocks for the most recent trading day.
-
-        [Source: Yahoo]
 
         Parameters
         ----------
@@ -200,6 +217,60 @@ class Yahoo:
         most_active = most_active.sort_values("vol_price", ascending=False)
 
         return most_active
+
+    def get_change_percent(self, ticker, days=365):
+        """Get the percentage change of a stock over a given number of days.
+
+        Parameters
+        ----------
+        ticker : str
+            the ticker symbol of the stock
+        days : int (default=365)
+            the number of days to go back in time
+
+        Returns
+        -------
+        change_percent : float
+            the percentage change of the stock over the given number of days
+        """
+        end_date = datetime.today().strftime("%Y-%m-%d")
+        start_date = (datetime.today() - timedelta(days=days)).strftime("%Y-%m-%d")
+
+        data = yf.download(ticker, start=start_date, end=end_date)
+
+        # Extract the adjusted close price from one year ago and the most recent price
+        start_price = data["Adj Close"].iloc[0]
+        end_price = data["Adj Close"].iloc[-1]
+
+        # Calculate the 1-year change percentage
+        change_percent = (end_price - start_price) / end_price
+
+        return change_percent
+
+    def get_sma(self, ticker, days=365):
+        """Get the percentage change of a stock over a given number of days.
+
+        Parameters
+        ----------
+        ticker : str
+            the ticker symbol of the stock
+        days : int (default=365)
+            the number of days to go back in time
+
+        Returns
+        -------
+        sma : float
+            the simple moving average
+        """
+        end_date = datetime.today().strftime("%Y-%m-%d")
+        start_date = (datetime.today() - timedelta(days=days)).strftime("%Y-%m-%d")
+
+        data = yf.download(ticker, start=start_date, end=end_date)
+
+        # Calculate the SMA using the rolling method
+        sma = data["Close"].mean()
+
+        return sma
 
     def _clean_index(self, clean_df, lvl, tickers):
         """Clean the index of DataFrame.
@@ -277,7 +348,7 @@ class Finviz:
 
     """
 
-    def get_heatmap_data(timeframe="day"):
+    def get_heatmap_data(self, timeframe="day"):
         """Get heatmap data from finviz.
 
         [Source: FinViz]

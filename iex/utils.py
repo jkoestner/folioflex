@@ -4,6 +4,12 @@ import ast
 import configparser
 import os
 
+from pathlib import Path
+
+ROOT_PATH = Path(__file__).resolve().parent.parent
+CONFIG_PATH = ROOT_PATH / "iex" / "configs"
+TESTS_PATH = ROOT_PATH / "tests" / "files"
+
 
 def load_config(path, section):
     """Load the configuration options.
@@ -23,14 +29,24 @@ def load_config(path, section):
     """
     config = configparser.ConfigParser()
 
-    # test if path exists
-    try:
-        with open(path):
-            pass
-    except FileNotFoundError:
-        raise FileNotFoundError(f"Config file not found at {path}")
+    # test if path exists and try default directories (CONFIG_PATH, TESTS_PATH)
+    paths_to_try = [
+        path,
+        os.path.join(CONFIG_PATH, path),
+        os.path.join(TESTS_PATH, path),
+    ]
+    for path_to_try in paths_to_try:
+        try:
+            with open(path_to_try):
+                break
+        except FileNotFoundError:
+            continue
+    else:
+        raise FileNotFoundError(
+            f"Config file not found at any of the following paths: {', '.join(paths_to_try)}"
+        )
 
-    config.read(path)
+    config.read(path_to_try)
 
     options = {}
     for option in config.options(section):
