@@ -1,7 +1,7 @@
-Welcome to IEX's documentation!
+Welcome to FolioFlex's documentation!
 ================================
 
-IEX is a finance app that can display information about stocks, sectors, ideas, macros, trackers, and crypto...
+FolioFlex is a finance app that can display information about stocks, sectors, ideas, macros, trackers, and crypto...
 
 Contents:
 

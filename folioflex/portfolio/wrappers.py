@@ -17,7 +17,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from urllib import request
 
-from iex.utils import config_helper
+from folioflex.utils import config_helper
 
 pd.options.display.float_format = "{:,.2f}".format
 

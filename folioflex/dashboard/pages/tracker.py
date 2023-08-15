@@ -3,7 +3,7 @@
 from dash import dash_table
 from dash import dcc
 from dash import html
-from iex.dashboard import dashboard_helper
+from folioflex.dashboard import dashboard_helper
 
 
 def layout(login_status, login_alert):

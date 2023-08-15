@@ -9,7 +9,7 @@ def read_req_file():
 
 def get_version():
     version = "unknown"
-    with open("iex/version.py") as f:
+    with open("folioflex/version.py") as f:
         line = f.read().strip()
         version = line.replace("version = ", "").replace('"', "")
         return version
@@ -21,18 +21,18 @@ def readme():
 
 
 setup(
-    name="iex",
+    name="folioflex",
     version=get_version(),
     author="John Koestner",
     author_email="johnkoestner@outlook.com",
     packages=find_packages(exclude=["tests*"]),
     include_package_data=True,
-    package_data={"iex": ["configs/*"]},
+    package_data={"folioflex": ["configs/*"]},
     license="MIT",
     description=("A collection of portfolio tracking capabilities"),
     long_description=readme(),
     long_description_content_type="text/markdown",
     install_requires=read_req_file(),
     python_requires=">=3.6",
-    url="https://github.com/jkoestner/iex",
+    url="https://github.com/jkoestner/folioflex",
 )

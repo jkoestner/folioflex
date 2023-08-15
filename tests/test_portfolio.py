@@ -4,8 +4,8 @@ import pandas as pd
 
 from pyxirr import xirr
 
-from iex.utils import config_helper
-from iex.portfolio import portfolio
+from folioflex.utils import config_helper
+from folioflex.portfolio import portfolio
 
 date = "05-02-2022"  # date to test for performance
 config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_portfolio.ini"

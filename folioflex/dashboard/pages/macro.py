@@ -3,8 +3,8 @@
 from dash import dcc
 from dash import html
 
-from iex.dashboard import dashboard_helper
-from iex.portfolio.wrappers import Fred
+from folioflex.dashboard import dashboard_helper
+from folioflex.portfolio.wrappers import Fred
 
 # Creating the dash app
 fred_summary = Fred().get_summary()

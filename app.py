@@ -22,10 +22,18 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
 
-from iex.dashboard import dashboard_helper, layouts
-from iex.dashboard.pages import stocks, sectors, ideas, macro, tracker, personal, login
-from iex.utils import config_helper, cq
-from iex.portfolio import heatmap, wrappers
+from folioflex.dashboard import dashboard_helper, layouts
+from folioflex.dashboard.pages import (
+    stocks,
+    sectors,
+    ideas,
+    macro,
+    tracker,
+    personal,
+    login,
+)
+from folioflex.utils import config_helper, cq
+from folioflex.portfolio import heatmap, wrappers
 
 
 #      _    ____  ____

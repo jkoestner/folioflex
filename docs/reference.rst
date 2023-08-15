@@ -4,11 +4,11 @@ API References
 Portfolio Module
 ----------------
 
-.. automodule:: iex.portfolio.portfolio
+.. automodule:: folioflex.portfolio.portfolio
    :members:
 
 Heatmap Module
 ----------------
 
-.. automodule:: iex.portfolio.heatmap
+.. automodule:: folioflex.portfolio.heatmap
    :members:

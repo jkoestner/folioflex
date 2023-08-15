@@ -1,5 +1,5 @@
 # this docker file is used to create a docker image for the worker.
-# It currently is being built on dockerhub at dmbymdt/iex and
+# It currently is being built on dockerhub at dmbymdt/folioflex and
 # then pulled down into a worker container that is used to process jobs.
 # To run dockerfile and create own image `docker build --no-cache -t cq-worker .` 
 # from where the dockerfile is located.
@@ -17,7 +17,7 @@ RUN adduser --disabled-password --gecos '' cq
 WORKDIR /code
 
 # Install requirements
-RUN pip install git+https://github.com/jkoestner/IEX.git
+RUN pip install git+https://github.com/jkoestner/folioflex.git
 
 RUN chown -R cq:cq /code
 

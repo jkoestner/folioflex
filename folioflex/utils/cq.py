@@ -11,11 +11,11 @@ deployed on web and the `LOCAL_REDIS` is used when debugging locally.
 will be listening to the redis server for tasks to execute.
 
 To run the worker process locally from the root directory, use the following command:
-   celery -A iex.utils.cq worker --pool=solo -l info
+   celery -A folioflex.utils.cq worker --pool=solo -l info
 
 If wanting to look at monitoring celery, use the following command which will be
 available at http://localhost:5555:
-    celery -A iex.utils.cq flower
+    celery -A folioflex.utils.cq flower
 """
 
 import yfinance as yf
@@ -23,9 +23,9 @@ import yfinance as yf
 from celery import Celery
 from datetime import datetime
 
-from iex.dashboard import layouts
-from iex.portfolio import portfolio
-from iex.utils import config_helper
+from folioflex.dashboard import layouts
+from folioflex.portfolio import portfolio
+from folioflex.utils import config_helper
 
 
 celery_app = Celery(

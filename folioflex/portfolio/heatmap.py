@@ -6,7 +6,7 @@ Provides the heatmap
 import pandas as pd
 import plotly.express as px
 
-from iex.portfolio.wrappers import Finviz, Web
+from folioflex.portfolio.wrappers import Finviz, Web
 
 
 def get_heatmap(portfolio=None, lookback=None):

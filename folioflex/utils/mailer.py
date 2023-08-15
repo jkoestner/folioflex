@@ -6,7 +6,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from iex.utils import config_helper
+from folioflex.utils import config_helper
 
 
 # logging options https://docs.python.org/3/library/logging.html

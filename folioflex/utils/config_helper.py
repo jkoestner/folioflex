@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 ROOT_PATH = Path(__file__).resolve().parent.parent.parent
-CONFIG_PATH = ROOT_PATH / "iex" / "configs"
+CONFIG_PATH = ROOT_PATH / "folioflex" / "configs"
 TESTS_PATH = ROOT_PATH / "tests" / "files"
 
 

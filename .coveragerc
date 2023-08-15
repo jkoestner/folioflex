@@ -1,11 +1,11 @@
 # coverage config file for pytest-cov coming from
 # https://pytest-cov.readthedocs.io/en/latest/
-# run using pytest --cov=iex --cov-report=html
+# run using pytest --cov=folioflex --cov-report=html
 [run]
 data_file = docs/coverage/.coverage
 omit =
     # omit everything in /dashboard
-    iex/dashboard/*
+    folioflex/dashboard/*
     # omit init files
     __init__.py
 

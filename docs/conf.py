@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.abspath("../"))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "iex"
+project = "folioflex"
 copyright = "2023, John Koestner"
 author = "John Koestner"
 release = "0.1"

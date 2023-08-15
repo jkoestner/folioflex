@@ -19,7 +19,7 @@ kill_timeout = "5s"
 
 [processes]
   web = "gunicorn app:server"
-#  worker = "python iex/util/worker.py" # no longer deploying worker
+#  worker = "python folioflex/utils/cq.py" # no longer deploying worker
 
 [[services]]
   protocol = "tcp"

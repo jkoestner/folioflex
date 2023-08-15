@@ -2,16 +2,16 @@
 Simple investment portfolio tool that will track stock and provide returns and other metrics. It also
 contains a web dashboard to view the data.
 
-![workflow badge](https://github.com/jkoestner/iex/actions/workflows/main.yml/badge.svg)
-[![license badge](https://img.shields.io/github/license/jkoestner/iex)](https://github.com/jkoestner/IEX/blob/main/LICENSE.md)
-[![codecov](https://codecov.io/gh/jkoestner/IEX/branch/main/graph/badge.svg?token=K4RS9LX4UG)](https://codecov.io/gh/jkoestner/IEX)
+![workflow badge](https://github.com/jkoestner/folioflex/actions/workflows/main.yml/badge.svg)
+[![license badge](https://img.shields.io/github/license/jkoestner/folioflex)](https://github.com/jkoestner/folioflex/blob/main/LICENSE.md)
+[![codecov](https://codecov.io/gh/jkoestner/folioflex/branch/main/graph/badge.svg?token=K4RS9LX4UG)](https://codecov.io/gh/jkoestner/folioflex)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ## Overview
 
 The tool has 2 functions with 1 being a web dashboard and the other the portfolio class. The web dashboard is built with plotly dash and can be run locally or deployed to a server. The portfolio class is used to track the returns of a portfolio.
 
-Full documentation can be seen here: https://jkoestner.github.io/IEX
+Full documentation can be seen here: https://jkoestner.github.io/folioflex
 
 Data sources:
 - https://pypi.org/project/yahoo-finance/
@@ -26,7 +26,7 @@ To install, this repository can be installed by running the following command in
 the environment of choice.
 
 ```
-pip install git+https://github.com/jkoestner/IEX.git
+pip install git+https://github.com/jkoestner/folioflex.git
 ```
 
 If wanting to do more and develop on the code, the following command can be run to install the packages in the requirements.txt file.
@@ -40,7 +40,7 @@ pip install -r requirements.txt
 When using the portfolio class, the following code can be used to get the returns of a portfolio.
 
 ```python
-from iex import config, portfolio
+from folioflex import config, portfolio
 config_path = config.CONFIG_PATH / "portfolio.ini"
 pf = portfolio.Portfolio(
     config_path=config_path, 
@@ -66,7 +66,7 @@ To have conda environments work with Jupyter Notebooks a kernel needs to be defi
 in the conda environment.
 
 ```
-python -m ipykernel install --user --name=iex
+python -m ipykernel install --user --name=folioflex
 ```
 
 ## Logging
@@ -74,7 +74,7 @@ python -m ipykernel install --user --name=iex
 If wanting to get more detail in output of messages the logging can increased
 ```python
 import logging
-logger = logging.getLogger('iex.portfolio.portfolio')
+logger = logging.getLogger('folioflex.portfolio.portfolio')
 logger.setLevel(logging.WARNING)  # default: only print WARNINGS and above
 logger.setLevel(logging.CRITICAL)  # disable printing
 logger.setLevel(logging.DEBUG)  # verbose: print errors & debug info
@@ -84,5 +84,5 @@ logger.setLevel(logging.DEBUG)  # verbose: print errors & debug info
 
 To see the test coverage the following command is run in the root directory. This is also documented in the `.coveragerc` file.
 ```
-pytest --cov=iex --cov-report=html
+pytest --cov=folioflex --cov-report=html
 ```

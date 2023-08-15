@@ -3,7 +3,7 @@
 try:
     import wrappers
 except (ImportError, ModuleNotFoundError):
-    from iex.portfolio import wrappers
+    from folioflex.portfolio import wrappers
 
 
 def test_stock_history():

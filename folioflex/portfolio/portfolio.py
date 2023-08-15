@@ -30,8 +30,8 @@ from argparse import RawTextHelpFormatter
 from datetime import datetime, timedelta
 from pyxirr import xirr
 
-from iex.utils import config_helper, mailer
-from iex.portfolio.wrappers import Yahoo
+from folioflex.utils import config_helper, mailer
+from folioflex.portfolio.wrappers import Yahoo
 
 pd.options.display.float_format = "{:,.2f}".format
 
@@ -1434,8 +1434,15 @@ def _create_argparser():
         help="The command to run (portfolio or manager)",
     )
     _parser.add_argument(
+        "--config_path",
+        type=str,
+        default="personal_portfolio.ini",
+        help="The path that has portfolio configuration",
+    )
+    _parser.add_argument(
         "--date",
         type=str,
+        default=None,
         help="The date to use for performance calculations (YYYY-MM-DD)",
     )
     _parser.add_argument(
@@ -1463,7 +1470,7 @@ def cli():
 
     if args.command == "portfolio":
         # create a Portfolio object
-        portfolio = Portfolio()
+        portfolio = Portfolio(config_path=args.config_path)
 
         # get the performance data
         performance = portfolio.get_performance(date=args.date, lookback=args.lookback)
@@ -1473,11 +1480,13 @@ def cli():
 
     elif args.command == "manager":
         # create a Manager object
-        manager = Manager()
+        manager = Manager(config_path=args.config_path)
 
         # get the summary data
         summary = manager.get_summary(
-            date=args.date, lookback=args.lookback, email=args.email
+            date=args.date,
+            lookback=args.lookback,
+            email=args.email,
         )
 
         # print the summary data
