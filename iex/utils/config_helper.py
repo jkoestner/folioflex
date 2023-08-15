@@ -6,25 +6,23 @@ import os
 
 from pathlib import Path
 
-ROOT_PATH = Path(__file__).resolve().parent.parent
+ROOT_PATH = Path(__file__).resolve().parent.parent.parent
 CONFIG_PATH = ROOT_PATH / "iex" / "configs"
 TESTS_PATH = ROOT_PATH / "tests" / "files"
 
 
-def load_config(path, section):
-    """Load the configuration options.
+def get_config(path):
+    """Get the config path.
 
      Parameters
      ----------
      path : str
         path to the config file
-    section : str
-        the section of the config file to load
 
      Returns
-     ----------
-     options : dict
-         dictionary of options
+    ----------
+    config : configparser.ConfigParser
+        the config parser
 
     """
     config = configparser.ConfigParser()
@@ -48,10 +46,31 @@ def load_config(path, section):
 
     config.read(path_to_try)
 
+    return config
+
+
+def get_config_options(path, section):
+    """Load the configuration options.
+
+     Parameters
+     ----------
+     path : str
+        path to the config file
+    section : str
+        the section of the config file to load
+
+     Returns
+     ----------
+     options : dict
+         dictionary of options
+
+    """
+    config = get_config(path)
     options = {}
     for option in config.options(section):
         options[option] = _config_reference(config, section, option, fallback=[])
 
+    # the portfolio class has a tx_file option that is not in the config file
     if "tx_file" in options:
         options["name"] = section
 
@@ -95,3 +114,24 @@ def _config_reference(config, section, option, **kwargs):
         return os.getenv(value[1:])
     else:
         return ast.literal_eval(value)
+
+
+config_file = CONFIG_PATH / "config.ini"
+
+# credentials
+FFX_USERNAME = get_config_options(config_file, "credentials")["ffx_username"]
+FFX_PASSWORD = get_config_options(config_file, "credentials")["ffx_password"]
+
+# apis
+FRED_API = get_config_options(config_file, "api")["fred_api"]
+
+# other
+if os.path.exists(r"/app/tests"):
+    REDIS_URL = get_config_options(config_file, "other")["redis_url"]
+else:
+    # if debugging locally will need a redis
+    REDIS_URL = get_config_options(config_file, "other")["local_redis"]
+SMTP_USERNAME = get_config_options(config_file, "other")["smtp_username"]
+SMTP_PASSWORD = get_config_options(config_file, "other")["smtp_password"]
+SMTP_SERVER = get_config_options(config_file, "other")["smtp_server"]
+SMTP_PORT = get_config_options(config_file, "other")["smtp_port"]

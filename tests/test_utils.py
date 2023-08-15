@@ -2,25 +2,25 @@
 
 from datetime import datetime
 
-from iex import constants, utils
+from iex.utils import config_helper
 from iex.dashboard import dashboard_helper
 
-config_path = constants.ROOT_PATH / "tests" / "files" / "test_portfolio.ini"
-config = utils.load_config(config_path, "test")
+config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_portfolio.ini"
+config_dict = config_helper.get_config_options(config_path, "test")
 
 
 def test_config_load():
     """Checks if config loads correctly."""
     assert (
-        config["tx_file"] == "tests/files/test_transactions.csv"
+        config_dict["tx_file"] == "tests/files/test_transactions.csv"
     ), "File did not match."
-    assert config["filter_type"] == ["Dividend"], "Filters did not match."
-    assert config["funds"] == ["BLKRK"], "Funds did not match."
-    assert config["delisted"] == [
+    assert config_dict["filter_type"] == ["Dividend"], "Filters did not match."
+    assert config_dict["funds"] == ["BLKRK"], "Funds did not match."
+    assert config_dict["delisted"] == [
         "CCIV",
         "AQUA",
     ], "Delisted did not match"
-    assert config["benchmarks"] == ["IVV"], "Benchmarks did not match."
+    assert config_dict["benchmarks"] == ["IVV"], "Benchmarks did not match."
 
 
 def test_datetime_to_unix():

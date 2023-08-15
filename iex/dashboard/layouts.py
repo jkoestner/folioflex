@@ -248,14 +248,6 @@ manager_fmt = [
     dict(id="index", name="index"),
     dict(id="date", name="date"),
     dict(id="lookback_date", name="lookback_date"),
-    dict(id="average_price", name="average_price"),
-    dict(id="last_price", name="last_price"),
-    dict(
-        id="cumulative_units",
-        name="cumulative_units",
-        type="numeric",
-        format=Format(precision=0, scheme=Scheme.fixed).group(True),
-    ),
     dict(
         id="cumulative_cost",
         name="cumulative_cost",

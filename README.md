@@ -40,8 +40,8 @@ pip install -r requirements.txt
 When using the portfolio class, the following code can be used to get the returns of a portfolio.
 
 ```python
-from iex import constants, portfolio
-config_path = constants.CONFIG_PATH / "portfolio.ini"
+from iex import config, portfolio
+config_path = config.CONFIG_PATH / "portfolio.ini"
 pf = portfolio.Portfolio(
     config_path=config_path, 
     portfolio='tracker'

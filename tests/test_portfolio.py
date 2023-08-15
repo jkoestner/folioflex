@@ -4,14 +4,14 @@ import pandas as pd
 
 from pyxirr import xirr
 
-from iex import constants, utils
+from iex.utils import config_helper
 from iex.portfolio import portfolio
 
 date = "05-02-2022"  # date to test for performance
-config_path = constants.ROOT_PATH / "tests" / "files" / "test_portfolio.ini"
+config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_portfolio.ini"
 
 pf = portfolio.Portfolio(config_path=config_path, portfolio="test")
-config = utils.load_config(config_path, "test")
+config_dict = config_helper.get_config_options(config_path, "test")
 
 
 def test_portfolio_load():
@@ -194,7 +194,7 @@ def test_benchmark():
     performance = pf.get_performance(date=date)
     cash_tx = pf.transactions[pf.transactions["ticker"] == "Cash"].copy()
     cash_tx = cash_tx[cash_tx["date"] <= date]
-    cash_tx["ticker"] = config["benchmarks"][0]
+    cash_tx["ticker"] = config_dict["benchmarks"][0]
 
     price_history = pf.price_history
 
@@ -208,7 +208,7 @@ def test_benchmark():
         .fillna(0)
         .sort_values(by=["ticker", "date"], ignore_index=True)
     )
-    cash_tx_hist = cash_tx_hist[cash_tx_hist["ticker"] == config["benchmarks"][0]]
+    cash_tx_hist = cash_tx_hist[cash_tx_hist["ticker"] == config_dict["benchmarks"][0]]
     cash_tx_hist["sale_price"] = np.where(
         cash_tx_hist["units"] == 0,
         0,

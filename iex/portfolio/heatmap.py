@@ -25,7 +25,7 @@ def get_heatmap(portfolio=None, lookback=None):
        heatmap figure
     """
     if portfolio is None:
-        returns = Finviz.get_heatmap_data()
+        returns = Finviz().get_heatmap_data()
         color = "return_pct"
     else:
         returns = portfolio.get_performance(lookback=lookback)
@@ -38,7 +38,7 @@ def get_heatmap(portfolio=None, lookback=None):
         color = "simple_return_pct"
 
     returns = returns[[color, "market_value", "ticker"]]
-    sp500_tickers = Web.get_sp500_tickers()
+    sp500_tickers = Web().get_sp500_tickers()
     returns = pd.merge(
         returns,
         sp500_tickers,

@@ -22,10 +22,9 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
 
-from iex import constants
 from iex.dashboard import dashboard_helper, layouts
 from iex.dashboard.pages import stocks, sectors, ideas, macro, tracker, personal, login
-from iex import cq
+from iex.utils import config_helper, cq
 from iex.portfolio import heatmap, wrappers
 
 
@@ -176,7 +175,7 @@ def update_activeanalysis(n_clicks):
     if n_clicks == 0:
         active_table = (None, None)
     else:
-        active = wrappers.Yahoo.most_active(count=25)
+        active = wrappers.Yahoo().most_active(count=25)
         active = active.reset_index()
 
         active_table = layouts.active_fmt, active.to_dict("records")
@@ -197,7 +196,7 @@ def update_insidersummaryanalysis(n_clicks, input_value):
     if n_clicks == 0:
         insider_summary_table = (None, None)
     else:
-        insider = wrappers.Web.insider_activity(ticker=input_value)
+        insider = wrappers.Web().insider_activity(ticker=input_value)
         insider = insider.reset_index()
         insider = insider.head(10)
 
@@ -852,7 +851,7 @@ def update_ManagerTable(manager_status, cq_pm):
 # User credentials
 # dictionary of username and password
 # e.g. {"username": "password"}
-credentials = {constants.FFX_USERNAME: constants.FFX_PASSWORD}
+credentials = {config_helper.FFX_USERNAME: config_helper.FFX_PASSWORD}
 
 
 @app.callback(

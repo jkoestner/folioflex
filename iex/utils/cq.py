@@ -11,11 +11,11 @@ deployed on web and the `LOCAL_REDIS` is used when debugging locally.
 will be listening to the redis server for tasks to execute.
 
 To run the worker process locally from the root directory, use the following command:
-   celery -A iex.cq worker --pool=solo -l info
+   celery -A iex.utils.cq worker --pool=solo -l info
 
 If wanting to look at monitoring celery, use the following command which will be
 available at http://localhost:5555:
-    celery -A iex.cq flower
+    celery -A iex.utils.cq flower
 """
 
 import yfinance as yf
@@ -25,13 +25,13 @@ from datetime import datetime
 
 from iex.dashboard import layouts
 from iex.portfolio import portfolio
-from iex import constants
+from iex.utils import config_helper
 
 
 celery_app = Celery(
     "tasks",
-    broker=constants.REDIS_URL,
-    backend=constants.REDIS_URL,
+    broker=config_helper.REDIS_URL,
+    backend=config_helper.REDIS_URL,
     task_serializer="json",
     result_serializer="json",
     accept_content=["json"],
@@ -79,7 +79,7 @@ def portfolio_query(config_file, broker="all", lookback=None):
     cq_portfolio_dict : dict
        provides a dict of portfolio objects
     """
-    config_path = constants.CONFIG_PATH / config_file
+    config_path = config_helper.CONFIG_PATH / config_file
     personal_portfolio = portfolio.Portfolio(config_path=config_path, portfolio=broker)
 
     # get transactions that have portfolio information as well
@@ -120,16 +120,9 @@ def manager_query(config_file, lookback=None):
     cq_pm : json
        provides the portfolio manager performance
     """
-    config_path = constants.CONFIG_PATH / config_file
-    # create portfolio objects
-    pf = portfolio.Portfolio(config_path=config_path, portfolio="all")
-    fidelity = portfolio.Portfolio(config_path=config_path, portfolio="fidelity")
-    ib = portfolio.Portfolio(config_path=config_path, portfolio="ib")
-    eiten = portfolio.Portfolio(config_path=config_path, portfolio="eiten")
-    roth = portfolio.Portfolio(config_path=config_path, portfolio="roth")
-    company = portfolio.Portfolio(config_path=config_path, portfolio="company")
-    portfolios = [pf, fidelity, ib, eiten, roth, company]
-    pm = portfolio.Manager(portfolios)
+    config_path = config_helper.CONFIG_PATH / config_file
+
+    pm = portfolio.Manager(config_path=config_path)
     cq_pm = pm.get_summary(lookback=lookback).to_json()
 
     return cq_pm

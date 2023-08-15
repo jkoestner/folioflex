@@ -30,7 +30,7 @@ from argparse import RawTextHelpFormatter
 from datetime import datetime, timedelta
 from pyxirr import xirr
 
-from iex import utils, constants
+from iex.utils import config_helper, mailer
 from iex.portfolio.wrappers import Yahoo
 
 pd.options.display.float_format = "{:,.2f}".format
@@ -52,7 +52,7 @@ logger.addHandler(console_handler)
 
 
 class Portfolio:
-    """An Portfolio class used to provide analysis of a portfolio.
+    """A Portfolio class used to provide analysis of a portfolio.
 
     The class requires a transaction file to be provided. The transaction file
     will have sales and buys to then develop a return of the portfolio as well
@@ -78,16 +78,16 @@ class Portfolio:
         portfolio,
     ):
         """Initialize the Portfolio class."""
-        config = utils.load_config(config_path, portfolio)
-        self.file = self.load_filename(config["tx_file"])
-        self.name = config["name"]
+        config_dict = config_helper.get_config_options(config_path, portfolio)
+        self.file = self.load_filename(config_dict["tx_file"])
+        self.name = config_dict["name"]
         logger.info(f"creating '{self.name}' portfolio")
-        self.filter_type = config["filter_type"]
-        self.filter_broker = config["filter_broker"]
-        self.funds = config["funds"]
-        self.delisted = config["delisted"]
-        self.benchmarks = config["benchmarks"]
-        self.other_fields = config["other_fields"]
+        self.filter_type = config_dict["filter_type"]
+        self.filter_broker = config_dict["filter_broker"]
+        self.funds = config_dict["funds"]
+        self.delisted = config_dict["delisted"]
+        self.benchmarks = config_dict["benchmarks"]
+        self.other_fields = config_dict["other_fields"]
         self.transactions = self.get_transactions(
             filter_type=self.filter_type,
             filter_broker=self.filter_broker,
@@ -238,20 +238,11 @@ class Portfolio:
             the path to the transactions file
 
         """
-        # create path if it exists
-        if os.path.isfile(tx_file):
-            file_path = tx_file
-        elif os.path.isfile(os.path.join(constants.CONFIG_PATH, tx_file)):
-            file_path = os.path.join(constants.CONFIG_PATH, tx_file)
+        # prefix with CONFIG_PATH if that exists
+        if os.path.isfile(os.path.join(config_helper.CONFIG_PATH, tx_file)):
+            file_path = os.path.join(config_helper.CONFIG_PATH, tx_file)
         else:
             file_path = tx_file
-
-        # test if path exists
-        try:
-            with open(file_path):
-                pass
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Config file not found at {file_path}")
 
         return file_path
 
@@ -288,6 +279,8 @@ class Portfolio:
                 transactions = pd.read_excel(self.file, engine="openpyxl")
             else:
                 raise ValueError("Unsupported file format")
+        except FileNotFoundError:
+            raise FileNotFoundError(f"File not found at {self.file}")
         except Exception as e:
             raise ValueError(f"Error loading file: {e}")
 
@@ -1302,15 +1295,25 @@ class Manager:
 
     Parameters
     ----------
-    portfolios : list
+    config_path : str
+        path to the portfolio file
+    portfolios : list (default is None)
         list of portfolios in the Portfolio class to analyze.
     """
 
     def __init__(
         self,
-        portfolios,
+        config_path,
+        portfolios=None,
     ):
-        self.portfolios = portfolios
+        # create list of portfolios in configuration
+        if portfolios is None:
+            sections = config_helper.get_config(config_path).sections()
+            portfolios = [item for item in sections if item != "static"]
+
+        self.portfolios = [
+            Portfolio(config_path=config_path, portfolio=item) for item in portfolios
+        ]
 
     def refresh(self):
         """Refresh the portfolio."""
@@ -1322,7 +1325,7 @@ class Manager:
         )
         logger.info("Refreshed portfolios.")
 
-    def get_summary(self, date=None, lookback=None):
+    def get_summary(self, date=None, lookback=None, email=None):
         """Get summary of portfolios.
 
         Parameters
@@ -1332,6 +1335,8 @@ class Manager:
             If none we use the max date.
         lookback : int (default is None)
             the number of days to look back
+        email : str (default is None)
+            email to send the summary to
 
         Returns
         ----------
@@ -1362,6 +1367,16 @@ class Manager:
             df = df.assign(**benchmark_dict)
             dfs.append(df)
         summary = pd.concat(dfs)
+
+        # dropping columns that have no values
+        summary = summary.drop(
+            ["average_price", "last_price", "cumulative_units"], axis=1
+        )
+
+        if email:
+            message = summary.to_html()
+            subject = f"Portfolio Summary as of {summary['date'].max()}"
+            mailer.send_email(message, subject=subject, emailee=email)
 
         return summary
 
@@ -1429,6 +1444,12 @@ def _create_argparser():
         default=30,
         help="The number of days to look back for performance calculations",
     )
+    _parser.add_argument(
+        "--email",
+        type=str,
+        default=None,
+        help="The recipient of the email",
+    )
 
     return _parser
 
@@ -1455,7 +1476,9 @@ def cli():
         manager = Manager()
 
         # get the summary data
-        summary = manager.get_summary(date=args.date, lookback=args.lookback)
+        summary = manager.get_summary(
+            date=args.date, lookback=args.lookback, email=args.email
+        )
 
         # print the summary data
         print(summary)

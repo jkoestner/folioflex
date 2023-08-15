@@ -17,7 +17,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from urllib import request
 
-from iex import constants
+from iex.utils import config_helper
 
 pd.options.display.float_format = "{:,.2f}".format
 
@@ -164,7 +164,7 @@ class Yahoo:
 
         return quote
 
-    def most_active(count=25):
+    def most_active(self, count=25):
         """Provide a dataframe of the most active stocks for the most recent trading day.
 
         Parameters
@@ -180,7 +180,9 @@ class Yahoo:
         if count <= 0 or count >= 101:
             logger.warning("Count should be between 1 and 100")
 
-        url = "https://finance.yahoo.com/screener/predefined/most_actives?count=50"
+        url = (
+            f"https://finance.yahoo.com/screener/predefined/most_actives?count={count}"
+        )
 
         response = requests.get(url, headers=_get_header())
         most_active = pd.read_html(response.text)[0]
@@ -243,7 +245,7 @@ class Yahoo:
         end_price = data["Adj Close"].iloc[-1]
 
         # Calculate the 1-year change percentage
-        change_percent = (end_price - start_price) / end_price
+        change_percent = (end_price - start_price) / start_price
 
         return change_percent
 
@@ -326,7 +328,7 @@ class Fred:
         fred_summary : dict
             provides dictionary of FRED data
         """
-        fred = fredapi.Fred(api_key=constants.FRED_API)
+        fred = fredapi.Fred(api_key=config_helper.FRED_API)
         fred_dict = {
             "recession": "RECPROUSM156N",
             "unemployment": "UNRATE",
@@ -347,6 +349,9 @@ class Finviz:
     Class that provides functions that use data from FinViz data.
 
     """
+
+    def __init__(self):
+        pass
 
     def get_heatmap_data(self, timeframe="day"):
         """Get heatmap data from finviz.
@@ -430,7 +435,7 @@ class Web:
     def __init__(self):
         pass
 
-    def get_sp500_tickers():
+    def get_sp500_tickers(self):
         """Provide sp500 tickers with sectors.
 
         Returns
@@ -455,7 +460,7 @@ class Web:
 
         return sp500_tickers
 
-    def insider_activity(ticker):
+    def insider_activity(self, ticker):
         """Get insider activity.
 
         [Source: Business Insider]
