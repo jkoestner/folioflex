@@ -1,14 +1,20 @@
 API References
 =====
 
+Heatmap Module
+----------------
+
+.. automodule:: folioflex.portfolio.heatmap
+   :members:
+
 Portfolio Module
 ----------------
 
 .. automodule:: folioflex.portfolio.portfolio
    :members:
 
-Heatmap Module
+Wrappers Module
 ----------------
 
-.. automodule:: folioflex.portfolio.heatmap
+.. automodule:: folioflex.portfolio.wrappers
    :members:

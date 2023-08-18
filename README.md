@@ -14,7 +14,9 @@ Simple investment portfolio tool that will track stock and provide returns and o
 - [Overview](#overview)
 - [Installation](#installation)
   - [Install packages](#install-packages)
-  - [Portfolio Class](#portfolio-class)
+- [Usage](#usage)
+  - [CLI](#cli)
+  - [Python](#python)
   - [Web Dashboard](#web-dashboard)
 - [Other Tools](#other-tools)
 
@@ -74,8 +76,17 @@ If wanting to do more and develop on the code, the following command can be run 
 ```
 pip install -r requirements.txt
 ```
+## Usage
 
-### Portfolio Class
+### CLI
+
+CLI can be used for easier commands of python scripts for both portfolio or manager. An example of a CLI command is shown below.
+
+```commandline
+ffx manager --email "your_name@outlook.com" --lookback "[1,None]"
+```
+
+### Python
 
 When using the portfolio class, the following code can be used to get the returns of a portfolio.
 
@@ -110,7 +121,6 @@ in the conda environment.
 ```
 python -m ipykernel install --user --name=folioflex
 ```
-
 ### Logging
 
 If wanting to get more detail in output of messages the logging can increased

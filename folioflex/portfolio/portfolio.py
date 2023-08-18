@@ -20,6 +20,7 @@ The Manager class has a number of objects, such as:
 """
 
 import argparse
+import ast
 import logging
 import numpy as np
 import os
@@ -108,19 +109,6 @@ class Portfolio:
         self._max_date = self.transactions_history["date"].max()
         self.return_view = self.get_view(view="return")
         self.cost_view = self.get_view(view="cumulative_cost")
-
-    def refresh(self):
-        """Refresh the portfolio."""
-        self.__init__(
-            tx_file=self.file,
-            filter_type=self.filter_type,
-            filter_broker=self.filter_broker,
-            funds=self.funds,
-            delisted=self.delisted,
-            benchmarks=self.benchmarks,
-            other_fields=self.other_fields,
-            name=self.name,
-        )
 
     def get_performance(self, date=None, tx_hist_df=None, lookback=None):
         """Get performance of portfolio and stocks traded at certain point of time.
@@ -1315,17 +1303,7 @@ class Manager:
             Portfolio(config_path=config_path, portfolio=item) for item in portfolios
         ]
 
-    def refresh(self):
-        """Refresh the portfolio."""
-        # refresh the portfolio data
-        for portfolio in self.portfolios:
-            portfolio.refresh()
-        self.__init__(
-            portfolios=self.portfolios,
-        )
-        logger.info("Refreshed portfolios.")
-
-    def get_summary(self, date=None, lookback=None, email=None):
+    def get_summary(self, date=None, lookbacks=None, email=None):
         """Get summary of portfolios.
 
         Parameters
@@ -1333,7 +1311,7 @@ class Manager:
         date : date
             the date the asset summary should be as of.
             If none we use the max date.
-        lookback : int (default is None)
+        lookbacks : list (default is None)
             the number of days to look back
         email : str (default is None)
             email to send the summary to
@@ -1349,36 +1327,85 @@ class Manager:
                 - benchmark return
 
         """
+        if lookbacks is None:
+            lookbacks = [None]
         portfolio_repr = ", ".join([portfolio.name for portfolio in self.portfolios])
-        logger.info(f"Summarizing following portfolios: [{portfolio_repr}]")
-        dfs = []
-        for portfolio in self.portfolios:
-            performance = portfolio.get_performance(date=date, lookback=lookback)
-            df = performance[performance.index == "portfolio"].rename(
-                index={"portfolio": portfolio.name}
-            )
-            # adding benchmark to the summary
-            benchmark = performance[performance.index.str.contains("benchmark")].head(1)
-            benchmark_dict = {}
-            if not benchmark.empty:
-                benchmark_dict["benchmark"] = benchmark.index.values[0].split("-")[1]
-                benchmark_dict["benchmark_dwrr_pct"] = benchmark["dwrr_pct"].values[0]
-
-            df = df.assign(**benchmark_dict)
-            dfs.append(df)
-        summary = pd.concat(dfs)
-
-        # dropping columns that have no values
-        summary = summary.drop(
-            ["average_price", "last_price", "cumulative_units"], axis=1
+        logger.info(
+            f"Summarizing following portfolios: [{portfolio_repr}] with lookbacks {lookbacks}"
         )
 
+        for i in range(len(lookbacks)):
+            pfs = []
+            # getting summary of each portfolio
+            for portfolio in self.portfolios:
+                performance = portfolio.get_performance(
+                    date=date, lookback=lookbacks[i]
+                )
+                pf = performance[performance.index == "portfolio"].rename(
+                    index={"portfolio": portfolio.name}
+                )
+                pf = pf.rename(columns={"dwrr_pct": str(lookbacks[i]) + "_dwrr_pct"})
+                # adding benchmark to the summary
+                benchmark = performance[
+                    performance.index.str.contains("benchmark")
+                ].head(1)
+                benchmark_dict = {}
+                if not benchmark.empty:
+                    benchmark_dict["benchmark"] = benchmark.index.values[0].split("-")[
+                        1
+                    ]
+                    benchmark_dict[
+                        str(lookbacks[i]) + "_benchmark_dwrr_pct"
+                    ] = benchmark["dwrr_pct"].values[0]
+
+                pf = pf.assign(**benchmark_dict)
+                pfs.append(pf)
+
+            # dataframe prepare (drop, reorder, format)
+            summary = pd.concat(pfs)
+            if i == 0:
+                columns_to_keep = [
+                    "date",
+                    "market_value",
+                    "equity",
+                    "cash",
+                    "cumulative_cost",
+                    "lookback_date",
+                    "return",
+                    "realized",
+                    "unrealized",
+                    "benchmark",
+                ]
+                columns_to_keep += summary.filter(like="_dwrr_pct").columns.tolist()
+                summary = summary.drop(
+                    summary.columns.difference(columns_to_keep), axis=1
+                )
+                summary = summary.loc[:, columns_to_keep]
+                summary_all = summary.copy()
+            else:
+                columns_to_keep = summary.filter(like="_dwrr_pct").columns.tolist()
+                summary = summary.drop(
+                    summary.columns.difference(columns_to_keep), axis=1
+                )
+                summary = summary.loc[:, columns_to_keep]
+                summary_all = pd.merge(
+                    summary_all, summary, how="left", left_index=True, right_index=True
+                )
+
+        # formatting table
+        pct_cols = summary_all.filter(like="pct").columns
+        for pct_col in pct_cols:
+            summary_all[pct_col] = summary_all[pct_col].apply(
+                lambda x: "{:.2%}".format(x)
+            )
+
+        # sending email
         if email:
-            message = summary.to_html()
-            subject = f"Portfolio Summary as of {summary['date'].max()}"
+            message = summary_all.to_html()
+            subject = f"Portfolio Summary as of {summary_all['date'].max()}"
             mailer.send_email(message, subject=subject, emailee=email)
 
-        return summary
+        return summary_all
 
     def get_view(self, view="market_value"):
         """Get the view of portfolios.
@@ -1410,7 +1437,6 @@ class Manager:
 
 
 #
-# https://patorjk.com/software/taag/ using BIG
 #    _____ _      _____
 #   / ____| |    |_   _|
 #  | |    | |      | |
@@ -1418,6 +1444,20 @@ class Manager:
 #  | |____| |____ _| |_
 #   \_____|______|_____|
 #
+
+
+def _parse_input(input_str):
+    try:
+        # Safely evaluate the string
+        result = ast.literal_eval(input_str)
+
+        # Check if the result is a list
+        if isinstance(result, list):
+            return result
+        else:
+            raise argparse.ArgumentTypeError(f"'{input_str}' is not a valid list")
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{input_str}' is not a valid list")
 
 
 def _create_argparser():
@@ -1434,24 +1474,28 @@ def _create_argparser():
         help="The command to run (portfolio or manager)",
     )
     _parser.add_argument(
+        "-c",
         "--config_path",
         type=str,
-        default="personal_portfolio.ini",
+        default="portfolio_personal.ini",
         help="The path that has portfolio configuration",
     )
     _parser.add_argument(
+        "-d",
         "--date",
         type=str,
-        default=None,
+        default=None,  # None is the max date
         help="The date to use for performance calculations (YYYY-MM-DD)",
     )
     _parser.add_argument(
+        "-l",
         "--lookback",
-        type=int,
-        default=30,
+        type=_parse_input,
+        default=[None],
         help="The number of days to look back for performance calculations",
     )
     _parser.add_argument(
+        "-e",
         "--email",
         type=str,
         default=None,
@@ -1485,7 +1529,7 @@ def cli():
         # get the summary data
         summary = manager.get_summary(
             date=args.date,
-            lookback=args.lookback,
+            lookbacks=args.lookback,
             email=args.email,
         )
 

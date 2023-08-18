@@ -16,7 +16,7 @@ def get_version():
 
 
 def readme():
-    with open("README.md") as f:
+    with open("README.md", encoding="utf-8") as f:
         return f.read()
 
 
@@ -30,6 +30,10 @@ setup(
     package_data={"folioflex": ["configs/*"]},
     license="MIT",
     description=("A collection of portfolio tracking capabilities"),
+    entry_points={
+        "console_scripts": [
+            "ffx = folioflex.portfolio.portfolio:cli",
+        ]},
     long_description=readme(),
     long_description_content_type="text/markdown",
     install_requires=read_req_file(),
