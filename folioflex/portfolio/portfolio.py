@@ -27,7 +27,7 @@ import os
 import pandas as pd
 import pandas_market_calendars as mcal
 
-from argparse import RawTextHelpFormatter
+from argparse import ArgumentDefaultsHelpFormatter
 from datetime import datetime, timedelta
 from pyxirr import xirr
 
@@ -190,6 +190,13 @@ class Portfolio:
             performance["return"]
             / (-performance["cumulative_cost"] + performance["realized"]),
         )
+
+        # changing format of percentage columns
+        pct_cols = performance.filter(like="pct").columns
+        for pct_col in pct_cols:
+            performance[pct_col] = performance[pct_col].apply(
+                lambda x: "{:.2%}".format(x)
+            )
 
         performance = performance[
             [
@@ -1392,13 +1399,6 @@ class Manager:
                     summary_all, summary, how="left", left_index=True, right_index=True
                 )
 
-        # formatting table
-        pct_cols = summary_all.filter(like="pct").columns
-        for pct_col in pct_cols:
-            summary_all[pct_col] = summary_all[pct_col].apply(
-                lambda x: "{:.2%}".format(x)
-            )
-
         # sending email
         if email:
             message = summary_all.to_html()
@@ -1446,7 +1446,19 @@ class Manager:
 #
 
 
-def _parse_input(input_str):
+def _parse_input_to_list(input_str):
+    """Parse the input string.
+
+    Parameters
+    ----------
+    input_str : str
+        string to parse
+
+    Returns
+    ----------
+    result : list
+        list of parsed input
+    """
     try:
         # Safely evaluate the string
         result = ast.literal_eval(input_str)
@@ -1461,40 +1473,84 @@ def _parse_input(input_str):
 
 
 def _create_argparser():
-    description = """Provides a portfolio tracker."""
+    description = """Provides a portfolio tracker and manager."""
     _parser = argparse.ArgumentParser(
         description=description,
-        formatter_class=RawTextHelpFormatter,
+        formatter_class=ArgumentDefaultsHelpFormatter,
     )
 
-    # add the command-line arguments
-    _parser.add_argument(
-        "command",
-        choices=["portfolio", "manager"],
-        help="The command to run (portfolio or manager)",
-    )
-    _parser.add_argument(
+    # creating subparsers for separate commands
+    _subparsers = _parser.add_subparsers(dest="command", help="command to choose")
+
+    # subparser: portfolio
+    _portfolio_parser = _subparsers.add_parser("portfolio", help="portfolio module")
+    _portfolio_parser.add_argument(
         "-c",
         "--config_path",
         type=str,
         default="portfolio_personal.ini",
         help="The path that has portfolio configuration",
     )
-    _parser.add_argument(
+
+    _portfolio_parser.add_argument(
+        "-p",
+        "--portfolio",
+        type=str,
+        default=None,
+        help="The portfolio to use for performance calculations",
+    )
+
+    _portfolio_parser.add_argument(
         "-d",
         "--date",
         type=str,
         default=None,  # None is the max date
         help="The date to use for performance calculations (YYYY-MM-DD)",
     )
-    _parser.add_argument(
+
+    _portfolio_parser.add_argument(
         "-l",
         "--lookback",
-        type=_parse_input,
-        default=[None],
-        help="The number of days to look back for performance calculations",
+        type=int,
+        default=None,
+        help="The number of days to look back for portfolio performance calculations",
     )
-    _parser.add_argument(
+
+    # subparser: manager
+    _manager_parser = _subparsers.add_parser("manager", help="manager module")
+    _manager_parser.add_argument(
+        "-c",
+        "--config_path",
+        type=str,
+        default="portfolio_personal.ini",
+        help="The path that has portfolio configuration",
+    )
+
+    _manager_parser.add_argument(
+        "-p",
+        "--portfolios",
+        type=_parse_input_to_list,
+        default=[None],
+        help="The portfolios to use for manager summary calculations",
+    )
+
+    _manager_parser.add_argument(
+        "-d",
+        "--date",
+        type=str,
+        default=None,  # None is the max date
+        help="The date to use for performance calculations (YYYY-MM-DD)",
+    )
+
+    _manager_parser.add_argument(
+        "-l",
+        "--lookback",
+        type=_parse_input_to_list,
+        default=[None],
+        help="The number of days to look back for manager summary calculations",
+    )
+
+    _manager_parser.add_argument(
         "-e",
         "--email",
         type=str,
@@ -1514,7 +1570,7 @@ def cli():
 
     if args.command == "portfolio":
         # create a Portfolio object
-        portfolio = Portfolio(config_path=args.config_path)
+        portfolio = Portfolio(config_path=args.config_path, portfolio=args.portfolio)
 
         # get the performance data
         performance = portfolio.get_performance(date=args.date, lookback=args.lookback)
@@ -1524,7 +1580,7 @@ def cli():
 
     elif args.command == "manager":
         # create a Manager object
-        manager = Manager(config_path=args.config_path)
+        manager = Manager(config_path=args.config_path, portfolios=args.portfolios)
 
         # get the summary data
         summary = manager.get_summary(

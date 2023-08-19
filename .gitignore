@@ -1,10 +1,15 @@
+# files
 *.pyc
 *.ipynb_checkpoints
 .DS_Store
 .env
 portfolio.ipynb
+
+# folders
 .pytest_cache/
 .vscode/
 _build/
 _pycache_/
+build/
 docs/coverage/
+folioflex.egg-info/

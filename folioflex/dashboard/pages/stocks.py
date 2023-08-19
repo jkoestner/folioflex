@@ -1,7 +1,5 @@
 """Stocks dashboard."""
 
-import datetime
-
 from dash import dash_table
 from dash import dcc
 from dash import html
@@ -41,16 +39,6 @@ def layout(login_status, login_alert):
                         "Insider Summary Submit",
                         id="insider-summary-button",
                         n_clicks=0,
-                    ),
-                ],
-                className="row",
-            ),
-            html.Div(
-                [
-                    dcc.DatePickerSingle(
-                        id="date-input",
-                        initial_visible_month=datetime.date.today(),
-                        date=datetime.date.today(),
                     ),
                 ],
                 className="row",
