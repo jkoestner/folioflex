@@ -1,10 +1,16 @@
-"""Emailer."""
+"""
+Email module.
 
-import base64
+This module contains functions to send emails as well as generate reports
+to send in the emails.
+
+"""
+
 import datetime
 import logging
 import smtplib
 
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -29,7 +35,7 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 
-def send_email(message, subject, email_list):
+def send_email(message, subject, email_list, image=None):
     """Send summary of portfolios to email.
 
     Parameters
@@ -40,6 +46,8 @@ def send_email(message, subject, email_list):
         Subject of email
     email_list : list
         Email addresses to send email to
+    image : bytes (optional) (default=None)
+        Image to attach to email
 
     Returns
     ----------
@@ -61,6 +69,14 @@ def send_email(message, subject, email_list):
 
     message = MIMEText(message, "html")
     email.attach(message)
+
+    if image is not None:
+        email_image = MIMEImage(image)
+        email_image.add_header("Content-ID", "image1")
+        email_image.add_header(
+            "Content-Disposition", "attachment", filename="attach.png"
+        )
+        email.attach(email_image)
 
     # Send the email
     try:
@@ -115,20 +131,19 @@ def generate_report(
     today = datetime.date.today()
     subject = f"Summary as of {today}"
     message = "Below is your financial summary.<br><br>"
+    image = None
 
     if heatmap_dict is not None:
         portfolio = heatmap_dict.get("portfolio", None)
         lookback = heatmap_dict.get("lookback", None)
 
         heatmap_summary = heatmap.get_heatmap(portfolio=portfolio, lookback=lookback)
-        # using plotly kaleido to convert to image into bytes then base64 encode as
-        # this is standard practice for emails.
-        heatmap_bytes = heatmap_summary.to_image(format="png")
-        heatmap_img = base64.b64encode(heatmap_bytes).decode("utf-8")
+        # using plotly kaleido to convert to image into bytes then attach it to the email.
+        image = heatmap_summary.to_image(format="png")
 
         message += (
             f"<p>Here is the heatmap as of {today}:</p>"
-            f"<img src='data:image/png;base64,{heatmap_img}'/>" + "<br>"
+            f"<img src='cid:image1' alt='heatmap'/>" + "<br>"
         )
 
     if manager_dict is not None:
@@ -169,4 +184,4 @@ def generate_report(
             + "<br>"
         )
 
-    return send_email(message, subject=subject, email_list=email_list)
+    return send_email(message, subject=subject, email_list=email_list, image=image)

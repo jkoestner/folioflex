@@ -21,6 +21,7 @@ from celery.result import AsyncResult
 from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
+from dash.dash_table.Format import Format, Scheme
 
 from folioflex.dashboard import dashboard_helper, layouts
 from folioflex.dashboard.pages import (
@@ -839,7 +840,23 @@ def update_ManagerTable(manager_status, cq_pm):
     if manager_status == "ready":
         cq_pm = pd.read_json(cq_pm).reset_index()
         cq_pm["lookback_date"] = pd.to_datetime(cq_pm["lookback_date"], unit="ms")
-        manager_table = layouts.manager_fmt, cq_pm.to_dict("records")
+        # formatting floats
+        # TODO: put this in dashboard_helper function
+        manager_table = [
+            {
+                "name": i,
+                "id": i,
+                **(
+                    {
+                        "type": "numeric",
+                        "format": Format(precision=2, scheme=Scheme.fixed).group(True),
+                    }
+                    if cq_pm[i].dtype == "float64"
+                    else {}
+                ),
+            }
+            for i in cq_pm.columns
+        ], cq_pm.to_dict("records")
     else:
         manager_table = (None, None)
 

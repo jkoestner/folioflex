@@ -1334,6 +1334,8 @@ class Manager:
         """
         if lookbacks is None:
             lookbacks = [None]
+        elif isinstance(lookbacks, int):
+            lookbacks = [lookbacks]
         portfolio_repr = ", ".join([portfolio.name for portfolio in self.portfolios])
         logger.info(
             f"Summarizing following portfolios: [{portfolio_repr}] with lookbacks {lookbacks}"

@@ -105,7 +105,7 @@ def portfolio_query(config_file, broker="all", lookback=None):
 
 
 @celery_app.task
-def manager_query(config_file, lookback=None):
+def manager_query(config_file, lookbacks=None):
     """Query for worker to generate manager.
 
     Parameters
@@ -123,6 +123,6 @@ def manager_query(config_file, lookback=None):
     config_path = config_helper.CONFIG_PATH / config_file
 
     pm = portfolio.Manager(config_path=config_path)
-    cq_pm = pm.get_summary(lookback=lookback).to_json()
+    cq_pm = pm.get_summary(lookbacks=lookbacks).to_json()
 
     return cq_pm
