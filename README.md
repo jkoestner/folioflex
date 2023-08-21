@@ -9,6 +9,8 @@ Simple investment portfolio tool that will track stock and provide returns and o
 [![license badge](https://img.shields.io/github/license/jkoestner/folioflex)](https://github.com/jkoestner/folioflex/blob/main/LICENSE.md)
 [![codecov](https://codecov.io/gh/jkoestner/folioflex/branch/main/graph/badge.svg?token=K4RS9LX4UG)](https://codecov.io/gh/jkoestner/folioflex)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Static Badge](https://img.shields.io/badge/docs-available-green?labelColor=green&color=gray&link=https%3A%2F%2Fjkoestner.github.io%2Ffolioflex%2F)](https://jkoestner.github.io/folioflex/)
+
 
 ## Table of Contents
 - [Overview](#overview)
@@ -30,23 +32,23 @@ Simple investment portfolio tool that will track stock and provide returns and o
 
 **🔧 Features:**
 
-- Dashboard Helper: Get a quick overview of your portfolio with our dashboard. 🖥️
-- Market Screener: Filter and find trending stocks. 🔍
-- Portfolio Management: Organize and track, your investments. 💼
-- Config Helper: Customize your experience with easy configurations. ⚙️
+- **Dashboard Helper**: Get a quick overview of your portfolio with our dashboard. 🖥️
+- **Market Screener**: Filter and find trending stocks. 🔍
+- **Portfolio Management**: Organize and track, your investments. 💼
+- **Config Helper**: Customize your experience with easy configurations. ⚙️
 
 **📚 Documentation:**
 
-- Installation Guide: Get started with FolioFlex in no time! 🛠️
-- Usage Guide: Learn how to make the most out of FolioFlex. 🤓
+- [Installation Guide](https://jkoestner.github.io/folioflex/installation.html): Get started with FolioFlex in no time! 🛠️
+- [Usage Guide](https://jkoestner.github.io/folioflex/usage.html): Learn how to make the most out of FolioFlex. 🤓
 
 **🔬 Examples:**
 
-- Portfolio Example: Explore a sample portfolio and see FolioFlex in action! 📔
+- [Portfolio Example](https://nbviewer.jupyter.org/github/jkoestner/folioflex/blob/main/notebook/portfolio_example.ipynb): Explore a sample portfolio and see FolioFlex in action! 📔
 
 **🎥 See It In Action:**
 
-- FolioFlex Demo: Visit a dashboard (https://koestner.fly.dev/) of FolioFlex and witness the magic! 🌟
+- **FolioFlex Demo**: Visit a dashboard (https://koestner.fly.dev/) of FolioFlex and witness the magic! 🌟
 
 **🤝 Contribute:**
 - Love FolioFlex? Feel free to contribute and make it even better! Every bit of help is appreciated. ❤️
@@ -83,7 +85,7 @@ pip install -r requirements.txt
 CLI can be used for easier commands of python scripts for both portfolio or manager. An example of a CLI command is shown below.
 
 ```commandline
-ffx manager --email "your_name@outlook.com" --lookback "[1,None]"
+ffx email -el "['yourname@outlook.com']" -hd {}
 ```
 
 ### Python
@@ -91,9 +93,9 @@ ffx manager --email "your_name@outlook.com" --lookback "[1,None]"
 When using the portfolio class, the following code can be used to get the returns of a portfolio.
 
 ```python
-from folioflex import config, portfolio
+from folioflex.portfolio.portfolio import Portfolio
 config_path = "portfolio.ini"
-pf = portfolio.Portfolio(
+pf = Portfolio(
     config_path=config_path, 
     portfolio='tracker'
 )

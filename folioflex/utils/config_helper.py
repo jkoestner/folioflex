@@ -14,12 +14,12 @@ TESTS_PATH = ROOT_PATH / "tests" / "files"
 def get_config(path):
     """Get the config path.
 
-     Parameters
-     ----------
-     path : str
-        path to the config file
+    Parameters
+    ----------
+    path : str
+       path to the config file
 
-     Returns
+    Returns
     ----------
     config : configparser.ConfigParser
         the config parser
@@ -52,17 +52,17 @@ def get_config(path):
 def get_config_options(path, section):
     """Load the configuration options.
 
-     Parameters
-     ----------
-     path : str
-        path to the config file
+    Parameters
+    ----------
+    path : str
+       path to the config file
     section : str
-        the section of the config file to load
+       the section of the config file to load
 
-     Returns
-     ----------
-     options : dict
-         dictionary of options
+    Returns
+    ----------
+    options : dict
+        dictionary of options
 
     """
     config = get_config(path)

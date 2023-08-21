@@ -68,7 +68,7 @@ def test_calc_average_price():
 
 def test_calc_return_pct():
     """Checks calculations of performance - return percent."""
-    performance = pf.get_performance(date=date)
+    performance = pf.get_performance(date=date, prettify=False)
 
     current_price = pf.transactions_history[
         (pf.transactions_history["ticker"] == "AMD")

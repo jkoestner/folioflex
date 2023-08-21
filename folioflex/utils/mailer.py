@@ -1,11 +1,15 @@
 """Emailer."""
 
+import base64
+import datetime
 import logging
 import smtplib
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from folioflex.portfolio import heatmap
+from folioflex.portfolio.portfolio import Portfolio, Manager
 from folioflex.utils import config_helper
 
 
@@ -25,7 +29,7 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 
-def send_email(message, subject, emailee):
+def send_email(message, subject, email_list):
     """Send summary of portfolios to email.
 
     Parameters
@@ -34,8 +38,8 @@ def send_email(message, subject, emailee):
         Message to send in email
     subject : str
         Subject of email
-    emailee : str
-        Email address to send email to
+    email_list : list
+        Email addresses to send email to
 
     Returns
     ----------
@@ -53,7 +57,7 @@ def send_email(message, subject, emailee):
     email = MIMEMultipart()
     email["Subject"] = subject
     email["From"] = config_helper.SMTP_USERNAME
-    email["To"] = emailee
+    email["To"] = ";".join(email_list)
 
     message = MIMEText(message, "html")
     email.attach(message)
@@ -69,3 +73,98 @@ def send_email(message, subject, emailee):
     except smtplib.SMTPException as e:
         logger.warning(f"Error sending email: {e}")
         return False
+
+
+def generate_report(
+    email_list, heatmap_dict=None, manager_dict=None, portfolio_dict=None
+):
+    """Generate report of portfolio performance and send to email.
+
+    Parameters
+    ----------
+    email_list : list
+        Email addresses to send email to
+    heatmap_dict : dict
+        Heatmap dictionary to get values for
+            Keys are:
+                - config_path (optional)
+                - portfolio (optional)
+                - lookback (optional)
+    manager_dict : dict
+        Manager dictionary to get values for
+            Keys are:
+                - config_path
+                - portfolios (optional)
+                - date (optional)
+                - lookbacks (optional)
+    portfolio_dict : dict
+        Portfolio dictionary to get values for
+            Keys are:
+                - config_path
+                - portfolio
+                - date (optional)
+                - lookback (optional)
+
+    Returns
+    ----------
+    bool
+        True if email was sent successfully, False otherwise.
+    """
+    # building the email message
+
+    today = datetime.date.today()
+    subject = f"Summary as of {today}"
+    message = "Below is your financial summary.<br><br>"
+
+    if heatmap_dict is not None:
+        portfolio = heatmap_dict.get("portfolio", None)
+        lookback = heatmap_dict.get("lookback", None)
+
+        heatmap_summary = heatmap.get_heatmap(portfolio=portfolio, lookback=lookback)
+        # using plotly kaleido to convert to image into bytes then base64 encode as
+        # this is standard practice for emails.
+        heatmap_bytes = heatmap_summary.to_image(format="png")
+        heatmap_img = base64.b64encode(heatmap_bytes).decode("utf-8")
+
+        message += (
+            f"<p>Here is the heatmap as of {today}:</p>"
+            f"<img src='data:image/png;base64,{heatmap_img}'/>"
+        )
+
+    if manager_dict is not None:
+        config_path = manager_dict.get("config_path")
+        portfolios = manager_dict.get("portfolios", None)
+        date = manager_dict.get("date", None)
+        lookbacks = manager_dict.get("lookbacks", None)
+
+        manager_summary = Manager(
+            config_path=config_path, portfolios=portfolios
+        ).get_summary(date=date, lookbacks=lookbacks)
+
+        message += (
+            f"Here is the manager summary with the following lookbacks: {lookbacks}:<br>"
+            + manager_summary.to_html()
+        )
+
+    if portfolio_dict is not None:
+        config_path = portfolio_dict.get("config_path")
+        portfolio = portfolio_dict.get("portfolio")
+        date = portfolio_dict.get("date", None)
+        lookback = portfolio_dict.get("lookback", None)
+
+        portfolio_summary = Portfolio(
+            config_path=config_path, portfolio=portfolio
+        ).get_performance(date=date, lookback=lookback)
+
+        # remove rows with 0 market value
+        portfolio_summary = portfolio_summary[
+            portfolio_summary["market_value"] != 0
+        ].sort_values("market_value", ascending=False)
+
+        message += (
+            f"Here is the portfolio summary for {portfolio} and the "
+            + f"following lookback: {lookback} :<br>"
+            + portfolio_summary.to_html()
+        )
+
+    return send_email(message, subject=subject, email_list=email_list)

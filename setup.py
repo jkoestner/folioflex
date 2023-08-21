@@ -32,8 +32,9 @@ setup(
     description=("A collection of portfolio tracking capabilities"),
     entry_points={
         "console_scripts": [
-            "ffx = folioflex.portfolio.portfolio:cli",
-        ]},
+            "ffx = folioflex.utils.cli:cli",
+        ]
+    },
     long_description=readme(),
     long_description_content_type="text/markdown",
     install_requires=read_req_file(),

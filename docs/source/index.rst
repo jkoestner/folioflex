@@ -1,7 +1,8 @@
 Welcome to FolioFlex's documentation!
-================================
+=====================================
 
-FolioFlex is a finance app that can display information about stocks, sectors, ideas, macros, and trackers...
+FolioFlex is a finance app that can display information about stocks, sectors, 
+ideas, macros, and trackers...
 
 Contents:
 
@@ -11,6 +12,7 @@ Contents:
 
    installation
    usage
+   development
    reference
 
 Indices and tables

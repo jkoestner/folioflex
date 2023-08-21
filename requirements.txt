@@ -12,6 +12,7 @@ fredapi>=0.4.3
 gunicorn>=19.9.0
 jupyter-dash
 jupyterlab
+kaleido==0.1.0.post1 # as of Kaleido 0.2.1, the image processig is too slow.
 numpy>=1.22.3
 openpyxl>=3.0.7
 pandas>=0.25.0

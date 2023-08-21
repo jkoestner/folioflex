@@ -6,15 +6,18 @@ Provides the heatmap
 import pandas as pd
 import plotly.express as px
 
+from folioflex.portfolio.portfolio import Portfolio
 from folioflex.portfolio.wrappers import Finviz, Web
 
 
-def get_heatmap(portfolio=None, lookback=None):
+def get_heatmap(config_path=None, portfolio=None, lookback=None):
     """Provide figure for heatmap.
 
     Parameters
     ----------
-    portfolio : Portfolio Class (default is None)
+    config_path : str (optional)
+        path to config file
+    portfolio : str (optional)
         portfolio to get heatmap for, if None use sp500
     lookback : int (optional)
         number of days to lookback
@@ -28,14 +31,15 @@ def get_heatmap(portfolio=None, lookback=None):
         returns = Finviz().get_heatmap_data()
         color = "return_pct"
     else:
-        returns = portfolio.get_performance(lookback=lookback)
+        portfolio_class = Portfolio(config_path=config_path, portfolio=portfolio)
+        returns = portfolio_class.get_performance(lookback=lookback, prettify=False)
         returns = returns.reset_index()
         # remove portfolio and benchmark
         returns = returns.loc[
             ~returns["ticker"].isin(["portfolio"])
             & ~returns["ticker"].str.contains("benchmark")
         ]
-        color = "simple_return_pct"
+        color = "dwrr_pct"
 
     returns = returns[[color, "market_value", "ticker"]]
     sp500_tickers = Web().get_sp500_tickers()
