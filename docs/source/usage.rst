@@ -28,7 +28,7 @@ To run an example that outputs to an email the following can be run:
 
 .. code-block:: bash
 
-    ffx email ffx email -el "['yourname@outlook.com']" -md "{'config_path' : 'portfolio_personal.ini', 'lookbacks' : [1, 30, None]}" -hd {}
+    ffx email -el "['yourname@outlook.com']" -md "{'config_path' : 'portfolio_personal.ini', 'lookbacks' : [1, 30, None]}" -hd {}
 
 Website
 -------

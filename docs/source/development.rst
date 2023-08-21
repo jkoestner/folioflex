@@ -5,7 +5,7 @@ To run some of the development tools, you'll need to install the development dep
 
 .. code-block:: bash
 
-    pip install -r requirements-test.txt
+    pip install -r requirements_ci.txt
 
 Testing
 -------
