@@ -128,7 +128,7 @@ def generate_report(
 
         message += (
             f"<p>Here is the heatmap as of {today}:</p>"
-            f"<img src='data:image/png;base64,{heatmap_img}'/>"
+            f"<img src='data:image/png;base64,{heatmap_img}'/>" + "<br>"
         )
 
     if manager_dict is not None:
@@ -144,6 +144,7 @@ def generate_report(
         message += (
             f"Here is the manager summary with the following lookbacks: {lookbacks}:<br>"
             + manager_summary.to_html()
+            + "<br>"
         )
 
     if portfolio_dict is not None:
@@ -165,6 +166,7 @@ def generate_report(
             f"Here is the portfolio summary for {portfolio} and the "
             + f"following lookback: {lookback} :<br>"
             + portfolio_summary.to_html()
+            + "<br>"
         )
 
     return send_email(message, subject=subject, email_list=email_list)
