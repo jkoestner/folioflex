@@ -1,9 +1,6 @@
 """Tests the wrappers."""
 
-try:
-    import wrappers
-except (ImportError, ModuleNotFoundError):
-    from folioflex.portfolio import wrappers
+from folioflex.portfolio import wrappers
 
 
 def test_stock_history():
