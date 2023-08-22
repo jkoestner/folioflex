@@ -41,7 +41,7 @@ def get_config(path):
             continue
     else:
         raise FileNotFoundError(
-            f"Config file not found at any of the following paths: {', '.join(paths_to_try)}"
+            f"Config file not found at any of the following paths: {', '.join(str(paths_to_try))}"
         )
 
     config.read(path_to_try)
