@@ -70,6 +70,12 @@ To install, this repository can be installed by running the following command in
 the environment of choice.
 
 ```
+pip install folioflex
+```
+
+Or could be done using GitHub.
+
+```
 pip install git+https://github.com/jkoestner/folioflex.git
 ```
 

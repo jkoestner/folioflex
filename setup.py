@@ -26,8 +26,7 @@ setup(
     author="John Koestner",
     author_email="johnkoestner@outlook.com",
     packages=find_packages(exclude=["tests*"]),
-    include_package_data=True,
-    package_data={"folioflex": ["configs/*"]},
+    include_package_data=True,  # include files from MANIFEST.in
     license="MIT",
     description=("A collection of portfolio tracking capabilities"),
     entry_points={
