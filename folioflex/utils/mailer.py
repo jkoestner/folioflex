@@ -35,7 +35,7 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 
-def send_email(message, subject, email_list, image=None):
+def send_email(message, subject, email_list, image_list=None):
     """Send summary of portfolios to email.
 
     Parameters
@@ -46,8 +46,8 @@ def send_email(message, subject, email_list, image=None):
         Subject of email
     email_list : list
         Email addresses to send email to
-    image : bytes (optional) (default=None)
-        Image to attach to email
+    image_list : list
+        Images to attach to email
 
     Returns
     ----------
@@ -70,13 +70,14 @@ def send_email(message, subject, email_list, image=None):
     message = MIMEText(message, "html")
     email.attach(message)
 
-    if image is not None:
-        email_image = MIMEImage(image)
-        email_image.add_header("Content-ID", "image1")
-        email_image.add_header(
-            "Content-Disposition", "attachment", filename="attach.png"
-        )
-        email.attach(email_image)
+    if image_list:
+        for idx, image in enumerate(image_list, start=1):
+            email_image = MIMEImage(image)
+            email_image.add_header("Content-ID", f"image{idx}")
+            email_image.add_header(
+                "Content-Disposition", "attachment", filename=f"image{idx}.png"
+            )
+            email.attach(email_image)
 
     # Send the email
     try:
@@ -92,7 +93,11 @@ def send_email(message, subject, email_list, image=None):
 
 
 def generate_report(
-    email_list, heatmap_dict=None, manager_dict=None, portfolio_dict=None
+    email_list,
+    heatmap_dict=None,
+    heatmap_port=None,
+    manager_dict=None,
+    portfolio_dict=None,
 ):
     """Generate report of portfolio performance and send to email.
 
@@ -101,25 +106,35 @@ def generate_report(
     email_list : list
         Email addresses to send email to
     heatmap_dict : dict
-        Heatmap dictionary to get values for
+        Market Heatmap dictionary to get values for
+            see: folioflex.portfolio.heatmap.get_heatmap for more details
             Keys are:
-                - config_path (optional)
-                - portfolio (optional)
-                - lookback (optional)
+            - config_path (optional)
+            - portfolio (optional)
+            - lookback (optional)
+    heatmap_port : dict
+        Portfolio Heatmap dictionary to get values for
+            see: folioflex.portfolio.heatmap.get_heatmap for more details
+            Keys are:
+            - config_path (optional)
+            - portfolio (optional)
+            - lookback (optional)
     manager_dict : dict
         Manager dictionary to get values for
+            see: folioflex.portfolio.portfolio.Manager.get_summary for more details
             Keys are:
-                - config_path
-                - portfolios (optional)
-                - date (optional)
-                - lookbacks (optional)
+            - config_path
+            - portfolios (optional)
+            - date (optional)
+            - lookbacks (optional)
     portfolio_dict : dict
         Portfolio dictionary to get values for
+            see: folioflex.portfolio.portfolio.Portfolio.get_performance for more details
             Keys are:
-                - config_path
-                - portfolio
-                - date (optional)
-                - lookback (optional)
+            - config_path
+            - portfolio
+            - date (optional)
+            - lookback (optional)
 
     Returns
     ----------
@@ -131,7 +146,8 @@ def generate_report(
     today = datetime.date.today()
     subject = f"Summary as of {today}"
     message = "Below is your financial summary.<br><br>"
-    image = None
+    image_list = []
+    image_idx = 1
 
     if heatmap_dict is not None:
         portfolio = heatmap_dict.get("portfolio", None)
@@ -140,11 +156,30 @@ def generate_report(
         heatmap_summary = heatmap.get_heatmap(portfolio=portfolio, lookback=lookback)
         # using plotly kaleido to convert to image into bytes then attach it to the email.
         image = heatmap_summary.to_image(format="png")
+        image_list.append(image)
 
         message += (
-            f"<p>Here is the heatmap as of {today}:</p>"
-            f"<img src='cid:image1' alt='heatmap'/>" + "<br>"
+            f"<p>Here is the heatmap for market as of {today}:</p>"
+            f"<img src='cid:image{image_idx}' alt='heatmap market'/>" + "<br>"
         )
+
+        image_idx += 1
+
+    if heatmap_port is not None:
+        portfolio = heatmap_port.get("portfolio", None)
+        lookback = heatmap_port.get("lookback", None)
+
+        heatmap_summary = heatmap.get_heatmap(portfolio=portfolio, lookback=lookback)
+        # using plotly kaleido to convert to image into bytes then attach it to the email.
+        image = heatmap_summary.to_image(format="png")
+        image_list.append(image)
+
+        message += (
+            f"<p>Here is the portfolio heatmap as of {today}:</p>"
+            f"<img src='cid:image{image_idx}' alt='heatmap portfolio'/>" + "<br>"
+        )
+
+        image_idx += 1
 
     if manager_dict is not None:
         config_path = manager_dict.get("config_path")
@@ -184,4 +219,6 @@ def generate_report(
             + "<br>"
         )
 
-    return send_email(message, subject=subject, email_list=email_list, image=image)
+    return send_email(
+        message, subject=subject, email_list=email_list, image_list=image_list
+    )

@@ -410,7 +410,7 @@ def initialize_trackerGraph(n_clicks):
     if n_clicks == 0:
         tracker_task_id = "none"
     else:
-        config_file = "portfolio.ini"
+        config_file = "portfolio_dash.ini"
         broker = "tracker"
         tracker_task = cq.portfolio_query.delay(config_file=config_file, broker=broker)
         tracker_task_id = tracker_task.id

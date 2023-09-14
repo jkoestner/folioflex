@@ -49,7 +49,10 @@ def test_calc_sale_price():
     sale_price = transactions["sale_price"].sum()
 
     test_df = pd.read_csv(pf.file, parse_dates=["date"])
-    test_df = test_df[(~test_df["ticker"].str.contains("Cash"))]
+    test_df = test_df[
+        (~test_df["ticker"].str.contains("Cash"))
+        & (~test_df["type"].str.contains("DIVIDEND"))
+    ]
     test_sale_price = test_df["price"].sum()
 
     assert (
@@ -128,6 +131,19 @@ def test_calc_return():
     ), "Expected return to be market_value - cumulative_cost"
 
 
+def test_calc_dividend():
+    """Checks calculations of performance - dividend."""
+    performance = pf.get_performance(date=date)
+    test_df = pd.read_csv(pf.file, parse_dates=["date"])
+    test_dividend = test_df[
+        (test_df["type"] == "DIVIDEND") & (test_df["date"] <= date)
+    ]["cost"].sum()
+
+    assert round(performance.loc["portfolio", "dividend"], 2) == round(
+        test_dividend, 2
+    ), "Expected dividend to be sum of dividend transactions"
+
+
 def test_calc_unrealized_return():
     """Checks calculations of performance - unrealized return."""
     performance = pf.get_performance(date=date)
@@ -148,7 +164,9 @@ def test_calc_unrealized_return():
 def test_calc_realized_return():
     """Checks calculations of performance - realized return."""
     performance = pf.get_performance(date=date)
-    performance["test_realized"] = performance["return"] - performance["unrealized"]
+    performance["test_realized"] = (
+        performance["return"] - performance["unrealized"] - performance["dividend"]
+    )
 
     assert round(performance.loc["portfolio", "realized"], 2) == round(
         performance.loc["portfolio", "test_realized"], 2

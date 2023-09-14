@@ -137,13 +137,16 @@ class Portfolio:
                 - annualized dwrr return percentage
                 - realized
                 - unrealized
+                - dividend
+                - cash
+                - equity
 
         """
         if date is None:
             date = self._max_date
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
-        # if lookback provided then apply lookback adjustment
+        # if lookback provided only calculate performance within lookback
         if lookback is not None:
             tx_hist_df = self._filter_lookback(
                 lookback=lookback, adjust_vars=True, tx_hist_df=tx_hist_df
@@ -158,6 +161,7 @@ class Portfolio:
         performance = performance.reset_index().set_index("ticker")
         performance.drop(["index", "units", "cost"], axis=1, inplace=True)
 
+        # add in portfolio metrics
         condition = performance.index.str.contains("Cash")
         performance.loc["portfolio", "cash"] = performance.loc[
             condition, "market_value"
@@ -170,6 +174,7 @@ class Portfolio:
             condition, "market_value"
         ].sum()
 
+        # check for duplicates
         duplicates = performance[performance.index.duplicated()].index
         if len(duplicates) > 0:
             logger.warning(
@@ -212,6 +217,7 @@ class Portfolio:
                 "dwrr_ann_pct",
                 "realized",
                 "unrealized",
+                "dividend",
                 "cash",
                 "equity",
             ]
@@ -343,17 +349,17 @@ class Portfolio:
 
         tx_df = tx_df.copy()
         transactions = tx_df[(tx_df["cost"] != 0) | (tx_df["units"] != 0)]
-
+        transactions = self._add_cash_tx(tx_df=transactions, other_fields=other_fields)
+        transactions = self._add_dividend(tx_df=transactions, other_fields=other_fields)
         transactions_history = self._add_price_history(
             tx_df=transactions, price_history=price_history, other_fields=other_fields
         )
         transactions_history = self._calc_tx_metrics(tx_hist_df=transactions_history)
-
         transactions_history = self._add_portfolio(tx_hist_df=transactions_history)
 
         for benchmark in benchmarks:
             benchmark_history = self._add_benchmark(
-                tx_df=transactions,
+                tx_df=tx_df,
                 ticker=benchmark,
                 price_history=price_history,
                 other_fields=other_fields,
@@ -368,55 +374,6 @@ class Portfolio:
         )
 
         return transactions_history
-
-    def _get_all_performance(self, step=5, tx_hist_df=None):
-        """Get performance of portfolio and stocks traded for duration of portfolio.
-
-        Parameters
-        ----------
-        step : int (default is 5)
-            the interval of dates to pull in perfomance from
-        tx_hist_df : DataFrame (default is all transactions)
-            dataframe to get return percent from
-
-        Returns
-        ----------
-        performance : DataFrame
-            the performance of individual assets as well as portfolio
-                - date
-                - average price
-                - last price
-                - cumulative units
-                - cumulative cost
-                - market value
-                - return
-                - return percentage
-                - realized
-                - unrealized
-
-        """
-        if tx_hist_df is None:
-            tx_hist_df = self.transactions_history
-
-        # filter dataframe after first transaction
-        min_date = tx_hist_df[tx_hist_df["units"] != 0]["date"].min()
-        tx_hist_df = tx_hist_df[tx_hist_df["date"] >= min_date]
-
-        # get dates to loop through func(get_performace)
-        dates = pd.to_datetime(tx_hist_df["date"].unique()).sort_values(ascending=False)
-
-        all_performance = pd.DataFrame()
-        for date in dates[::step]:
-            all_performance = pd.concat(
-                [
-                    all_performance,
-                    self.get_performance(date=date, tx_hist_df=tx_hist_df),
-                ]
-            )
-
-        all_performance = all_performance.sort_values("date")
-
-        return all_performance
 
     def _get_price_history(self):
         """Get the history of prices.
@@ -483,7 +440,7 @@ class Portfolio:
             fund_hist_df.rename(columns={"sale_price": "last_price"}, inplace=True)
             price_history = pd.concat([price_history, fund_hist_df])
 
-        # adding cash price history
+        # adding ticker `Cash` for price history lookup
         if "Cash" in self.tickers:
             logger.info("Adding transaction history for cash transactions")
             df = template_df.copy()
@@ -510,6 +467,79 @@ class Portfolio:
 
         return price_history
 
+    def _add_dividend(self, tx_df, other_fields=None):
+        """Add price history to transactions DataFrame.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            Transactions to calculate metrics on
+        other_fields : list (optional)
+            additional fields to include
+
+        Returns
+        ----------
+        tx_df : DataFrame
+            DataFrame that has dividend column included
+        """
+        if other_fields is None:
+            other_fields = []
+
+        dividends = tx_df[tx_df["type"] == "DIVIDEND"]
+        dividends = (
+            dividends.groupby(by=["date", "ticker"] + other_fields)
+            .sum(numeric_only=True)
+            .reset_index()
+        )
+        dividends.rename(columns={"cost": "dividend"}, inplace=True)
+
+        tx_df = pd.merge(
+            tx_df,
+            dividends[["date", "ticker", "dividend"]],
+            on=["date", "ticker"],
+            how="left",
+        )
+        tx_df["dividend"].fillna(0, inplace=True)
+
+        # remove dividend transactions
+        tx_df = tx_df[tx_df["type"] != "DIVIDEND"]
+
+        return tx_df
+
+    def _add_cash_tx(self, tx_df, other_fields=None):
+        """Add cash transactions to transactions DataFrame.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            Transactions to calculate metrics on
+        other_fields : list (optional)
+            additional fields to include
+
+        Returns
+        ----------
+        tx_df : DataFrame
+            DataFrame that has cash included
+        """
+        if other_fields is None:
+            other_fields = []
+
+        tickers = list(tx_df["ticker"].unique())
+
+        # create cash transactions from stock purchases
+        if "Cash" in tickers:
+            cash_tx = tx_df[tx_df["ticker"] != "Cash"].copy()
+            cash_tx["ticker"] = "Cash"
+            cash_tx["type"] = "Cash"
+            cash_tx["units"] = cash_tx["cost"]
+            cash_tx["sale_price"] = 1
+            tx_df = pd.concat([tx_df, cash_tx], axis=0)
+            tx_df.loc[tx_df["ticker"] == "Cash", "cost"] = (
+                tx_df.loc[tx_df["ticker"] == "Cash", "cost"] * -1
+            )
+
+        return tx_df
+
     def _add_price_history(self, tx_df, price_history=None, other_fields=None):
         """Add price history to transactions DataFrame.
 
@@ -532,18 +562,6 @@ class Portfolio:
 
         tickers = list(tx_df["ticker"].unique())
 
-        # create cash transactions from stock purchases
-        if "Cash" in tickers:
-            cash_tx = tx_df[tx_df["ticker"] != "Cash"].copy()
-            cash_tx["ticker"] = "Cash"
-            cash_tx["type"] = "Cash"
-            cash_tx["units"] = cash_tx["cost"]
-            cash_tx["sale_price"] = 1
-            tx_df = pd.concat([tx_df, cash_tx], axis=0)
-            tx_df.loc[tx_df["ticker"] == "Cash", "cost"] = (
-                tx_df.loc[tx_df["ticker"] == "Cash", "cost"] * -1
-            )
-
         # sale price to be based on units bought and not sold (resolves same day sales)
         tx_df["sale_cost"] = tx_df["cost"]
         tx_df["sale_units"] = tx_df["units"]
@@ -565,7 +583,10 @@ class Portfolio:
         tx_merge_df = (
             pd.merge(
                 price_history,
-                tx_df[["date", "ticker", "sale_price", "units", "cost"] + other_fields],
+                tx_df[
+                    ["date", "ticker", "sale_price", "units", "cost", "dividend"]
+                    + other_fields
+                ],
                 how="outer",
                 on=["date", "ticker"],
             )
@@ -600,17 +621,26 @@ class Portfolio:
             - return
             - unrealized
             - realized
+            - dividend
         """
-        # sort values ascending to calculat cumsum correctly
+        # sort values ascending to calculate cumsum correctly
         tx_hist_df = tx_hist_df.sort_values(by=["ticker", "date"], ascending=True)
 
         # cumulative amounts
         tx_hist_df["cumulative_units"] = tx_hist_df.groupby("ticker")[
             "units"
         ].transform(pd.Series.cumsum)
-        tx_hist_df["cumulative_cost"] = tx_hist_df.groupby("ticker")["cost"].transform(
+        tx_hist_df["cumulative_cost_without_dividend"] = tx_hist_df.groupby("ticker")[
+            "cost"
+        ].transform(pd.Series.cumsum)
+        tx_hist_df["dividend"] = tx_hist_df.groupby("ticker")["dividend"].transform(
             pd.Series.cumsum
         )
+        # adding dividends profit to cumulative cost
+        tx_hist_df["cumulative_cost"] = (
+            tx_hist_df["cumulative_cost_without_dividend"] + tx_hist_df["dividend"]
+        )
+        tx_hist_df = tx_hist_df.drop(columns=["cumulative_cost_without_dividend"])
 
         # average price
         tx_hist_df = tx_hist_df.groupby("ticker", group_keys=False).apply(
@@ -633,7 +663,9 @@ class Portfolio:
             tx_hist_df["average_price"] * tx_hist_df["cumulative_units"]
         )
 
-        tx_hist_df["realized"] = tx_hist_df["return"] - tx_hist_df["unrealized"]
+        tx_hist_df["realized"] = (
+            tx_hist_df["return"] - tx_hist_df["unrealized"] - tx_hist_df["dividend"]
+        )
 
         # fill in zeroes
         for field in [
@@ -642,6 +674,7 @@ class Portfolio:
             "return",
             "unrealized",
             "realized",
+            "dividend",
             "cumulative_units",
         ]:
             condition = tx_hist_df["cumulative_cost"] == 0
@@ -657,6 +690,9 @@ class Portfolio:
 
     def _add_benchmark(self, tx_df, ticker, price_history=None, other_fields=None):
         """Add a benchmark with transaction history dataframe.
+
+        Notes:
+        Benchmark does not include any dividends from the benchmark
 
         Parameters
         ----------
@@ -707,13 +743,17 @@ class Portfolio:
             benchmark_tx["sale_cost"] / benchmark_tx["sale_units"] * -1,
         )
 
+        # assuming that there are 0 dividends from benchmark
+        benchmark_tx["dividend"] = 0
+
         price_history = price_history[price_history["ticker"] == ticker]
 
         benchmark_tx_hist = (
             pd.merge(
                 price_history,
                 benchmark_tx[
-                    ["date", "ticker", "sale_price", "units", "cost"] + other_fields
+                    ["date", "ticker", "sale_price", "units", "cost", "dividend"]
+                    + other_fields
                 ],
                 how="outer",
                 on=["date", "ticker"],
@@ -776,6 +816,7 @@ class Portfolio:
             "return",
             "unrealized",
             "realized",
+            "dividend",
         ]
         for view in views:
             cols = ["ticker", "date"] + [view]
@@ -1117,7 +1158,7 @@ class Portfolio:
         lookback : int
             number of days to lookback
         adjust_vars : bool
-            whether to adjust the variables return, realized, and unrealized
+            whether to adjust the variables return, realized, unrealized, and dividend
         tx_hist_df : DataFrame (optional)
             stock dataframe to get return percent from
 
@@ -1144,7 +1185,7 @@ class Portfolio:
 
         if adjust_vars:
             # List of variables to modify
-            variables = ["return", "unrealized", "realized"]
+            variables = ["return", "unrealized", "realized", "dividend"]
 
             # Grouping the DataFrame by 'ticker' and applying the operation to each group
             for variable in variables:
@@ -1247,7 +1288,15 @@ class Portfolio:
             portfolio_checks_failed = portfolio_checks_failed + 1
 
         # type checks
-        tx_allowed_types = ["BOOK", "BUY", "Cash", "SELL", "BUY COVER", "SELL SHORT"]
+        tx_allowed_types = [
+            "BOOK",
+            "BUY",
+            "Cash",
+            "SELL",
+            "BUY COVER",
+            "SELL SHORT",
+            "DIVIDEND",
+        ]
         tx_types = tx_df["type"].unique()
         for tx_type in tx_types:
             if tx_type not in tx_allowed_types:
@@ -1381,6 +1430,7 @@ class Manager:
                     "return",
                     "realized",
                     "unrealized",
+                    "dividend",
                     "benchmark",
                 ]
                 columns_to_keep += summary.filter(like="_dwrr_pct").columns.tolist()

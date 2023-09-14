@@ -100,10 +100,10 @@ When using the portfolio class, the following code can be used to get the return
 
 ```python
 from folioflex.portfolio.portfolio import Portfolio
-config_path = "portfolio.ini"
+config_path = "portfolio_demo.ini"
 pf = Portfolio(
     config_path=config_path, 
-    portfolio='tracker'
+    portfolio='company_a'
 )
 pf.get_performance()
 ```

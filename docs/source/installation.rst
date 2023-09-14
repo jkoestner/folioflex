@@ -54,7 +54,7 @@ Portfolio
 ~~~~~~~~~
 
 There are also a number of portfolio specific configurations that are used in the
-performance located in the ``configs\portfolio.ini`` file.
+performance located in the ``configs\portfolio_demo.ini`` file.
 
 
 
