@@ -139,7 +139,7 @@ def test_calc_dividend():
         (test_df["type"] == "DIVIDEND") & (test_df["date"] <= date)
     ]["cost"].sum()
 
-    assert round(performance.loc["portfolio", "dividend"], 2) == round(
+    assert round(performance.loc["portfolio", "cumulative_dividend"], 2) == round(
         test_dividend, 2
     ), "Expected dividend to be sum of dividend transactions"
 
@@ -165,7 +165,9 @@ def test_calc_realized_return():
     """Checks calculations of performance - realized return."""
     performance = pf.get_performance(date=date)
     performance["test_realized"] = (
-        performance["return"] - performance["unrealized"] - performance["dividend"]
+        performance["return"]
+        - performance["unrealized"]
+        - performance["cumulative_dividend"]
     )
 
     assert round(performance.loc["portfolio", "realized"], 2) == round(

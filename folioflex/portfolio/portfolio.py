@@ -25,11 +25,12 @@ import os
 import pandas as pd
 import pandas_market_calendars as mcal
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pyxirr import xirr
 
 from folioflex.utils import config_helper
 from folioflex.portfolio.wrappers import Yahoo
+from folioflex.portfolio.helper import check_stock_dates
 
 pd.options.display.float_format = "{:,.2f}".format
 
@@ -96,7 +97,6 @@ class Portfolio:
         self._min_year = self.transactions["date"].min().year
         self.tickers = list(self.transactions["ticker"].unique())
         self.check_tx()
-        logger.info(f"You had {len(self.transactions)} transactions")
         self.price_history = self._get_price_history()
         self.transactions_history = self.get_transactions_history(
             tx_df=self.transactions,
@@ -137,7 +137,7 @@ class Portfolio:
                 - annualized dwrr return percentage
                 - realized
                 - unrealized
-                - dividend
+                - cumulative_dividend
                 - cash
                 - equity
 
@@ -217,7 +217,7 @@ class Portfolio:
                 "dwrr_ann_pct",
                 "realized",
                 "unrealized",
-                "dividend",
+                "cumulative_dividend",
                 "cash",
                 "equity",
             ]
@@ -285,6 +285,8 @@ class Portfolio:
         except Exception as e:
             raise ValueError(f"Error loading file: {e}")
 
+        logger.info(f"there are {len(transactions)} transactions in file")
+
         cols = ["date", "ticker", "type", "units", "cost"] + other_fields
         missing_cols = set(cols) - set(transactions.columns)
         if missing_cols:
@@ -295,6 +297,12 @@ class Portfolio:
         if filter_broker:
             transactions = transactions[transactions["broker"].isin(filter_broker)]
 
+        # raise error if length of transactions is 0
+        if len(transactions) == 0:
+            raise ValueError(
+                "There are no transactions in file (look at if filter broker is correct)"
+            )
+
         # handle multiple transactions on same day by grouping
         transactions = (
             transactions.groupby(
@@ -304,7 +312,6 @@ class Portfolio:
             .reset_index()
         )
 
-        # sale price to be based on units bought and not sold (resolves same day sales)
         transactions["date"] = pd.to_datetime(transactions["date"], format="%m/%d/%Y")
         transactions["sale_cost"] = transactions["cost"]
         transactions["sale_units"] = transactions["units"]
@@ -313,13 +320,52 @@ class Portfolio:
             transactions["sale_cost"] / transactions["sale_units"]
         ) * -1
         transactions.loc[transactions["ticker"] == "Cash", "sale_price"] = 1
+        transactions.loc[transactions["type"] == "DIVIDEND", "sale_price"] = 1
 
         # sort values descending
         transactions = transactions.sort_values(by="date", ascending=False)
 
         transactions = transactions[cols + ["sale_price"]]
 
+        logger.info(
+            f"after filtering and grouping there are {len(transactions)} transactions in file"
+        )
+
         return transactions
+
+    def _add_cash_tx(self, tx_df, other_fields=None):
+        """Add cash transactions to transactions DataFrame.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            Transactions to calculate metrics on
+        other_fields : list (optional)
+            additional fields to include
+
+        Returns
+        ----------
+        tx_df : DataFrame
+            DataFrame that has cash included
+        """
+        if other_fields is None:
+            other_fields = []
+
+        tickers = list(tx_df["ticker"].unique())
+
+        # create cash transactions from stock purchases
+        if "Cash" in tickers:
+            cash_tx = tx_df[tx_df["ticker"] != "Cash"].copy()
+            cash_tx["ticker"] = "Cash"
+            cash_tx["type"] = "Cash"
+            cash_tx["units"] = cash_tx["cost"]
+            cash_tx["sale_price"] = 1
+            tx_df = pd.concat([tx_df, cash_tx], axis=0)
+            tx_df.loc[tx_df["ticker"] == "Cash", "cost"] = (
+                tx_df.loc[tx_df["ticker"] == "Cash", "cost"] * -1
+            )
+
+        return tx_df
 
     def get_transactions_history(
         self, tx_df, price_history=None, other_fields=None, benchmarks=None
@@ -350,9 +396,13 @@ class Portfolio:
         tx_df = tx_df.copy()
         transactions = tx_df[(tx_df["cost"] != 0) | (tx_df["units"] != 0)]
         transactions = self._add_cash_tx(tx_df=transactions, other_fields=other_fields)
-        transactions = self._add_dividend(tx_df=transactions, other_fields=other_fields)
         transactions_history = self._add_price_history(
             tx_df=transactions, price_history=price_history, other_fields=other_fields
+        )
+        transactions_history = self._add_dividend(
+            tx_df=transactions,
+            tx_df_hist=transactions_history,
+            other_fields=other_fields,
         )
         transactions_history = self._calc_tx_metrics(tx_hist_df=transactions_history)
         transactions_history = self._add_portfolio(tx_hist_df=transactions_history)
@@ -398,6 +448,7 @@ class Portfolio:
 
         # adding fund price history
         transactions = self.transactions
+        transactions = transactions[transactions["type"] != "DIVIDEND"]
         template_df = pd.DataFrame(price_history["date"].unique(), columns=["date"])
         funds = [tick for tick in self.tickers if tick in self.funds]
         delisted = [tick for tick in self.tickers if tick in self.delisted]
@@ -467,79 +518,6 @@ class Portfolio:
 
         return price_history
 
-    def _add_dividend(self, tx_df, other_fields=None):
-        """Add price history to transactions DataFrame.
-
-        Parameters
-        ----------
-        tx_df : DataFrame
-            Transactions to calculate metrics on
-        other_fields : list (optional)
-            additional fields to include
-
-        Returns
-        ----------
-        tx_df : DataFrame
-            DataFrame that has dividend column included
-        """
-        if other_fields is None:
-            other_fields = []
-
-        dividends = tx_df[tx_df["type"] == "DIVIDEND"]
-        dividends = (
-            dividends.groupby(by=["date", "ticker"] + other_fields)
-            .sum(numeric_only=True)
-            .reset_index()
-        )
-        dividends.rename(columns={"cost": "dividend"}, inplace=True)
-
-        tx_df = pd.merge(
-            tx_df,
-            dividends[["date", "ticker", "dividend"]],
-            on=["date", "ticker"],
-            how="left",
-        )
-        tx_df["dividend"].fillna(0, inplace=True)
-
-        # remove dividend transactions
-        tx_df = tx_df[tx_df["type"] != "DIVIDEND"]
-
-        return tx_df
-
-    def _add_cash_tx(self, tx_df, other_fields=None):
-        """Add cash transactions to transactions DataFrame.
-
-        Parameters
-        ----------
-        tx_df : DataFrame
-            Transactions to calculate metrics on
-        other_fields : list (optional)
-            additional fields to include
-
-        Returns
-        ----------
-        tx_df : DataFrame
-            DataFrame that has cash included
-        """
-        if other_fields is None:
-            other_fields = []
-
-        tickers = list(tx_df["ticker"].unique())
-
-        # create cash transactions from stock purchases
-        if "Cash" in tickers:
-            cash_tx = tx_df[tx_df["ticker"] != "Cash"].copy()
-            cash_tx["ticker"] = "Cash"
-            cash_tx["type"] = "Cash"
-            cash_tx["units"] = cash_tx["cost"]
-            cash_tx["sale_price"] = 1
-            tx_df = pd.concat([tx_df, cash_tx], axis=0)
-            tx_df.loc[tx_df["ticker"] == "Cash", "cost"] = (
-                tx_df.loc[tx_df["ticker"] == "Cash", "cost"] * -1
-            )
-
-        return tx_df
-
     def _add_price_history(self, tx_df, price_history=None, other_fields=None):
         """Add price history to transactions DataFrame.
 
@@ -560,9 +538,11 @@ class Portfolio:
         if other_fields is None:
             other_fields = []
 
+        # remove dividend transactions
+        tx_df = tx_df[tx_df["type"] != "DIVIDEND"].copy()
+
         tickers = list(tx_df["ticker"].unique())
 
-        # sale price to be based on units bought and not sold (resolves same day sales)
         tx_df["sale_cost"] = tx_df["cost"]
         tx_df["sale_units"] = tx_df["units"]
 
@@ -583,10 +563,7 @@ class Portfolio:
         tx_merge_df = (
             pd.merge(
                 price_history,
-                tx_df[
-                    ["date", "ticker", "sale_price", "units", "cost", "dividend"]
-                    + other_fields
-                ],
+                tx_df[["date", "ticker", "sale_price", "units", "cost"] + other_fields],
                 how="outer",
                 on=["date", "ticker"],
             )
@@ -598,6 +575,50 @@ class Portfolio:
         tx_merge_df = tx_merge_df.sort_values(by="date", ascending=False)
 
         return tx_merge_df
+
+    def _add_dividend(self, tx_df, tx_df_hist, other_fields=None):
+        """Add dividends to transactions history DataFrame.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            Transactions to get dividends from
+        tx_df_hist : DataFrame
+            Transactions history to add dividends to
+        other_fields : list (optional)
+            additional fields to include
+
+        Returns
+        ----------
+        tx_df_hist : DataFrame
+            DataFrame that has dividend column included
+        """
+        if other_fields is None:
+            other_fields = []
+
+        dividends = tx_df[tx_df["type"] == "DIVIDEND"]
+
+        if dividends.empty:
+            logger.info("There are no dividends added to portfolio")
+        else:
+            logger.info(f"Adding {dividends['cost'].sum()} of dividends to portfolio")
+
+        dividends = (
+            dividends.groupby(by=["date", "ticker"] + other_fields)
+            .sum(numeric_only=True)
+            .reset_index()
+        )
+        dividends.rename(columns={"cost": "dividend"}, inplace=True)
+
+        tx_df_hist = pd.merge(
+            tx_df_hist,
+            dividends[["date", "ticker", "dividend"]],
+            on=["date", "ticker"],
+            how="left",
+        )
+        tx_df_hist["dividend"].fillna(0, inplace=True)
+
+        return tx_df_hist
 
     def _calc_tx_metrics(self, tx_hist_df):
         """Calculate summation metrics on transactions DataFrame.
@@ -621,7 +642,7 @@ class Portfolio:
             - return
             - unrealized
             - realized
-            - dividend
+            - cumulative_dividend
         """
         # sort values ascending to calculate cumsum correctly
         tx_hist_df = tx_hist_df.sort_values(by=["ticker", "date"], ascending=True)
@@ -633,14 +654,15 @@ class Portfolio:
         tx_hist_df["cumulative_cost_without_dividend"] = tx_hist_df.groupby("ticker")[
             "cost"
         ].transform(pd.Series.cumsum)
-        tx_hist_df["dividend"] = tx_hist_df.groupby("ticker")["dividend"].transform(
-            pd.Series.cumsum
-        )
+        tx_hist_df["cumulative_dividend"] = tx_hist_df.groupby("ticker")[
+            "dividend"
+        ].transform(pd.Series.cumsum)
         # adding dividends profit to cumulative cost
         tx_hist_df["cumulative_cost"] = (
-            tx_hist_df["cumulative_cost_without_dividend"] + tx_hist_df["dividend"]
+            tx_hist_df["cumulative_cost_without_dividend"]
+            + tx_hist_df["cumulative_dividend"]
         )
-        tx_hist_df = tx_hist_df.drop(columns=["cumulative_cost_without_dividend"])
+        # tx_hist_df = tx_hist_df.drop(columns=["cumulative_cost_without_dividend"])
 
         # average price
         tx_hist_df = tx_hist_df.groupby("ticker", group_keys=False).apply(
@@ -664,7 +686,9 @@ class Portfolio:
         )
 
         tx_hist_df["realized"] = (
-            tx_hist_df["return"] - tx_hist_df["unrealized"] - tx_hist_df["dividend"]
+            tx_hist_df["return"]
+            - tx_hist_df["unrealized"]
+            - tx_hist_df["cumulative_dividend"]
         )
 
         # fill in zeroes
@@ -674,15 +698,19 @@ class Portfolio:
             "return",
             "unrealized",
             "realized",
-            "dividend",
+            "cumulative_dividend",
             "cumulative_units",
         ]:
-            condition = tx_hist_df["cumulative_cost"] == 0
+            condition = (tx_hist_df["cumulative_cost"] == 0) & (
+                tx_hist_df["dividend"] == 0
+            )
             tx_hist_df.loc[condition, field] = tx_hist_df.loc[condition, field].replace(
                 0, np.nan
             )
 
-        tx_hist_df["cumulative_cost"] = tx_hist_df["cumulative_cost"].replace(0, np.nan)
+        tx_hist_df.loc[tx_hist_df["dividend"] == 0, "cumulative_cost"] = tx_hist_df[
+            "cumulative_cost"
+        ].replace(0, np.nan)
 
         transaction_metrics = tx_hist_df
 
@@ -692,7 +720,8 @@ class Portfolio:
         """Add a benchmark with transaction history dataframe.
 
         Notes:
-        Benchmark does not include any dividends from the benchmark
+        Benchmark does not include any dividends from the benchmark, but
+        does include investing dividends from portfolio
 
         Parameters
         ----------
@@ -727,7 +756,6 @@ class Portfolio:
         benchmark_tx["ticker"] = ticker
         benchmark_tx["cost"] = -benchmark_tx["cost"]
 
-        # sale price to be based on units bought and not sold (resolves same day sales)
         benchmark_tx["sale_cost"] = benchmark_tx["cost"]
         benchmark_tx["sale_units"] = benchmark_tx["units"]
 
@@ -816,7 +844,7 @@ class Portfolio:
             "return",
             "unrealized",
             "realized",
-            "dividend",
+            "cumulative_dividend",
         ]
         for view in views:
             cols = ["ticker", "date"] + [view]
@@ -1185,7 +1213,7 @@ class Portfolio:
 
         if adjust_vars:
             # List of variables to modify
-            variables = ["return", "unrealized", "realized", "dividend"]
+            variables = ["return", "unrealized", "realized", "cumulative_dividend"]
 
             # Grouping the DataFrame by 'ticker' and applying the operation to each group
             for variable in variables:
@@ -1287,6 +1315,26 @@ class Portfolio:
             )
             portfolio_checks_failed = portfolio_checks_failed + 1
 
+        # dividend
+        dividend_tx = tx_df[tx_df["type"] == "DIVIDEND"]
+        if any(dividend_tx["cost"] != dividend_tx["units"]):
+            err_df = dividend_tx[dividend_tx["units"] != dividend_tx["cost"]]
+            logger.warning(
+                f"There were transactions that had cost not equal to units for "
+                f"DIVIDEND type such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['units']} units and {err_df.iloc[1]['cost']} cost"
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        if any(dividend_tx["cost"] < 0):
+            err_df = dividend_tx[dividend_tx["units"] < 0]
+            logger.warning(
+                f"There were transactions that had cost less than 0 for "
+                f"DIVIDEND type such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['units']} units"
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
         # type checks
         tx_allowed_types = [
             "BOOK",
@@ -1315,20 +1363,8 @@ class Portfolio:
                 portfolio_checks_failed = portfolio_checks_failed + 1
 
         # date checks
-        tx_df_min = tx_df["date"].min()
-        tx_df_max = tx_df["date"].max()
-        stock_dates = (
-            mcal.get_calendar("NYSE")
-            .schedule(start_date=tx_df_min, end_date=tx_df_max)
-            .index
-        )
-        invalid_dt = tx_df["date"][~tx_df["date"].isin(stock_dates)].to_list()
-        invalid_dt = [datetime.strftime(i, "%Y-%m-%d") for i in invalid_dt]
+        invalid_dt = check_stock_dates(tx_df, fix=False)
         if len(invalid_dt) > 0:
-            logger.warning(
-                f"{len(invalid_dt)} transaction(s) dates were done outside of stock market "
-                f"dates such as {invalid_dt} \n"
-            )
             portfolio_checks_failed = portfolio_checks_failed + 1
 
         return portfolio_checks_failed
@@ -1430,7 +1466,7 @@ class Manager:
                     "return",
                     "realized",
                     "unrealized",
-                    "dividend",
+                    "cumulative_dividend",
                     "benchmark",
                 ]
                 columns_to_keep += summary.filter(like="_dwrr_pct").columns.tolist()

@@ -1,3 +1,4 @@
+# MANIFEST is used to include files in the distribution for setuptools
 include requirements.txt
 include requirements_ci.txt
 graft folioflex/configs

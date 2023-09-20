@@ -14,7 +14,7 @@ def test_config_load():
     assert (
         config_dict["tx_file"] == "tests/files/test_transactions.csv"
     ), "File did not match."
-    assert config_dict["filter_type"] == ["Dividend"], "Filters did not match."
+    assert config_dict["filter_type"] == [], "Filters did not match."
     assert config_dict["funds"] == ["BLKRK"], "Funds did not match."
     assert config_dict["delisted"] == [
         "CCIV",
