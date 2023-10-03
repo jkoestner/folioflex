@@ -99,11 +99,11 @@ def _config_reference(config, section, option, **kwargs):
     Notes
     ----------
     There are certain special characters
-    `.`: reference to another section
+    `static`: reference to static section
     `$`: reference to an environment variable
     """
     value = config.get(section, option, **kwargs)
-    if "." in value:  # If value is a reference
+    if value.startswith("static"):  # If value is a static reference
         ref_section, ref_option = value.split(".")
         value = config.get(ref_section, ref_option, **kwargs)
         if value.startswith("$"):

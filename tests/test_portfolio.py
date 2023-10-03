@@ -37,7 +37,7 @@ def test_calc_cumulative_units():
     ), "Expected cumulative_units to be sum of units"
 
 
-def test_calc_sale_price():
+def test_calc_price():
     """Checks calculations of performance - sale price."""
     transactions = pf.transactions_history
     transactions = transactions[
@@ -46,17 +46,17 @@ def test_calc_sale_price():
         & (~transactions["ticker"].str.contains("benchmark"))
         & (~transactions["ticker"].str.contains("Cash"))
     ]
-    sale_price = transactions["sale_price"].sum()
+    price = transactions["price"].sum()
 
     test_df = pd.read_csv(pf.file, parse_dates=["date"])
     test_df = test_df[
         (~test_df["ticker"].str.contains("Cash"))
         & (~test_df["type"].str.contains("DIVIDEND"))
     ]
-    test_sale_price = test_df["price"].sum()
+    test_price = test_df["price"].sum()
 
     assert (
-        round(sale_price, 2) == test_sale_price
+        round(price, 2) == test_price
     ), "Expected sale price to match transaction file"
 
 
@@ -88,6 +88,15 @@ def test_calc_return_pct():
     assert round(performance.loc["AMD", "dwrr_ann_pct"], 4) == round(
         return_pct, 4
     ), "Expected return percentage to match dollar weight"
+
+
+def test_calc_div_return_pct():
+    """Checks calculations of performance - return percent."""
+    performance = pf.get_performance(date=date, prettify=False)
+
+    assert (
+        round(performance.loc["SPY", "div_dwrr_pct"], 2) == 0.10
+    ), "Expected dividend return percentage to match dollar weight"
 
 
 def test_calc_market_value():
@@ -221,7 +230,7 @@ def test_benchmark():
     cash_tx_hist = (
         pd.merge(
             price_history,
-            cash_tx[["date", "ticker", "sale_price", "units", "cost"]],
+            cash_tx[["date", "ticker", "price", "units", "cost"]],
             how="outer",
             on=["date", "ticker"],
         )
@@ -229,7 +238,7 @@ def test_benchmark():
         .sort_values(by=["ticker", "date"], ignore_index=True)
     )
     cash_tx_hist = cash_tx_hist[cash_tx_hist["ticker"] == config_dict["benchmarks"][0]]
-    cash_tx_hist["sale_price"] = np.where(
+    cash_tx_hist["price"] = np.where(
         cash_tx_hist["units"] == 0,
         0,
         cash_tx_hist["last_price"],
@@ -237,7 +246,7 @@ def test_benchmark():
     cash_tx_hist["units"] = np.where(
         cash_tx_hist["units"] == 0,
         0,
-        cash_tx_hist["cost"] / cash_tx_hist["sale_price"],
+        cash_tx_hist["cost"] / cash_tx_hist["price"],
     )
 
     benchmark_market_value = (
@@ -248,3 +257,15 @@ def test_benchmark():
     assert round(performance.loc["benchmark-IVV", "market_value"], 2) == round(
         benchmark_market_value, 2
     ), "Expected benchmark to be based on cash transactions"
+
+
+def test_yf_download():
+    """Checks that yf is downloading the same data."""
+    test_price_history = pd.read_csv(
+        config_dict["history_offline"], index_col=0, parse_dates=["date"]
+    )
+    price_history = pf.price_history
+    price_history = price_history[price_history["date"] <= "10/2/2023"]
+    assert test_price_history.equals(
+        price_history
+    ), "Expected the downloaded price history to match the offline file."

@@ -340,8 +340,8 @@ transactions_fmt = [
         name="broker",
     ),
     dict(
-        id="sale_price",
-        name="sale_price",
+        id="price",
+        name="price",
         type="numeric",
         format=Format(precision=2, scheme=Scheme.fixed).group(True),
     ),

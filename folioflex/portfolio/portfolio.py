@@ -97,7 +97,9 @@ class Portfolio:
         self._min_year = self.transactions["date"].min().year
         self.tickers = list(self.transactions["ticker"].unique())
         self.check_tx()
-        self.price_history = self._get_price_history()
+        self.price_history = self._get_price_history(
+            history_offline=config_dict.get("history_offline", None)
+        )
         self.transactions_history = self.get_transactions_history(
             tx_df=self.transactions,
             other_fields=self.other_fields,
@@ -215,6 +217,8 @@ class Portfolio:
                 "return",
                 "dwrr_pct",
                 "dwrr_ann_pct",
+                "div_dwrr_pct",
+                "div_dwrr_ann_pct",
                 "realized",
                 "unrealized",
                 "cumulative_dividend",
@@ -313,19 +317,15 @@ class Portfolio:
         )
 
         transactions["date"] = pd.to_datetime(transactions["date"], format="%m/%d/%Y")
-        transactions["sale_cost"] = transactions["cost"]
-        transactions["sale_units"] = transactions["units"]
 
-        transactions["sale_price"] = (
-            transactions["sale_cost"] / transactions["sale_units"]
-        ) * -1
-        transactions.loc[transactions["ticker"] == "Cash", "sale_price"] = 1
-        transactions.loc[transactions["type"] == "DIVIDEND", "sale_price"] = 1
+        transactions["price"] = (transactions["cost"] / transactions["units"]) * -1
+        transactions.loc[transactions["ticker"] == "Cash", "price"] = 1
+        transactions.loc[transactions["type"] == "DIVIDEND", "price"] = 1
 
         # sort values descending
         transactions = transactions.sort_values(by="date", ascending=False)
 
-        transactions = transactions[cols + ["sale_price"]]
+        transactions = transactions[cols + ["price"]]
 
         logger.info(
             f"after filtering and grouping there are {len(transactions)} transactions in file"
@@ -359,11 +359,12 @@ class Portfolio:
             cash_tx["ticker"] = "Cash"
             cash_tx["type"] = "Cash"
             cash_tx["units"] = cash_tx["cost"]
-            cash_tx["sale_price"] = 1
+            cash_tx["price"] = 1
             tx_df = pd.concat([tx_df, cash_tx], axis=0)
-            tx_df.loc[tx_df["ticker"] == "Cash", "cost"] = (
-                tx_df.loc[tx_df["ticker"] == "Cash", "cost"] * -1
-            )
+        # the cash transactions cost is opposite to equity except for
+        # cash dividends which will act as interest
+        condition = (tx_df["ticker"] == "Cash") & (tx_df["type"] != "DIVIDEND")
+        tx_df.loc[condition, "cost"] *= -1
 
         return tx_df
 
@@ -401,7 +402,7 @@ class Portfolio:
         )
         transactions_history = self._add_dividend(
             tx_df=transactions,
-            tx_df_hist=transactions_history,
+            tx_hist_df=transactions_history,
             other_fields=other_fields,
         )
         transactions_history = self._calc_tx_metrics(tx_hist_df=transactions_history)
@@ -425,8 +426,14 @@ class Portfolio:
 
         return transactions_history
 
-    def _get_price_history(self):
+    def _get_price_history(self, history_offline=None):
         """Get the history of prices.
+
+        Parameters
+        ----------
+        offline_location : str (optional)
+            location of the csv price history. This is useful when not connected
+            to internet and the price history is already available.
 
         Returns
         ----------
@@ -436,8 +443,27 @@ class Portfolio:
                - date
                - last price
         """
+        if history_offline:
+            try:
+                if history_offline.endswith(".csv"):
+                    price_history = pd.read_csv(
+                        history_offline, index_col=0, parse_dates=["date"]
+                    )
+                else:
+                    raise ValueError("Unsupported file format needs to be .csv")
+            except FileNotFoundError:
+                raise FileNotFoundError(f"File not found at {history_offline}")
+            except Exception as e:
+                raise ValueError(f"Error loading file: {e}")
+
+            return price_history
+
+        # if price history isn't offline, download from yahoo finance
+        logger.info("Downloading price history from yahoo finance")
         tickers = [
-            tick for tick in self.tickers if tick not in self.funds + self.delisted
+            tick
+            for tick in self.tickers
+            if tick not in self.funds + self.delisted + ["Cash"]
         ] + self.benchmarks
 
         if self.benchmarks:
@@ -448,7 +474,6 @@ class Portfolio:
 
         # adding fund price history
         transactions = self.transactions
-        transactions = transactions[transactions["type"] != "DIVIDEND"]
         template_df = pd.DataFrame(price_history["date"].unique(), columns=["date"])
         funds = [tick for tick in self.tickers if tick in self.funds]
         delisted = [tick for tick in self.tickers if tick in self.delisted]
@@ -479,16 +504,16 @@ class Portfolio:
 
             fund_hist_df = pd.merge(
                 expanded_template_df,
-                all_funds_df[["date", "ticker", "sale_price"]],
+                all_funds_df[["date", "ticker", "price"]],
                 how="outer",
                 on=["date", "ticker"],
             )
 
             fund_hist_df = fund_hist_df.groupby(["date", "ticker"]).min().reset_index()
-            fund_hist_df[["sale_price"]] = fund_hist_df.groupby("ticker")[
-                ["sale_price"]
-            ].fillna(method="ffill")
-            fund_hist_df.rename(columns={"sale_price": "last_price"}, inplace=True)
+            fund_hist_df[["price"]] = fund_hist_df.groupby("ticker")[["price"]].fillna(
+                method="ffill"
+            )
+            fund_hist_df.rename(columns={"price": "last_price"}, inplace=True)
             price_history = pd.concat([price_history, fund_hist_df])
 
         # adding ticker `Cash` for price history lookup
@@ -532,7 +557,7 @@ class Portfolio:
 
         Returns
         ----------
-        tx_merge_df : DataFrame
+        tx_hist_df : DataFrame
             DataFrame that has transactions and price history
         """
         if other_fields is None:
@@ -543,27 +568,24 @@ class Portfolio:
 
         tickers = list(tx_df["ticker"].unique())
 
-        tx_df["sale_cost"] = tx_df["cost"]
-        tx_df["sale_units"] = tx_df["units"]
-
         tx_df = (
             tx_df.groupby(by=["date", "ticker"] + other_fields)
             .sum(numeric_only=True)
             .reset_index()
         )
 
-        tx_df["sale_price"] = np.where(
+        tx_df["price"] = np.where(
             tx_df["units"] == 0,
             0,
-            tx_df["sale_cost"] / tx_df["sale_units"] * -1,
+            tx_df["cost"] / tx_df["units"] * -1,
         )
 
         price_history = price_history[price_history["ticker"].isin(tickers)]
 
-        tx_merge_df = (
+        tx_hist_df = (
             pd.merge(
                 price_history,
-                tx_df[["date", "ticker", "sale_price", "units", "cost"] + other_fields],
+                tx_df[["date", "ticker", "price", "units", "cost"] + other_fields],
                 how="outer",
                 on=["date", "ticker"],
             )
@@ -572,25 +594,32 @@ class Portfolio:
         )
 
         # sort values descending
-        tx_merge_df = tx_merge_df.sort_values(by="date", ascending=False)
+        tx_hist_df = tx_hist_df.sort_values(by="date", ascending=False)
 
-        return tx_merge_df
+        # fill in missing other_fields values
+        for field in other_fields:
+            tx_hist_df[field] = tx_hist_df[field].replace(0, np.nan)
+            tx_hist_df[field] = (
+                tx_hist_df[field].fillna(method="ffill").fillna(method="bfill")
+            )
 
-    def _add_dividend(self, tx_df, tx_df_hist, other_fields=None):
-        """Add dividends to transactions history DataFrame.
+        return tx_hist_df
+
+    def _add_dividend(self, tx_df, tx_hist_df, other_fields=None):
+        """Add dividend column to transactions history DataFrame.
 
         Parameters
         ----------
         tx_df : DataFrame
             Transactions to get dividends from
-        tx_df_hist : DataFrame
+        tx_hist_df : DataFrame
             Transactions history to add dividends to
         other_fields : list (optional)
             additional fields to include
 
         Returns
         ----------
-        tx_df_hist : DataFrame
+        tx_hist_df : DataFrame
             DataFrame that has dividend column included
         """
         if other_fields is None:
@@ -610,15 +639,15 @@ class Portfolio:
         )
         dividends.rename(columns={"cost": "dividend"}, inplace=True)
 
-        tx_df_hist = pd.merge(
-            tx_df_hist,
+        tx_hist_df = pd.merge(
+            tx_hist_df,
             dividends[["date", "ticker", "dividend"]],
             on=["date", "ticker"],
             how="left",
         )
-        tx_df_hist["dividend"].fillna(0, inplace=True)
+        tx_hist_df["dividend"].fillna(0, inplace=True)
 
-        return tx_df_hist
+        return tx_hist_df
 
     def _calc_tx_metrics(self, tx_hist_df):
         """Calculate summation metrics on transactions DataFrame.
@@ -662,7 +691,6 @@ class Portfolio:
             tx_hist_df["cumulative_cost_without_dividend"]
             + tx_hist_df["cumulative_dividend"]
         )
-        # tx_hist_df = tx_hist_df.drop(columns=["cumulative_cost_without_dividend"])
 
         # average price
         tx_hist_df = tx_hist_df.groupby("ticker", group_keys=False).apply(
@@ -756,19 +784,16 @@ class Portfolio:
         benchmark_tx["ticker"] = ticker
         benchmark_tx["cost"] = -benchmark_tx["cost"]
 
-        benchmark_tx["sale_cost"] = benchmark_tx["cost"]
-        benchmark_tx["sale_units"] = benchmark_tx["units"]
-
         benchmark_tx = (
             benchmark_tx.groupby(by=["date", "ticker"] + other_fields)
             .sum(numeric_only=True)
             .reset_index()
         )
 
-        benchmark_tx["sale_price"] = np.where(
+        benchmark_tx["price"] = np.where(
             benchmark_tx["units"] == 0,
             0,
-            benchmark_tx["sale_cost"] / benchmark_tx["sale_units"] * -1,
+            benchmark_tx["cost"] / benchmark_tx["units"] * -1,
         )
 
         # assuming that there are 0 dividends from benchmark
@@ -780,7 +805,7 @@ class Portfolio:
             pd.merge(
                 price_history,
                 benchmark_tx[
-                    ["date", "ticker", "sale_price", "units", "cost", "dividend"]
+                    ["date", "ticker", "price", "units", "cost", "dividend"]
                     + other_fields
                 ],
                 how="outer",
@@ -792,10 +817,10 @@ class Portfolio:
 
         # zero out sale price of offsetting transactions
         condition = benchmark_tx_hist["units"] == 0
-        benchmark_tx_hist.loc[condition, "sale_price"] = 0
+        benchmark_tx_hist.loc[condition, "price"] = 0
         # update sale price
         condition = benchmark_tx_hist["units"] != 0
-        benchmark_tx_hist.loc[condition, "sale_price"] = benchmark_tx_hist.loc[
+        benchmark_tx_hist.loc[condition, "price"] = benchmark_tx_hist.loc[
             condition, "last_price"
         ]
         # update units
@@ -840,10 +865,12 @@ class Portfolio:
         views = [
             "cost",
             "cumulative_cost",
+            "cumulative_cost_without_dividend",
             "market_value",
             "return",
             "unrealized",
             "realized",
+            "dividend",
             "cumulative_dividend",
         ]
         for view in views:
@@ -875,7 +902,7 @@ class Portfolio:
         df : DataFrame
             dataframe that includes the "average price"
         """
-        df.loc[df.index[0], "average_price"] = df.loc[df.index[0], "sale_price"]
+        df.loc[df.index[0], "average_price"] = df.loc[df.index[0], "price"]
         if len(df) != 1:
             for i in range(1, len(df)):
                 if df.loc[df.index[i], "cumulative_units"] == 0:
@@ -886,7 +913,7 @@ class Portfolio:
                     ]
                 else:
                     df.loc[df.index[i], "average_price"] = (
-                        df.loc[df.index[i], "sale_price"] * df.loc[df.index[i], "units"]
+                        df.loc[df.index[i], "price"] * df.loc[df.index[i], "units"]
                         + df.loc[df.index[i - 1], "cumulative_units"]
                         * df.loc[df.index[i - 1], "average_price"]
                     ) / df.loc[df.index[i], "cumulative_units"]
@@ -908,7 +935,7 @@ class Portfolio:
         df["average_price"] = np.nan
         tx = df[df["units"] != 0]
         if len(tx) != 0:
-            tx.loc[tx.index[0], "average_price"] = tx.loc[tx.index[0], "sale_price"]
+            tx.loc[tx.index[0], "average_price"] = tx.loc[tx.index[0], "price"]
         if len(tx) != 1:
             for i in range(1, len(tx)):
                 if tx.loc[tx.index[i], "cumulative_units"] == 0:
@@ -919,7 +946,7 @@ class Portfolio:
                     ]
                 else:
                     tx.loc[tx.index[i], "average_price"] = (
-                        tx.loc[tx.index[i], "sale_price"] * tx.loc[tx.index[i], "units"]
+                        tx.loc[tx.index[i], "price"] * tx.loc[tx.index[i], "units"]
                         + tx.loc[tx.index[i - 1], "cumulative_units"]
                         * tx.loc[tx.index[i - 1], "average_price"]
                     ) / tx.loc[tx.index[i], "cumulative_units"]
@@ -986,44 +1013,67 @@ class Portfolio:
 
         transactions = tx_hist_df[tx_hist_df["cost"] != 0]
 
-        # get the current price, entry price, and transactions
+        # get the current price and transactions
         current_price = tx_hist_df[
             (tx_hist_df["ticker"] == ticker) & (tx_hist_df["date"] == date)
-        ]
-        entry_price = tx_hist_df[
-            (tx_hist_df["ticker"] == ticker)
-            & (tx_hist_df["date"] == tx_hist_df["date"].min())
         ].copy()
         ticker_transactions = transactions[
             (transactions["ticker"] == ticker) & (transactions["date"] <= date)
         ].copy()
 
-        # combine the entry price, transactions, and current price
+        # create the return transactions that will have positive and negative
+        # values.
+        if ticker == "Cash":
+            # equity + dividend
+            current_price["return_txs"] = current_price["market_value"]
+            ticker_transactions["return_txs"] = (
+                ticker_transactions["cost"] + ticker_transactions["dividend"]
+            )
+            # only dividend
+            current_price["return_div_txs"] = current_price["return_txs"]
+            ticker_transactions["return_div_txs"] = ticker_transactions["return_txs"]
 
-        # entry price is the first transaction. To offset transactional costs on the same day
-        # the entry price removes the cost. Also xirr does not work with a start of 0 or nan
-        # so removing those transactions as well.
-        entry_price["market_value"] = entry_price["market_value"] + entry_price["cost"]
-        entry_price = entry_price[["date", "ticker", "units", "market_value"]]
-        entry_price.loc[:, "market_value"] *= -1
-        entry_price = entry_price[
-            (entry_price["market_value"] != 0) & (~entry_price["market_value"].isna())
-        ]
-        entry_price = entry_price.reset_index(drop=True)
-        ticker_transactions["market_value"] = ticker_transactions["cost"]
-        current_price = current_price[["date", "ticker", "units", "market_value"]]
+        elif ticker == "portfolio":
+            # equity + dividend
+            current_price["return_txs"] = (
+                current_price["market_value"] + current_price["cumulative_dividend"]
+            )
+            ticker_transactions["return_txs"] = ticker_transactions["cost"]
+            # only dividend
+            current_price["return_div_txs"] = -current_price[
+                "cumulative_cost_without_dividend"
+            ]
+            ticker_transactions["return_div_txs"] = (
+                ticker_transactions["cost"] + ticker_transactions["dividend"]
+            )
 
+        else:
+            # equity + dividend
+            current_price["return_txs"] = (
+                current_price["market_value"] + current_price["cumulative_dividend"]
+            )
+            ticker_transactions["return_txs"] = ticker_transactions["cost"]
+            # only dividend
+            current_price["return_div_txs"] = (
+                -current_price["cumulative_cost_without_dividend"]
+                + current_price["cumulative_dividend"]
+            )
+            ticker_transactions["return_div_txs"] = ticker_transactions["cost"]
+
+        # combine the transactions and current price
         ticker_transactions = pd.concat(
-            [entry_price, ticker_transactions, current_price], ignore_index=True
+            [ticker_transactions, current_price], ignore_index=True
         ).sort_values(by="date", ascending=False)
-        ticker_transactions["market_value"] = ticker_transactions[
-            "market_value"
-        ].replace(np.nan, 0)
+        ticker_transactions["return_txs"] = ticker_transactions["return_txs"].replace(
+            np.nan, 0
+        )
 
         # makes sure that ticker had transactions both negative
         # and positive to calculate return
         dwrr_return_pct = np.NaN
         dwrr_ann_return_pct = np.NaN
+        dwrr_div_return_pct = np.NaN
+        dwrr_div_ann_return_pct = np.NaN
         mdrr_return_pct = np.NaN
         mdrr_ann_return_pct = np.NaN
         if ticker_transactions.empty:
@@ -1033,7 +1083,7 @@ class Portfolio:
 
         elif (
             len(ticker_transactions) == 1
-            and ticker_transactions["market_value"].iloc[0] == 0
+            and ticker_transactions["return_txs"].iloc[0] == 0
         ):
             logger.debug(
                 f"The ticker {ticker} is in portfolio but has no transactions"
@@ -1041,12 +1091,20 @@ class Portfolio:
             )
 
         elif (
-            not min(ticker_transactions["market_value"])
+            not min(ticker_transactions["return_txs"])
             < 0
-            < max(ticker_transactions["market_value"])
+            < max(ticker_transactions["return_txs"])
         ):
             logger.warning(
                 f"The transactions for {ticker} did not have positive and negatives"
+            )
+
+        elif not min(ticker_transactions["return_div_txs"]) < 0 < max(
+            ticker_transactions["return_div_txs"]
+        ) and not all(ticker_transactions["return_div_txs"] == 0):
+            logger.warning(
+                f"The transactions for {ticker} did not have positive and "
+                f"negative transactions for dividends"
             )
 
         else:
@@ -1056,8 +1114,9 @@ class Portfolio:
             days = (end_date - start_date).days
 
             # calculating the dwrr return
+            # ---------------------------
             dwrr_ann_return_pct = xirr(
-                ticker_transactions["date"], ticker_transactions["market_value"]
+                ticker_transactions["date"], ticker_transactions["return_txs"]
             )
             # where dwrr can't be calculated
             if dwrr_ann_return_pct is None:
@@ -1068,14 +1127,29 @@ class Portfolio:
             else:
                 dwrr_return_pct = (1 + dwrr_ann_return_pct) ** (days / 365) - 1
 
+            # calculating the dwrr return for dividends
+            # -----------------------------------------
+            dwrr_div_ann_return_pct = xirr(
+                ticker_transactions["date"], ticker_transactions["return_div_txs"]
+            )
+            # where dwrr can't be calculated
+            if dwrr_div_ann_return_pct is None:
+                pass
+            elif dwrr_div_ann_return_pct > 1000:
+                dwrr_div_return_pct = (1 + dwrr_div_ann_return_pct) ** (days / 365) - 1
+                dwrr_div_ann_return_pct = np.NaN
+            else:
+                dwrr_div_return_pct = (1 + dwrr_div_ann_return_pct) ** (days / 365) - 1
+
             # calculating the dietz return
+            # ----------------------------
             ticker_transactions["weight"] = (
                 days - (ticker_transactions["date"] - start_date).dt.days
             ) / (days)
             ticker_transactions["weighted_value"] = (
-                ticker_transactions["market_value"] * ticker_transactions["weight"]
+                ticker_transactions["return_txs"] * ticker_transactions["weight"]
             )
-            mdrr_return_pct = ticker_transactions["market_value"].sum() / (
+            mdrr_return_pct = ticker_transactions["return_txs"].sum() / (
                 ticker_transactions["weighted_value"].sum() * -1
             )
             # where mdrr can't be calculated
@@ -1091,6 +1165,8 @@ class Portfolio:
         return_dict = {}
         return_dict["dwrr_return_pct"] = dwrr_return_pct
         return_dict["dwrr_ann_return_pct"] = dwrr_ann_return_pct
+        return_dict["div_dwrr_return_pct"] = dwrr_div_return_pct
+        return_dict["div_dwrr_ann_return_pct"] = dwrr_div_ann_return_pct
         return_dict["mdrr_return_pct"] = mdrr_return_pct
         return_dict["mdrr_ann_return_pct"] = mdrr_ann_return_pct
 
@@ -1139,6 +1215,8 @@ class Portfolio:
                             "ticker": [ticker],
                             "dwrr_pct": return_dict["dwrr_return_pct"],
                             "dwrr_ann_pct": return_dict["dwrr_ann_return_pct"],
+                            "div_dwrr_pct": return_dict["div_dwrr_return_pct"],
+                            "div_dwrr_ann_pct": return_dict["div_dwrr_ann_return_pct"],
                         }
                     ),
                 ]
@@ -1173,7 +1251,7 @@ class Portfolio:
             index="date", columns="ticker", values=view, aggfunc="sum"
         )
         view_df["portfolio"] = view_df.loc[
-            :, ~view_df.columns.str.contains("benchmark")
+            :, ~view_df.columns.str.contains("benchmark|portfolio")
         ].sum(axis=1)
 
         return view_df

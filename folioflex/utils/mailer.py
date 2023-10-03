@@ -109,8 +109,6 @@ def generate_report(
         Market Heatmap dictionary to get values for
             see: folioflex.portfolio.heatmap.get_heatmap for more details
             Keys are:
-            - config_path (optional)
-            - portfolio (optional)
             - lookback (optional)
     heatmap_port : dict
         Portfolio Heatmap dictionary to get values for
@@ -145,37 +143,46 @@ def generate_report(
 
     today = datetime.date.today()
     subject = f"Summary as of {today}"
-    message = "Below is your financial summary.<br><br>"
+    message = f"Below is your financial summary as of {today}.<br><br>"
     image_list = []
     image_idx = 1
 
     if heatmap_dict is not None:
-        portfolio = heatmap_dict.get("portfolio", None)
         lookback = heatmap_dict.get("lookback", None)
 
-        heatmap_summary = heatmap.get_heatmap(portfolio=portfolio, lookback=lookback)
+        heatmap_summary = heatmap.get_heatmap(lookback=lookback)
         # using plotly kaleido to convert to image into bytes then attach it to the email.
         image = heatmap_summary.to_image(format="png")
         image_list.append(image)
 
         message += (
-            f"<p>Here is the heatmap for market as of {today}:</p>"
+            f"<p>Market Heatmap Summary</p>"
+            f"<ul>"
+            f"<li>lookback: {lookback}</li>"
+            f"</ul>"
             f"<img src='cid:image{image_idx}' alt='heatmap market'/>" + "<br>"
         )
 
         image_idx += 1
 
     if heatmap_port is not None:
+        config_path = heatmap_port.get("config_path", None)
         portfolio = heatmap_port.get("portfolio", None)
         lookback = heatmap_port.get("lookback", None)
 
-        heatmap_summary = heatmap.get_heatmap(portfolio=portfolio, lookback=lookback)
+        heatmap_summary = heatmap.get_heatmap(
+            config_path=config_path, portfolio=portfolio, lookback=lookback
+        )
         # using plotly kaleido to convert to image into bytes then attach it to the email.
         image = heatmap_summary.to_image(format="png")
         image_list.append(image)
 
         message += (
-            f"<p>Here is the portfolio heatmap as of {today}:</p>"
+            f"<p>Portfolio Heatmap Summary</p>"
+            f"<ul>"
+            f"<li>portfolio: {portfolio}</li>"
+            f"<li>lookback: {lookback}</li>"
+            f"</ul>"
             f"<img src='cid:image{image_idx}' alt='heatmap portfolio'/>" + "<br>"
         )
 
@@ -192,9 +199,10 @@ def generate_report(
         ).get_summary(date=date, lookbacks=lookbacks)
 
         message += (
-            f"Here is the manager summary with the following lookbacks: {lookbacks}:<br>"
-            + manager_summary.to_html()
-            + "<br>"
+            f"<p>Manager Summary</p>"
+            f"<ul>"
+            f"<li>lookbacks: {lookbacks}</li>"
+            f"</ul><br>" + manager_summary.to_html() + "<br>"
         )
 
     if portfolio_dict is not None:
@@ -213,10 +221,11 @@ def generate_report(
         ].sort_values("market_value", ascending=False)
 
         message += (
-            f"Here is the portfolio summary for {portfolio} and the "
-            + f"following lookback: {lookback} :<br>"
-            + portfolio_summary.to_html()
-            + "<br>"
+            f"<p>Portfolio Summary</p>"
+            f"<ul>"
+            f"<li>portfolio: {portfolio}</li>"
+            f"<li>lookback: {lookback}</li>"
+            f"</ul><br>" + portfolio_summary.to_html() + "<br>"
         )
 
     return send_email(
