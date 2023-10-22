@@ -120,7 +120,7 @@ class Portfolio:
         tx_hist_df : DataFrame (default is all transactions)
             dataframe to get return percent from
         lookback : int (default is None)
-            the number of days to look back
+            the number of days to look back (uses a calendar day and not stock)
         prettify : bool (default is True)
             whether to prettify the output
 
@@ -146,8 +146,17 @@ class Portfolio:
         """
         if date is None:
             date = self._max_date
+        date = pd.to_datetime(check_stock_dates(date, fix=True)["fix_tx_df"]["date"])[0]
+        if date > self._max_date:
+            raise ValueError(
+                f"date {date} is greater than max date {self._max_date} please "
+                f"provide a date less than max date."
+            )
+
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
+        tx_hist_df = tx_hist_df[tx_hist_df["date"] <= date]
+
         # if lookback provided only calculate performance within lookback
         if lookback is not None:
             tx_hist_df = self._filter_lookback(
@@ -355,12 +364,22 @@ class Portfolio:
 
         # create cash transactions from stock purchases
         if "Cash" in tickers:
-            cash_tx = tx_df[tx_df["ticker"] != "Cash"].copy()
-            cash_tx["ticker"] = "Cash"
-            cash_tx["type"] = "Cash"
-            cash_tx["units"] = cash_tx["cost"]
-            cash_tx["price"] = 1
-            tx_df = pd.concat([tx_df, cash_tx], axis=0)
+            non_cash_tx = tx_df[tx_df["ticker"] != "Cash"].copy()
+            non_cash_tx["ticker"] = "Cash"
+            non_cash_tx["type"] = "Cash"
+            non_cash_tx["units"] = non_cash_tx["cost"]
+            non_cash_tx["price"] = 1
+            tx_df = pd.concat([tx_df, non_cash_tx], axis=0)
+
+        # cash dividends are treated as interest
+        cash_div_tx = tx_df[
+            (tx_df["ticker"] == "Cash") & (tx_df["type"] == "DIVIDEND")
+        ].copy()
+        if not cash_div_tx.empty:
+            cash_div_tx["type"] = "Cash"
+            cash_div_tx["cost"] = 0
+            tx_df = pd.concat([tx_df, cash_div_tx], axis=0)
+
         # the cash transactions cost is opposite to equity except for
         # cash dividends which will act as interest
         condition = (tx_df["ticker"] == "Cash") & (tx_df["type"] != "DIVIDEND")
@@ -627,17 +646,22 @@ class Portfolio:
 
         dividends = tx_df[tx_df["type"] == "DIVIDEND"]
 
-        if dividends.empty:
-            logger.info("There are no dividends added to portfolio")
-        else:
-            logger.info(f"Adding {dividends['cost'].sum()} of dividends to portfolio")
-
         dividends = (
             dividends.groupby(by=["date", "ticker"] + other_fields)
             .sum(numeric_only=True)
             .reset_index()
         )
         dividends.rename(columns={"cost": "dividend"}, inplace=True)
+
+        # cash dividends are treated as interest
+        dividends.loc[dividends["ticker"] == "Cash", "dividend"] = 0
+
+        if dividends.empty:
+            logger.info("There are no dividends added to portfolio")
+        else:
+            logger.info(
+                f"Adding {dividends['dividend'].sum()} of dividends to portfolio"
+            )
 
         tx_hist_df = pd.merge(
             tx_hist_df,
@@ -996,7 +1020,7 @@ class Portfolio:
         tx_hist_df : DataFrame (optional)
             stock dataframe to get return percent from
         lookback : int (optional)
-            number of days to lookback
+            the number of days to look back (uses a calendar day and not stock)
         Returns
         ----------
         return_dict : dict
@@ -1011,62 +1035,72 @@ class Portfolio:
                 lookback=lookback, adjust_vars=False, tx_hist_df=tx_hist_df
             )
 
-        transactions = tx_hist_df[tx_hist_df["cost"] != 0]
+        # start the dataframe at the first market value for ticker
+        ticker_df = tx_hist_df[tx_hist_df["ticker"] == ticker]
+        if ticker_df["market_value"].sum() == 0:
+            ticker_begin = 0
+        else:
+            ticker_begin = ticker_df[ticker_df["market_value"] > 0].index[-1]
+        ticker_df = ticker_df.loc[ticker_df.index <= ticker_begin]
 
-        # get the current price and transactions
-        current_price = tx_hist_df[
-            (tx_hist_df["ticker"] == ticker) & (tx_hist_df["date"] == date)
+        # get the entry price, transactions, current price
+        entry_price = ticker_df[ticker_df["date"] == ticker_df["date"].min()].copy()
+        ticker_transactions = ticker_df[
+            (ticker_df["date"] > ticker_df["date"].min())
+            & (ticker_df["date"] <= date)
+            & ((ticker_df["cost"] != 0) | (ticker_df["dividend"] != 0))
         ].copy()
-        ticker_transactions = transactions[
-            (transactions["ticker"] == ticker) & (transactions["date"] <= date)
-        ].copy()
+        current_price = ticker_df[(ticker_df["date"] == date)].copy()
 
         # create the return transactions that will have positive and negative
         # values.
-        if ticker == "Cash":
-            # equity + dividend
-            current_price["return_txs"] = current_price["market_value"]
-            ticker_transactions["return_txs"] = (
-                ticker_transactions["cost"] + ticker_transactions["dividend"]
-            )
-            # only dividend
-            current_price["return_div_txs"] = current_price["return_txs"]
-            ticker_transactions["return_div_txs"] = ticker_transactions["return_txs"]
+        #
+        # The return is based on
+        #   - an intitial investment (entry price) net an return,
+        #   - transactions (ticker_transactions),
+        #   - finally the current market price which includes the dividend. Cash
+        #     excludes dividend since that is already in market value
+        #
+        # the dividend return is based on
+        #   - an intitial investment (entry price) not including dividend return,
+        #   - transactions (ticker_transactions),
+        #   - finally the current market price which includes the dividend return.
+        #     Cash excludes dividend since that is already in cost
 
-        elif ticker == "portfolio":
-            # equity + dividend
-            current_price["return_txs"] = (
-                current_price["market_value"] + current_price["cumulative_dividend"]
-            )
-            ticker_transactions["return_txs"] = ticker_transactions["cost"]
-            # only dividend
-            current_price["return_div_txs"] = -current_price[
-                "cumulative_cost_without_dividend"
-            ]
-            ticker_transactions["return_div_txs"] = (
-                ticker_transactions["cost"] + ticker_transactions["dividend"]
-            )
+        # equity + dividend
+        entry_price["return_txs"] = np.where(
+            entry_price["cost"] == 0,
+            -entry_price["market_value"],
+            entry_price["cost"],
+        )
+        ticker_transactions["return_txs"] = ticker_transactions["cost"]
+        current_price["return_txs"] = (
+            current_price["market_value"] + current_price["cumulative_dividend"]
+        )
 
-        else:
-            # equity + dividend
-            current_price["return_txs"] = (
-                current_price["market_value"] + current_price["cumulative_dividend"]
-            )
-            ticker_transactions["return_txs"] = ticker_transactions["cost"]
-            # only dividend
-            current_price["return_div_txs"] = (
-                -current_price["cumulative_cost_without_dividend"]
-                + current_price["cumulative_dividend"]
-            )
-            ticker_transactions["return_div_txs"] = ticker_transactions["cost"]
+        # only dividend
+        entry_price["return_div_txs"] = np.where(
+            entry_price["cost"] == 0,
+            entry_price["cumulative_cost_without_dividend"]
+            - entry_price["cumulative_dividend"],
+            entry_price["cost"],
+        )
+        ticker_transactions["return_div_txs"] = ticker_transactions["cost"]
+        current_price["return_div_txs"] = (
+            -current_price["cumulative_cost_without_dividend"]
+            + current_price["cumulative_dividend"]
+        )
 
-        # combine the transactions and current price
-        ticker_transactions = pd.concat(
-            [ticker_transactions, current_price], ignore_index=True
+        # combine the transactions
+        return_transactions = pd.concat(
+            [entry_price, ticker_transactions, current_price], ignore_index=True
         ).sort_values(by="date", ascending=False)
-        ticker_transactions["return_txs"] = ticker_transactions["return_txs"].replace(
+        return_transactions["return_txs"] = return_transactions["return_txs"].replace(
             np.nan, 0
         )
+        return_transactions["return_div_txs"] = return_transactions[
+            "return_div_txs"
+        ].replace(np.nan, 0)
 
         # makes sure that ticker had transactions both negative
         # and positive to calculate return
@@ -1076,14 +1110,14 @@ class Portfolio:
         dwrr_div_ann_return_pct = np.NaN
         mdrr_return_pct = np.NaN
         mdrr_ann_return_pct = np.NaN
-        if ticker_transactions.empty:
+        if return_transactions.empty:
             logger.debug(
                 f"There were no transactions for {ticker} to calculate the return"
             )
 
         elif (
-            len(ticker_transactions) == 1
-            and ticker_transactions["return_txs"].iloc[0] == 0
+            len(return_transactions) == 1
+            and return_transactions["return_txs"].iloc[0] == 0
         ):
             logger.debug(
                 f"The ticker {ticker} is in portfolio but has no transactions"
@@ -1091,17 +1125,17 @@ class Portfolio:
             )
 
         elif (
-            not min(ticker_transactions["return_txs"])
+            not min(return_transactions["return_txs"])
             < 0
-            < max(ticker_transactions["return_txs"])
+            < max(return_transactions["return_txs"])
         ):
             logger.warning(
                 f"The transactions for {ticker} did not have positive and negatives"
             )
 
-        elif not min(ticker_transactions["return_div_txs"]) < 0 < max(
-            ticker_transactions["return_div_txs"]
-        ) and not all(ticker_transactions["return_div_txs"] == 0):
+        elif not min(return_transactions["return_div_txs"]) < 0 < max(
+            return_transactions["return_div_txs"]
+        ) and not all(return_transactions["return_div_txs"] == 0):
             logger.warning(
                 f"The transactions for {ticker} did not have positive and "
                 f"negative transactions for dividends"
@@ -1109,14 +1143,14 @@ class Portfolio:
 
         else:
             # for annualizing returns need the days
-            start_date = ticker_transactions["date"].iloc[-1]
-            end_date = ticker_transactions["date"].iloc[0]
+            start_date = return_transactions["date"].iloc[-1]
+            end_date = return_transactions["date"].iloc[0]
             days = (end_date - start_date).days
 
             # calculating the dwrr return
             # ---------------------------
             dwrr_ann_return_pct = xirr(
-                ticker_transactions["date"], ticker_transactions["return_txs"]
+                return_transactions["date"], return_transactions["return_txs"]
             )
             # where dwrr can't be calculated
             if dwrr_ann_return_pct is None:
@@ -1130,7 +1164,7 @@ class Portfolio:
             # calculating the dwrr return for dividends
             # -----------------------------------------
             dwrr_div_ann_return_pct = xirr(
-                ticker_transactions["date"], ticker_transactions["return_div_txs"]
+                return_transactions["date"], return_transactions["return_div_txs"]
             )
             # where dwrr can't be calculated
             if dwrr_div_ann_return_pct is None:
@@ -1143,14 +1177,14 @@ class Portfolio:
 
             # calculating the dietz return
             # ----------------------------
-            ticker_transactions["weight"] = (
-                days - (ticker_transactions["date"] - start_date).dt.days
+            return_transactions["weight"] = (
+                days - (return_transactions["date"] - start_date).dt.days
             ) / (days)
-            ticker_transactions["weighted_value"] = (
-                ticker_transactions["return_txs"] * ticker_transactions["weight"]
+            return_transactions["weighted_value"] = (
+                return_transactions["return_txs"] * return_transactions["weight"]
             )
-            mdrr_return_pct = ticker_transactions["return_txs"].sum() / (
-                ticker_transactions["weighted_value"].sum() * -1
+            mdrr_return_pct = return_transactions["return_txs"].sum() / (
+                return_transactions["weighted_value"].sum() * -1
             )
             # where mdrr can't be calculated
             if mdrr_return_pct is None:
@@ -1182,7 +1216,7 @@ class Portfolio:
         tx_hist_df : DataFrame (optional)
             dataframe to get return percent from
         lookback : int (optional)
-            number of days to lookback
+            the number of days to look back (uses a calendar day and not stock)
 
         Returns
         ----------
@@ -1262,7 +1296,7 @@ class Portfolio:
         Parameters
         ----------
         lookback : int
-            number of days to lookback
+            the number of days to look back (uses a calendar day and not stock)
         adjust_vars : bool
             whether to adjust the variables return, realized, unrealized, and dividend
         tx_hist_df : DataFrame (optional)
@@ -1314,7 +1348,7 @@ class Portfolio:
         portfolio_checks_failed : int
         """
         if tx_df is None:
-            tx_df = self.transactions
+            tx_df = self.transactions.copy()
 
         portfolio_checks_failed = 0
         # buy checks
@@ -1441,7 +1475,7 @@ class Portfolio:
                 portfolio_checks_failed = portfolio_checks_failed + 1
 
         # date checks
-        invalid_dt = check_stock_dates(tx_df, fix=False)
+        invalid_dt = check_stock_dates(tx_df, fix=False)["invalid_dt"]
         if len(invalid_dt) > 0:
             portfolio_checks_failed = portfolio_checks_failed + 1
 

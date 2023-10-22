@@ -140,6 +140,19 @@ def test_calc_return():
     ), "Expected return to be market_value - cumulative_cost"
 
 
+def test_calc_cash_return():
+    """Checks calculations of performance - return."""
+    cash_return = pf._get_return_pct("Cash", "9/21/2023", lookback=365)[
+        "dwrr_return_pct"
+    ]
+    cash_div_return = pf._get_return_pct("Cash", "9/21/2023", lookback=365)[
+        "div_dwrr_return_pct"
+    ]
+
+    assert round(cash_return, 2) == 0.10, "Expected cash return to be 10%"
+    assert round(cash_div_return, 2) == 0.00, "Expected cash div return to be 0%"
+
+
 def test_calc_dividend():
     """Checks calculations of performance - dividend."""
     performance = pf.get_performance(date=date)

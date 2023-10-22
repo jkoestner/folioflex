@@ -29,4 +29,5 @@ company_a,5/19/2022,BUY,NFLX,5,186.35,-931.75,
 company_a,5/19/2022,Cash,Cash,-1000,1,-1000,
 company_b,5/20/2022,Cash,Cash,1000,1,1000,
 company_b,5/20/2022,BUY,NFLX,5,186.35,-931.75,
-company_a,5/23/2022,Cash,Cash,-1000,1,-1000,withdrawal
+company_a,5/23/2022,Cash,Cash,-858.5,1,-858.5,withdrawal
+company_a,5/23/2023,DIVIDEND,Cash,100,1,100,cash interest
