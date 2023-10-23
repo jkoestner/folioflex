@@ -82,6 +82,35 @@ class Yahoo:
 
         return stock_data
 
+    def stock_splits(self, ticker):
+        """Get stock split for ticker.
+
+        Parameters
+        ----------
+        ticker : str
+            symbol to get data for
+
+        Returns
+        ----------
+        stock_splits : DataFrame
+            the stock split history with the cumulative splits
+        """
+        stock_splits = pd.DataFrame(yf.Ticker(ticker).splits)
+        stock_splits = stock_splits.reset_index()
+        if not stock_splits.empty:
+            stock_splits = stock_splits.rename(
+                columns={"Stock Splits": "stock_splits", "Date": "date"}
+            )
+            stock_splits.loc[len(stock_splits)] = [datetime.today().date(), 1]
+            # make date a datetime object without timezone
+            stock_splits["date"] = pd.to_datetime(stock_splits["date"]).dt.tz_localize(
+                None
+            )
+            stock_splits = stock_splits.sort_values(by="date", ascending=False)
+            stock_splits["cumulative_splits"] = stock_splits["stock_splits"].cumprod()
+
+        return stock_splits
+
     def news(self, ticker):
         """Get the news for ticker.
 

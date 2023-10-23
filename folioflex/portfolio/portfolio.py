@@ -79,6 +79,7 @@ class Portfolio:
         """Initialize the Portfolio class."""
         config_dict = config_helper.get_config_options(config_path, portfolio)
         self.file = self.load_filename(config_dict["tx_file"])
+        logger.info(f"read {self.file}")
         self.name = config_dict["name"]
         logger.info(f"creating '{self.name}' portfolio")
         self.filter_type = config_dict["filter_type"]
@@ -92,7 +93,6 @@ class Portfolio:
             filter_broker=self.filter_broker,
             other_fields=self.other_fields,
         )
-        logger.info(f"read {self.file}")
 
         self._min_year = self.transactions["date"].min().year
         self.tickers = list(self.transactions["ticker"].unique())
@@ -163,11 +163,11 @@ class Portfolio:
                 lookback=lookback, adjust_vars=True, tx_hist_df=tx_hist_df
             )
         lookback_date = tx_hist_df["date"].min()
-        tx_hist_df["lookback_date"] = lookback_date
 
         return_pcts = self._get_return_pcts(date=date, tx_hist_df=tx_hist_df)
 
         performance = tx_hist_df.copy()
+        performance["lookback_date"] = lookback_date
         performance = performance[performance["date"] == date]
         performance = performance.reset_index().set_index("ticker")
         performance.drop(["index", "units", "cost"], axis=1, inplace=True)
@@ -324,6 +324,8 @@ class Portfolio:
             .sum()
             .reset_index()
         )
+        # adjust stock splits
+        transactions = self._add_stock_splits(tx_df=transactions)
 
         transactions["date"] = pd.to_datetime(transactions["date"], format="%m/%d/%Y")
 
@@ -341,51 +343,6 @@ class Portfolio:
         )
 
         return transactions
-
-    def _add_cash_tx(self, tx_df, other_fields=None):
-        """Add cash transactions to transactions DataFrame.
-
-        Parameters
-        ----------
-        tx_df : DataFrame
-            Transactions to calculate metrics on
-        other_fields : list (optional)
-            additional fields to include
-
-        Returns
-        ----------
-        tx_df : DataFrame
-            DataFrame that has cash included
-        """
-        if other_fields is None:
-            other_fields = []
-
-        tickers = list(tx_df["ticker"].unique())
-
-        # create cash transactions from stock purchases
-        if "Cash" in tickers:
-            non_cash_tx = tx_df[tx_df["ticker"] != "Cash"].copy()
-            non_cash_tx["ticker"] = "Cash"
-            non_cash_tx["type"] = "Cash"
-            non_cash_tx["units"] = non_cash_tx["cost"]
-            non_cash_tx["price"] = 1
-            tx_df = pd.concat([tx_df, non_cash_tx], axis=0)
-
-        # cash dividends are treated as interest
-        cash_div_tx = tx_df[
-            (tx_df["ticker"] == "Cash") & (tx_df["type"] == "DIVIDEND")
-        ].copy()
-        if not cash_div_tx.empty:
-            cash_div_tx["type"] = "Cash"
-            cash_div_tx["cost"] = 0
-            tx_df = pd.concat([tx_df, cash_div_tx], axis=0)
-
-        # the cash transactions cost is opposite to equity except for
-        # cash dividends which will act as interest
-        condition = (tx_df["ticker"] == "Cash") & (tx_df["type"] != "DIVIDEND")
-        tx_df.loc[condition, "cost"] *= -1
-
-        return tx_df
 
     def get_transactions_history(
         self, tx_df, price_history=None, other_fields=None, benchmarks=None
@@ -444,6 +401,182 @@ class Portfolio:
         )
 
         return transactions_history
+
+    def get_view(self, view="market_value", tx_hist_df=None):
+        """Get the a specific view of the portfolio.
+
+        Useful for plotting returns visually.
+
+        Parameters
+        ----------
+        view : str
+            column to sum over on the portfolio dataframe
+               - e.g. "market_value", "return", "cumulative_cost", "realized"
+        tx_hist_df : DataFrame
+            dataframe to get return percent from
+
+        Returns
+        ----------
+        view_df : DataFrame
+        """
+        if tx_hist_df is None:
+            tx_hist_df = self.transactions_history
+        cols = ["ticker", "date"] + [view]
+        view_df = tx_hist_df[cols]
+        view_df = view_df.pivot_table(
+            index="date", columns="ticker", values=view, aggfunc="sum"
+        )
+        view_df["portfolio"] = view_df.loc[
+            :, ~view_df.columns.str.contains("benchmark|portfolio")
+        ].sum(axis=1)
+
+        return view_df
+
+    def check_tx(self, tx_df=None):
+        """Check that transactions have correct data.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            dataframe to performe checks on
+
+        Returns
+        ----------
+        portfolio_checks_failed : int
+        """
+        if tx_df is None:
+            tx_df = self.transactions.copy()
+
+        portfolio_checks_failed = 0
+        # buy checks
+        if any(tx_df[tx_df["type"] == "SELL"]["units"] > 0):
+            err_df = tx_df[(tx_df["type"] == "SELL") & (tx_df["units"] > 0)]
+            logger.warning(
+                f"There were transactions that had positive units for SELL "
+                f"type such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['units']} units"
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        if any(tx_df[tx_df["type"] == "SELL"]["cost"] < 0):
+            err_df = tx_df[(tx_df["type"] == "SELL") & (tx_df["cost"] < 0)]
+            logger.warning(
+                f"There were transactions that had negative cost for SELL "
+                f"type such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['cost']} cost"
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        # sell short checks
+        if any(tx_df[tx_df["type"] == "SELL SHORT"]["units"] > 0):
+            err_df = tx_df[(tx_df["type"] == "SELL SHORT") & (tx_df["units"] > 0)]
+            logger.warning(
+                f"There were transactions that had positive units for SELL "
+                f"SHORT type such as {err_df.iloc[1]['ticker']} "
+                f"with {err_df.iloc[1]['units']} units"
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        if any(tx_df[tx_df["type"] == "SELL SHORT"]["cost"] < 0):
+            err_df = tx_df[(tx_df["type"] == "SELL SHORT") & (tx_df["cost"] < 0)]
+            logger.warning(
+                f"There were transactions that had negative cost for SELL SHORT "
+                f"type such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['cost']} cost"
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        # buy
+        if any(tx_df[tx_df["type"] == "BUY"]["units"] < 0):
+            err_df = tx_df[(tx_df["type"] == "BUY") & (tx_df["units"] < 0)]
+            logger.warning(
+                f"There were transactions that had negative units for BUY type "
+                f"such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['units']} units "
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        if any(tx_df[tx_df["type"] == "BUY"]["cost"] > 0):
+            err_df = tx_df[(tx_df["type"] == "BUY") & (tx_df["cost"] > 0)]
+            logger.warning(
+                f"There were transactions that had positive cost for BUY type "
+                f"such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['cost']} cost "
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        # buy cover
+        if any(tx_df[tx_df["type"] == "BUY COVER"]["units"] < 0):
+            err_df = tx_df[(tx_df["type"] == "BUY COVER") & (tx_df["units"] < 0)]
+            logger.warning(
+                f"There were transactions that had negative units for BUY "
+                f"COVER type such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['units']} units "
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        if any(tx_df[tx_df["type"] == "BUY COVER"]["cost"] > 0):
+            err_df = tx_df[(tx_df["type"] == "BUY COVER") & (tx_df["cost"] > 0)]
+            logger.warning(
+                f"There were transactions that had positive cost for BUY COVER type "
+                f"such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['cost']} cost "
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        # dividend
+        dividend_tx = tx_df[tx_df["type"] == "DIVIDEND"]
+        if any(dividend_tx["cost"] != dividend_tx["units"]):
+            err_df = dividend_tx[dividend_tx["units"] != dividend_tx["cost"]]
+            logger.warning(
+                f"There were transactions that had cost not equal to units for "
+                f"DIVIDEND type such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['units']} units and {err_df.iloc[1]['cost']} cost"
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        if any(dividend_tx["cost"] < 0):
+            err_df = dividend_tx[dividend_tx["units"] < 0]
+            logger.warning(
+                f"There were transactions that had cost less than 0 for "
+                f"DIVIDEND type such as {err_df.iloc[1]['ticker']} with "
+                f"{err_df.iloc[1]['units']} units"
+            )
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        # type checks
+        tx_allowed_types = [
+            "BOOK",
+            "BUY",
+            "Cash",
+            "SELL",
+            "BUY COVER",
+            "SELL SHORT",
+            "DIVIDEND",
+        ]
+        tx_types = tx_df["type"].unique()
+        for tx_type in tx_types:
+            if tx_type not in tx_allowed_types:
+                logger.warning(f"This type '{tx_type}' is not in {tx_allowed_types}")
+                portfolio_checks_failed = portfolio_checks_failed + 1
+
+        # column checks
+        tx_needed_columns = ["ticker", "date", "type", "units", "cost"]
+        tx_columns = list(tx_df.columns)
+        for tx_needed_column in tx_needed_columns:
+            if tx_needed_column not in tx_columns:
+                logger.warning(
+                    f"This column '{tx_needed_column}' is needed, and not "
+                    f"in {tx_columns}"
+                )
+                portfolio_checks_failed = portfolio_checks_failed + 1
+
+        # date checks
+        invalid_dt = check_stock_dates(tx_df, fix=False)["invalid_dt"]
+        if len(invalid_dt) > 0:
+            portfolio_checks_failed = portfolio_checks_failed + 1
+
+        return portfolio_checks_failed
 
     def _get_price_history(self, history_offline=None):
         """Get the history of prices.
@@ -623,6 +756,106 @@ class Portfolio:
             )
 
         return tx_hist_df
+
+    def _add_cash_tx(self, tx_df, other_fields=None):
+        """Add cash transactions to transactions DataFrame.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            Transactions to calculate metrics on
+        other_fields : list (optional)
+            additional fields to include
+
+        Returns
+        ----------
+        tx_df : DataFrame
+            DataFrame that has cash included
+        """
+        if other_fields is None:
+            other_fields = []
+
+        tickers = list(tx_df["ticker"].unique())
+
+        # create cash transactions from stock purchases
+        if "Cash" in tickers:
+            non_cash_tx = tx_df[tx_df["ticker"] != "Cash"].copy()
+            non_cash_tx["ticker"] = "Cash"
+            non_cash_tx["type"] = "Cash"
+            non_cash_tx["units"] = non_cash_tx["cost"]
+            non_cash_tx["price"] = 1
+            tx_df = pd.concat([tx_df, non_cash_tx], axis=0)
+
+        # cash dividends are treated as interest and not a cost
+        # but adds to units and market value
+        cash_div_tx = tx_df[
+            (tx_df["ticker"] == "Cash") & (tx_df["type"] == "DIVIDEND")
+        ].copy()
+        if not cash_div_tx.empty:
+            cash_div_tx["type"] = "Cash"
+            cash_div_tx["cost"] = 0
+            tx_df = pd.concat([tx_df, cash_div_tx], axis=0)
+
+        # the cash transactions cost is opposite to equity except for
+        # cash dividends which will act as interest
+        condition = (tx_df["ticker"] == "Cash") & (tx_df["type"] != "DIVIDEND")
+        tx_df.loc[condition, "cost"] *= -1
+
+        return tx_df
+
+    def _add_stock_splits(self, tx_df):
+        """Add stock splits to transactions.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            Transactions to calculate splits on
+
+        Returns
+        ----------
+        tx_df : DataFrame
+            DataFrame that has adjusted transactions for splits
+        """
+
+        tickers = [
+            tick
+            for tick in list(tx_df["ticker"].unique())
+            if tick not in self.funds + self.delisted + ["Cash"]
+        ]
+        wrapper = Yahoo()
+
+        tx_df = tx_df.sort_values(by="date")
+        tx_df["cumulative_splits"] = 1
+        adjusted_ticks = []
+
+        # get the split adjustments
+        for tick in tickers:
+            stock_splits = wrapper.stock_splits(tick)
+            if not stock_splits.empty:
+                tick_tx = tx_df[tx_df["ticker"] == tick]
+                tick_tx = tick_tx.drop(columns=["cumulative_splits"])
+                stock_splits = stock_splits.sort_values(by="date")[
+                    ["date", "cumulative_splits"]
+                ]
+                tick_tx = pd.merge_asof(
+                    tick_tx.reset_index(),
+                    stock_splits,
+                    on="date",
+                    direction="forward",
+                ).set_index("index")
+                tx_df.update(tick_tx)
+                if len(tick_tx["cumulative_splits"].unique()) > 1:
+                    adjusted_ticks.append(tick)
+
+        # adjust the transactions
+        logger.info(
+            f"Adjusted the following tickers for stock splits: {adjusted_ticks}"
+        )
+        tx_df["units"] = tx_df["units"] * tx_df["cumulative_splits"]
+
+        tx_df = tx_df.sort_values(by="date", ascending=False)
+
+        return tx_df
 
     def _add_dividend(self, tx_df, tx_hist_df, other_fields=None):
         """Add dividend column to transactions history DataFrame.
@@ -1040,7 +1273,9 @@ class Portfolio:
         if ticker_df["market_value"].sum() == 0:
             ticker_begin = 0
         else:
-            ticker_begin = ticker_df[ticker_df["market_value"] > 0].index[-1]
+            ticker_begin = ticker_df[
+                (ticker_df["market_value"].notna()) & (ticker_df["market_value"] != 0)
+            ].index[-1]
         ticker_df = ticker_df.loc[ticker_df.index <= ticker_begin]
 
         # get the entry price, transactions, current price
@@ -1260,36 +1495,6 @@ class Portfolio:
 
         return return_pcts
 
-    def get_view(self, view="market_value", tx_hist_df=None):
-        """Get the a specific view of the portfolio.
-
-        Useful for plotting returns visually.
-
-        Parameters
-        ----------
-        view : str
-            column to sum over on the portfolio dataframe
-               - e.g. "market_value", "return", "cumulative_cost", "realized"
-        tx_hist_df : DataFrame
-            dataframe to get return percent from
-
-        Returns
-        ----------
-        view_df : DataFrame
-        """
-        if tx_hist_df is None:
-            tx_hist_df = self.transactions_history
-        cols = ["ticker", "date"] + [view]
-        view_df = tx_hist_df[cols]
-        view_df = view_df.pivot_table(
-            index="date", columns="ticker", values=view, aggfunc="sum"
-        )
-        view_df["portfolio"] = view_df.loc[
-            :, ~view_df.columns.str.contains("benchmark|portfolio")
-        ].sum(axis=1)
-
-        return view_df
-
     def _filter_lookback(self, lookback, adjust_vars=False, tx_hist_df=None):
         """Modify the transactions history dataframe to only include lookback.
 
@@ -1334,152 +1539,6 @@ class Portfolio:
                 ].transform(lambda x: x - x.iloc[-1])
 
         return lookback_df
-
-    def check_tx(self, tx_df=None):
-        """Check that transactions have correct data.
-
-        Parameters
-        ----------
-        tx_df : DataFrame
-            dataframe to performe checks on
-
-        Returns
-        ----------
-        portfolio_checks_failed : int
-        """
-        if tx_df is None:
-            tx_df = self.transactions.copy()
-
-        portfolio_checks_failed = 0
-        # buy checks
-        if any(tx_df[tx_df["type"] == "SELL"]["units"] > 0):
-            err_df = tx_df[(tx_df["type"] == "SELL") & (tx_df["units"] > 0)]
-            logger.warning(
-                f"There were transactions that had positive units for SELL "
-                f"type such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['units']} units"
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
-
-        if any(tx_df[tx_df["type"] == "SELL"]["cost"] < 0):
-            err_df = tx_df[(tx_df["type"] == "SELL") & (tx_df["cost"] < 0)]
-            logger.warning(
-                f"There were transactions that had negative cost for SELL "
-                f"type such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['cost']} cost"
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
-
-        # sell short checks
-        if any(tx_df[tx_df["type"] == "SELL SHORT"]["units"] > 0):
-            err_df = tx_df[(tx_df["type"] == "SELL SHORT") & (tx_df["units"] > 0)]
-            logger.warning(
-                f"There were transactions that had positive units for SELL "
-                f"SHORT type such as {err_df.iloc[1]['ticker']} "
-                f"with {err_df.iloc[1]['units']} units"
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
-
-        if any(tx_df[tx_df["type"] == "SELL SHORT"]["cost"] < 0):
-            err_df = tx_df[(tx_df["type"] == "SELL SHORT") & (tx_df["cost"] < 0)]
-            logger.warning(
-                f"There were transactions that had negative cost for SELL SHORT "
-                f"type such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['cost']} cost"
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
-
-        # buy
-        if any(tx_df[tx_df["type"] == "BUY"]["units"] < 0):
-            err_df = tx_df[(tx_df["type"] == "BUY") & (tx_df["units"] < 0)]
-            logger.warning(
-                f"There were transactions that had negative units for BUY type "
-                f"such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['units']} units "
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
-
-        if any(tx_df[tx_df["type"] == "BUY"]["cost"] > 0):
-            err_df = tx_df[(tx_df["type"] == "BUY") & (tx_df["cost"] > 0)]
-            logger.warning(
-                f"There were transactions that had positive cost for BUY type "
-                f"such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['cost']} cost "
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
-
-        # buy cover
-        if any(tx_df[tx_df["type"] == "BUY COVER"]["units"] < 0):
-            err_df = tx_df[(tx_df["type"] == "BUY COVER") & (tx_df["units"] < 0)]
-            logger.warning(
-                f"There were transactions that had negative units for BUY "
-                f"COVER type such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['units']} units "
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
-
-        if any(tx_df[tx_df["type"] == "BUY COVER"]["cost"] > 0):
-            err_df = tx_df[(tx_df["type"] == "BUY COVER") & (tx_df["cost"] > 0)]
-            logger.warning(
-                f"There were transactions that had positive cost for BUY COVER type "
-                f"such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['cost']} cost "
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
-
-        # dividend
-        dividend_tx = tx_df[tx_df["type"] == "DIVIDEND"]
-        if any(dividend_tx["cost"] != dividend_tx["units"]):
-            err_df = dividend_tx[dividend_tx["units"] != dividend_tx["cost"]]
-            logger.warning(
-                f"There were transactions that had cost not equal to units for "
-                f"DIVIDEND type such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['units']} units and {err_df.iloc[1]['cost']} cost"
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
-
-        if any(dividend_tx["cost"] < 0):
-            err_df = dividend_tx[dividend_tx["units"] < 0]
-            logger.warning(
-                f"There were transactions that had cost less than 0 for "
-                f"DIVIDEND type such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['units']} units"
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
-
-        # type checks
-        tx_allowed_types = [
-            "BOOK",
-            "BUY",
-            "Cash",
-            "SELL",
-            "BUY COVER",
-            "SELL SHORT",
-            "DIVIDEND",
-        ]
-        tx_types = tx_df["type"].unique()
-        for tx_type in tx_types:
-            if tx_type not in tx_allowed_types:
-                logger.warning(f"This type '{tx_type}' is not in {tx_allowed_types}")
-                portfolio_checks_failed = portfolio_checks_failed + 1
-
-        # column checks
-        tx_needed_columns = ["ticker", "date", "type", "units", "cost"]
-        tx_columns = list(tx_df.columns)
-        for tx_needed_column in tx_needed_columns:
-            if tx_needed_column not in tx_columns:
-                logger.warning(
-                    f"This column '{tx_needed_column}' is needed, and not "
-                    f"in {tx_columns}"
-                )
-                portfolio_checks_failed = portfolio_checks_failed + 1
-
-        # date checks
-        invalid_dt = check_stock_dates(tx_df, fix=False)["invalid_dt"]
-        if len(invalid_dt) > 0:
-            portfolio_checks_failed = portfolio_checks_failed + 1
-
-        return portfolio_checks_failed
 
 
 class Manager:

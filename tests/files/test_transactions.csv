@@ -1,8 +1,9 @@
 broker,date,type,ticker,units,price,cost,note
-company_a,8/31/2020,Cash,Cash,21953.43,1,21953.43,
+company_a,8/31/2020,Cash,Cash,22704.63,1,22704.63,
 company_a,8/31/2020,BUY,ZM,6.151953245,325.1,-2000,
 company_a,1/26/2021,BUY,SOFI,102.1972407,19.57,-2000,
 company_a,2/26/2021,BUY,DDOG,21.07259509,94.91,-2000,
+company_a,7/14/2021,BUY,NVDA,1,751.2,-751.2,stock split 4:1 7/21/2021
 company_a,5/12/2021,Cash,Cash,50,1,50,
 company_a,5/12/2021,BUY,BLKRK,5,10,-50,fund
 company_a,6/7/2021,BUY,AQUA,62,32.16,-1993.92,
