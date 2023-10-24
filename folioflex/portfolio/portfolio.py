@@ -96,10 +96,12 @@ class Portfolio:
 
         self._min_year = self.transactions["date"].min().year
         self.tickers = list(self.transactions["ticker"].unique())
-        self.check_tx()
         self.price_history = self._get_price_history(
             history_offline=config_dict.get("history_offline", None)
         )
+        if config_dict.get("stock_splits", False):
+            self.transactions = self._add_stock_splits(self.transactions)
+        self.check_tx()
         self.transactions_history = self.get_transactions_history(
             tx_df=self.transactions,
             other_fields=self.other_fields,
@@ -324,8 +326,6 @@ class Portfolio:
             .sum()
             .reset_index()
         )
-        # adjust stock splits
-        transactions = self._add_stock_splits(tx_df=transactions)
 
         transactions["date"] = pd.to_datetime(transactions["date"], format="%m/%d/%Y")
 
@@ -679,6 +679,12 @@ class Portfolio:
         # sort values descending
         price_history = price_history.sort_values(["ticker", "date"], ascending=False)
 
+        # add in stock splits
+        price_history["stock_splits"].replace(0, 1, inplace=True)
+        price_history["cumulative_stock_splits"] = price_history.groupby("ticker")[
+            "stock_splits"
+        ].cumprod()
+
         # check if there are any missing values for a ticker in price history
         pivot = price_history.pivot(index="date", columns="ticker", values="last_price")
         for tick in tickers:
@@ -803,55 +809,45 @@ class Portfolio:
 
         return tx_df
 
-    def _add_stock_splits(self, tx_df):
+    def _add_stock_splits(self, tx_df, price_history=None):
         """Add stock splits to transactions.
 
         Parameters
         ----------
         tx_df : DataFrame
             Transactions to calculate splits on
+        price_history : DataFrame
+            Price history DataFrame
 
         Returns
         ----------
         tx_df : DataFrame
             DataFrame that has adjusted transactions for splits
         """
-
-        tickers = [
-            tick
-            for tick in list(tx_df["ticker"].unique())
-            if tick not in self.funds + self.delisted + ["Cash"]
-        ]
-        wrapper = Yahoo()
-
-        tx_df = tx_df.sort_values(by="date")
-        tx_df["cumulative_splits"] = 1
-        adjusted_ticks = []
+        if price_history is None:
+            price_history = self.price_history
 
         # get the split adjustments
-        for tick in tickers:
-            stock_splits = wrapper.stock_splits(tick)
-            if not stock_splits.empty:
-                tick_tx = tx_df[tx_df["ticker"] == tick]
-                tick_tx = tick_tx.drop(columns=["cumulative_splits"])
-                stock_splits = stock_splits.sort_values(by="date")[
-                    ["date", "cumulative_splits"]
-                ]
-                tick_tx = pd.merge_asof(
-                    tick_tx.reset_index(),
-                    stock_splits,
-                    on="date",
-                    direction="forward",
-                ).set_index("index")
-                tx_df.update(tick_tx)
-                if len(tick_tx["cumulative_splits"].unique()) > 1:
-                    adjusted_ticks.append(tick)
+        tx_df = pd.merge(
+            tx_df,
+            price_history[["date", "ticker", "cumulative_stock_splits"]],
+            on=["date", "ticker"],
+            how="left",
+        )
+        tx_df["cumulative_stock_splits"].fillna(1, inplace=True)
+
+        # get the tickers that had adjustments
+        adjusted_ticks = tx_df[tx_df["cumulative_stock_splits"] != 1]["ticker"].unique()
 
         # adjust the transactions
         logger.info(
             f"Adjusted the following tickers for stock splits: {adjusted_ticks}"
         )
-        tx_df["units"] = tx_df["units"] * tx_df["cumulative_splits"]
+        tx_df["units"] = np.where(
+            tx_df["type"] != "DIVIDEND",
+            tx_df["units"] * tx_df["cumulative_stock_splits"],
+            tx_df["units"],
+        )
 
         tx_df = tx_df.sort_values(by="date", ascending=False)
 

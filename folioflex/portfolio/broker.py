@@ -107,6 +107,8 @@ def ally(broker_file, output_file=None, broker="ally"):
     if output_file is not None:
         if os.path.exists(output_file):
             trades = append_trades(trades, output_file, broker)
+        else:
+            logger.warning(f"{output_file} does not exist. Creating new file.")
 
         trades.sort_values(by=["date", "ticker"], ascending=False, inplace=True)
         trades.to_csv(output_file, index=False)
@@ -197,6 +199,8 @@ def fidelity(broker_file, output_file=None, broker="fidelity"):
     if output_file is not None:
         if os.path.exists(output_file):
             trades = append_trades(trades, output_file, broker)
+        else:
+            logger.warning(f"{output_file} does not exist. Creating new file.")
 
         trades.sort_values(by=["date", "ticker"], ascending=False, inplace=True)
         trades.to_csv(output_file, index=False)
@@ -292,6 +296,8 @@ def ib(broker_file, output_file=None, broker="ib"):
     if output_file is not None:
         if os.path.exists(output_file):
             trades = append_trades(trades, output_file, broker)
+        else:
+            logger.warning(f"{output_file} does not exist. Creating new file.")
 
         trades.sort_values(by=["date", "ticker"], ascending=False, inplace=True)
         trades.to_csv(output_file, index=False)
@@ -299,12 +305,14 @@ def ib(broker_file, output_file=None, broker="ib"):
     return trades
 
 
-def custom(broker_file, output_file=None, broker="custom"):
-    """Format the transactions made from custom broker.
+def ybr(broker_file, output_file=None, broker="401"):
+    """Format the transactions made from ybr.
 
     Instructions for downloading transactions:
     ------------------------------------------
-    - this will differ based on the broker
+    - go to https://ybr.com
+    - go to Retirement & Savings -> Account Activity
+    - download activity to .csv for each year
 
     Parameters
     ----------
@@ -323,12 +331,11 @@ def custom(broker_file, output_file=None, broker="custom"):
     """
     # lookup table for types of transactions
     type_lkup = {
-        "BUY": "BUY",
-        "SELL": "SELL",
-        "CASH RECEIPTS": "Cash",
-        "DISBURSEMENT": "Cash",
         "DIVIDEND": "DIVIDEND",
-        "CREDIT INT": "DIVIDEND",
+        "CASH DISTRIBUTN": "Cash",
+        "YOU BOUGHT": "BUY",
+        "REINVESTMENT": "BUY",
+        "YOU SOLD": "SELL",
     }
 
     # read in the transactions file
@@ -341,21 +348,18 @@ def custom(broker_file, output_file=None, broker="custom"):
 
     # cleaning dataframe by formatting columns and removing whitespace
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
-    df["description"] = df["description"].fillna("") + " " + df["buy/sell"].fillna("")
     df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-    df = df[df["symbol"] != "Symbol"]
 
     # update date column type
-    df["date"] = pd.to_datetime(df["datetime"], format="mixed").dt.date
+    df["date"] = pd.to_datetime(df["run_date"], format="%m/%d/%Y").dt.date
 
     # Loop through each type_lkup and update type
     for string, tag in type_lkup.items():
-        df.loc[df["description"].str.contains(string, case=False), "type"] = tag
-    # Credit interest is tagged with Cash
-    df.loc[df["description"].str.contains("CREDIT INT", case=False), "symbol"] = "Cash"
+        df.loc[df["action"].str.contains(string, case=False), "type"] = tag
 
-    # drop rows that do not have a type
-    df = df.dropna(subset=["type"])
+    # SPAXX is actually cash
+    df = df.loc[~((df["symbol"] == "SPAXX") & (df["type"] == "BUY"))]
+    df.loc[(df["symbol"] == "SPAXX"), "symbol"] = "Cash"
 
     # standardize column and data
     trades = pd.DataFrame(
@@ -365,10 +369,10 @@ def custom(broker_file, output_file=None, broker="custom"):
             "type": df["type"],
             "units": np.select(
                 [(df["type"] == "Cash") | (df["type"] == "DIVIDEND")],
-                [df["proceeds"]],
+                [df["amount_($)"]],
                 default=df["quantity"],
             ),
-            "cost": df["proceeds"],
+            "cost": df["amount_($)"],
             "broker": broker,
         }
     )
@@ -383,6 +387,8 @@ def custom(broker_file, output_file=None, broker="custom"):
     if output_file is not None:
         if os.path.exists(output_file):
             trades = append_trades(trades, output_file, broker)
+        else:
+            logger.warning(f"{output_file} does not exist. Creating new file.")
 
         trades.sort_values(by=["date", "ticker"], ascending=False, inplace=True)
         trades.to_csv(output_file, index=False)

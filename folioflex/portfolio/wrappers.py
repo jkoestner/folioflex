@@ -65,7 +65,10 @@ class Yahoo:
                - last price
         """
         stock_data = yf.download(
-            tickers, start=datetime(min_year, 1, 1), end=datetime(2100, 1, 1)
+            tickers,
+            start=datetime(min_year, 1, 1),
+            end=datetime(2100, 1, 1),
+            actions=True,  # get dividends and stock splits
         )
         self._clean_index(clean_df=stock_data, lvl=0, tickers=tickers)
         stock_data.index.rename("date", inplace=True)
@@ -76,40 +79,11 @@ class Yahoo:
         stock_data.index = stock_data.index.swaplevel("date", "ticker")
         stock_data.sort_index(axis=0, level="ticker", inplace=True)
         stock_data = stock_data.reset_index()
-        cols = ["ticker", "date", "adj_close"]
+        cols = ["ticker", "date", "adj_close", "stock_splits"]
         stock_data = stock_data[cols]
         stock_data.rename(columns={"adj_close": "last_price"}, inplace=True)
 
         return stock_data
-
-    def stock_splits(self, ticker):
-        """Get stock split for ticker.
-
-        Parameters
-        ----------
-        ticker : str
-            symbol to get data for
-
-        Returns
-        ----------
-        stock_splits : DataFrame
-            the stock split history with the cumulative splits
-        """
-        stock_splits = pd.DataFrame(yf.Ticker(ticker).splits)
-        stock_splits = stock_splits.reset_index()
-        if not stock_splits.empty:
-            stock_splits = stock_splits.rename(
-                columns={"Stock Splits": "stock_splits", "Date": "date"}
-            )
-            stock_splits.loc[len(stock_splits)] = [datetime.today().date(), 1]
-            # make date a datetime object without timezone
-            stock_splits["date"] = pd.to_datetime(stock_splits["date"]).dt.tz_localize(
-                None
-            )
-            stock_splits = stock_splits.sort_values(by="date", ascending=False)
-            stock_splits["cumulative_splits"] = stock_splits["stock_splits"].cumprod()
-
-        return stock_splits
 
     def news(self, ticker):
         """Get the news for ticker.
