@@ -45,18 +45,20 @@ def test_calc_price():
         & (transactions["units"].notnull())
         & (~transactions["ticker"].str.contains("benchmark"))
         & (~transactions["ticker"].str.contains("Cash"))
+        & (~transactions["ticker"].str.contains("NVDA"))  # don't include stock splits
     ]
     price = transactions["price"].sum()
 
     test_df = pd.read_csv(pf.file, parse_dates=["date"])
     test_df = test_df[
         (~test_df["ticker"].str.contains("Cash"))
+        & (~test_df["ticker"].str.contains("NVDA"))
         & (~test_df["type"].str.contains("DIVIDEND"))
     ]
     test_price = test_df["price"].sum()
 
-    assert (
-        round(price, 2) == test_price
+    assert round(price, 2) == round(
+        test_price, 2
     ), "Expected sale price to match transaction file"
 
 
@@ -278,7 +280,7 @@ def test_yf_download():
         config_dict["history_offline"], index_col=0, parse_dates=["date"]
     )
     price_history = pf.price_history
-    price_history = price_history[price_history["date"] <= "10/2/2023"]
+    price_history = price_history[price_history["date"] <= "10/27/2023"]
     assert test_price_history.equals(
         price_history
     ), "Expected the downloaded price history to match the offline file."

@@ -14,7 +14,7 @@ def test_stock_history():
         round(stock_data.iloc[0]["last_price"], 2) == 49.1
     ), "Stock data not pulled correctly."
 
-    expected_columns = ["ticker", "date", "last_price"]
+    expected_columns = ["ticker", "date", "last_price", "stock_splits"]
     assert (
         list(stock_data.columns) == expected_columns
     ), "Stock data columns not correct."
