@@ -453,8 +453,8 @@ class Portfolio:
             err_df = tx_df[(tx_df["type"] == "SELL") & (tx_df["units"] > 0)]
             logger.warning(
                 f"There were transactions that had positive units for SELL "
-                f"type such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['units']} units"
+                f"type such as {err_df.iloc[0]['ticker']} with "
+                f"{err_df.iloc[0]['units']} units"
             )
             portfolio_checks_failed = portfolio_checks_failed + 1
 
@@ -462,8 +462,8 @@ class Portfolio:
             err_df = tx_df[(tx_df["type"] == "SELL") & (tx_df["cost"] < 0)]
             logger.warning(
                 f"There were transactions that had negative cost for SELL "
-                f"type such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['cost']} cost"
+                f"type such as {err_df.iloc[0]['ticker']} with "
+                f"{err_df.iloc[0]['cost']} cost"
             )
             portfolio_checks_failed = portfolio_checks_failed + 1
 
@@ -472,8 +472,8 @@ class Portfolio:
             err_df = tx_df[(tx_df["type"] == "SELL SHORT") & (tx_df["units"] > 0)]
             logger.warning(
                 f"There were transactions that had positive units for SELL "
-                f"SHORT type such as {err_df.iloc[1]['ticker']} "
-                f"with {err_df.iloc[1]['units']} units"
+                f"SHORT type such as {err_df.iloc[0]['ticker']} "
+                f"with {err_df.iloc[0]['units']} units"
             )
             portfolio_checks_failed = portfolio_checks_failed + 1
 
@@ -481,8 +481,8 @@ class Portfolio:
             err_df = tx_df[(tx_df["type"] == "SELL SHORT") & (tx_df["cost"] < 0)]
             logger.warning(
                 f"There were transactions that had negative cost for SELL SHORT "
-                f"type such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['cost']} cost"
+                f"type such as {err_df.iloc[0]['ticker']} with "
+                f"{err_df.iloc[0]['cost']} cost"
             )
             portfolio_checks_failed = portfolio_checks_failed + 1
 
@@ -491,8 +491,8 @@ class Portfolio:
             err_df = tx_df[(tx_df["type"] == "BUY") & (tx_df["units"] < 0)]
             logger.warning(
                 f"There were transactions that had negative units for BUY type "
-                f"such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['units']} units "
+                f"such as {err_df.iloc[0]['ticker']} with "
+                f"{err_df.iloc[0]['units']} units "
             )
             portfolio_checks_failed = portfolio_checks_failed + 1
 
@@ -500,8 +500,8 @@ class Portfolio:
             err_df = tx_df[(tx_df["type"] == "BUY") & (tx_df["cost"] > 0)]
             logger.warning(
                 f"There were transactions that had positive cost for BUY type "
-                f"such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['cost']} cost "
+                f"such as {err_df.iloc[0]['ticker']} with "
+                f"{err_df.iloc[0]['cost']} cost "
             )
             portfolio_checks_failed = portfolio_checks_failed + 1
 
@@ -510,8 +510,8 @@ class Portfolio:
             err_df = tx_df[(tx_df["type"] == "BUY COVER") & (tx_df["units"] < 0)]
             logger.warning(
                 f"There were transactions that had negative units for BUY "
-                f"COVER type such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['units']} units "
+                f"COVER type such as {err_df.iloc[0]['ticker']} with "
+                f"{err_df.iloc[0]['units']} units "
             )
             portfolio_checks_failed = portfolio_checks_failed + 1
 
@@ -519,8 +519,8 @@ class Portfolio:
             err_df = tx_df[(tx_df["type"] == "BUY COVER") & (tx_df["cost"] > 0)]
             logger.warning(
                 f"There were transactions that had positive cost for BUY COVER type "
-                f"such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['cost']} cost "
+                f"such as {err_df.iloc[0]['ticker']} with "
+                f"{err_df.iloc[0]['cost']} cost "
             )
             portfolio_checks_failed = portfolio_checks_failed + 1
 
@@ -530,8 +530,8 @@ class Portfolio:
             err_df = dividend_tx[dividend_tx["units"] != dividend_tx["cost"]]
             logger.warning(
                 f"There were transactions that had cost not equal to units for "
-                f"DIVIDEND type such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['units']} units and {err_df.iloc[1]['cost']} cost"
+                f"DIVIDEND type such as {err_df.iloc[0]['ticker']} with "
+                f"{err_df.iloc[0]['units']} units and {err_df.iloc[0]['cost']} cost"
             )
             portfolio_checks_failed = portfolio_checks_failed + 1
 
@@ -539,8 +539,8 @@ class Portfolio:
             err_df = dividend_tx[dividend_tx["units"] < 0]
             logger.warning(
                 f"There were transactions that had cost less than 0 for "
-                f"DIVIDEND type such as {err_df.iloc[1]['ticker']} with "
-                f"{err_df.iloc[1]['units']} units"
+                f"DIVIDEND type such as {err_df.iloc[0]['ticker']} with "
+                f"{err_df.iloc[0]['units']} units"
             )
             portfolio_checks_failed = portfolio_checks_failed + 1
 
@@ -740,16 +740,23 @@ class Portfolio:
 
         price_history = price_history[price_history["ticker"].isin(tickers)]
 
-        tx_hist_df = (
-            pd.merge(
-                price_history,
-                tx_df[["date", "ticker", "price", "units", "cost"] + other_fields],
-                how="outer",
-                on=["date", "ticker"],
-            )
-            .fillna(0)
-            .sort_values(by=["ticker", "date"], ignore_index=True)
+        tx_hist_df = pd.merge(
+            price_history,
+            tx_df[["date", "ticker", "price", "units", "cost"] + other_fields],
+            how="outer",
+            on=["date", "ticker"],
+        ).sort_values(by=["ticker", "date"], ignore_index=True)
+
+        # fill in acquisition ticker prices
+        tx_hist_df["last_price"] = np.where(
+            (tx_hist_df["price"] != 0) & (tx_hist_df["last_price"] == 0),
+            tx_hist_df["price"],
+            tx_hist_df["last_price"],
         )
+        tx_hist_df["last_price"] = tx_hist_df.groupby("ticker")["last_price"].fillna(
+            method="ffill"
+        )
+        tx_hist_df = tx_hist_df.fillna(0)
 
         # sort values descending
         tx_hist_df = tx_hist_df.sort_values(by="date", ascending=False)
@@ -1210,7 +1217,9 @@ class Portfolio:
         df.loc[df["cumulative_units"] == 0, "average_price"] = 0
         return df
 
-    def _get_return_pct(self, ticker, date, tx_hist_df=None, lookback=None):
+    def _get_return_pct(
+        self, ticker, date, tx_hist_df=None, lookback=None, debug=False
+    ):
         """Get the dollar and time weighted return of a ticker.
 
         TODO same day transactions do mess up the calculation of returns
@@ -1250,6 +1259,9 @@ class Portfolio:
             stock dataframe to get return percent from
         lookback : int (optional)
             the number of days to look back (uses a calendar day and not stock)
+        debug : bool (optional)
+            if True, then will return the transactions used to calculate the return
+
         Returns
         ----------
         return_dict : dict
@@ -1302,7 +1314,7 @@ class Portfolio:
         entry_price["return_txs"] = np.where(
             entry_price["cost"] == 0,
             -entry_price["market_value"],
-            entry_price["cost"],
+            entry_price["cumulative_cost"],
         )
         ticker_transactions["return_txs"] = ticker_transactions["cost"]
         current_price["return_txs"] = (
@@ -1314,7 +1326,7 @@ class Portfolio:
             entry_price["cost"] == 0,
             entry_price["cumulative_cost_without_dividend"]
             - entry_price["cumulative_dividend"],
-            entry_price["cost"],
+            entry_price["cumulative_cost"],
         )
         ticker_transactions["return_div_txs"] = ticker_transactions["cost"]
         current_price["return_div_txs"] = (
@@ -1361,7 +1373,10 @@ class Portfolio:
             < max(return_transactions["return_txs"])
         ):
             logger.warning(
-                f"The transactions for {ticker} did not have positive and negatives"
+                f"The transactions for {ticker} with preformance date `{date}` "
+                f" did not have positive and negatives with "
+                f"minimum of `{min(return_transactions['return_txs'])}` and "
+                f"maximum of `{max(return_transactions['return_txs'])}`"
             )
 
         elif not min(return_transactions["return_div_txs"]) < 0 < max(
@@ -1434,6 +1449,9 @@ class Portfolio:
         return_dict["div_dwrr_ann_return_pct"] = dwrr_div_ann_return_pct
         return_dict["mdrr_return_pct"] = mdrr_return_pct
         return_dict["mdrr_ann_return_pct"] = mdrr_ann_return_pct
+
+        if debug:
+            return_dict["return_transactions"] = return_transactions
 
         return return_dict
 
@@ -1529,10 +1547,13 @@ class Portfolio:
             variables = ["return", "unrealized", "realized", "cumulative_dividend"]
 
             # Grouping the DataFrame by 'ticker' and applying the operation to each group
+            # that will subtract the prior value from the current value.
             for variable in variables:
-                lookback_df[variable] = lookback_df.groupby("ticker")[
-                    variable
-                ].transform(lambda x: x - x.iloc[-1])
+                lookback_df[variable] = (
+                    lookback_df.groupby("ticker")[variable]
+                    .fillna(0)  # need to make first record 0 that may have been NaN
+                    .transform(lambda x: x - x.iloc[-1])
+                )
 
         return lookback_df
 

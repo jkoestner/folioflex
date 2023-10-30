@@ -13,8 +13,10 @@ import logging
 import numpy as np
 import pandas as pd
 import os
+import re
 
 from folioflex.portfolio.helper import check_stock_dates
+from folioflex.portfolio.wrappers import Yahoo
 
 # logging options https://docs.python.org/3/library/logging.html
 logger = logging.getLogger(__name__)
@@ -208,7 +210,7 @@ def fidelity(broker_file, output_file=None, broker="fidelity"):
     return trades
 
 
-def ib(broker_file, output_file=None, broker="ib"):
+def ib(broker_file, output_file=None, broker="ib", funds=[], delisted=[]):
     """Format the transactions made from Investment Bankers.
 
     Instructions for downloading transactions:
@@ -219,6 +221,22 @@ def ib(broker_file, output_file=None, broker="ib"):
        - Format: csv
        - Date Format: MM/dd/yyyy
 
+    Setting up the Flex Query:
+    ---------------------------
+    These are the settings that were used, however there may be other types of
+    transactions that could be added.
+    - Trades: Execution
+      - Transaction Type, Asset Class, Symbol, Date/Time, Proceeds, Description,
+        Quantity, TradePrice, Buy/Sell
+    - Cash Transactions: Dividends, Deposits/Withdrawals, Broker Interest Paid
+      Broker Interest Received, Detail
+      - Type, Asset Class, Symbol, Date/Time, Amount, Description
+    - Transfers
+      - Type, Asset Class, Symbol, Date/Time, Position Amount, Description, Quantity,
+        Cash Transfer, Direction
+    - Company Actions
+      - Type, Asset Class, Symbol, Date/Time, Position Amount, Description, Quantity
+
     Parameters
     ----------
     broker_file : str
@@ -227,6 +245,10 @@ def ib(broker_file, output_file=None, broker="ib"):
         path to trades file that will be created
     broker : str (optional)
         name of the broker
+    funds : list (optional)
+        list of tickers that are funds
+    delisted : list (optional)
+        list of tickers that are delisted
 
     Returns
     ----------
@@ -237,11 +259,14 @@ def ib(broker_file, output_file=None, broker="ib"):
     # lookup table for types of transactions
     type_lkup = {
         "BUY": "BUY",
+        "IN": "BUY",
         "SELL": "SELL",
         "CASH RECEIPTS": "Cash",
         "DISBURSEMENT": "Cash",
         "DIVIDEND": "DIVIDEND",
         "CREDIT INT": "DIVIDEND",
+        "CHANGE TO": "acquisition",
+        "MERGED": "acquisition",
     }
 
     # read in the transactions file
@@ -256,16 +281,120 @@ def ib(broker_file, output_file=None, broker="ib"):
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
     df["description"] = df["description"].fillna("") + " " + df["buy/sell"].fillna("")
     df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-    df = df[df["symbol"] != "Symbol"]
+    df = df[df["symbol"] != "Symbol"]  # remove header rows not first row
+    df["quantity"] = df["quantity"].astype(float)
+    df["proceeds"] = df["proceeds"].astype(float)
+    df["tradeprice"] = df["tradeprice"].astype(float)
 
     # update date column type
     df["date"] = pd.to_datetime(df["datetime"], format="mixed").dt.date
 
     # Loop through each type_lkup and update type
     for string, tag in type_lkup.items():
-        df.loc[df["description"].str.contains(string, case=False), "type"] = tag
+        df.loc[
+            df["description"].str.contains(r"\b" + string + r"\b", case=False), "type"
+        ] = tag
+
+    # Cash Transactions
     # Credit interest is tagged with Cash
     df.loc[df["description"].str.contains("CREDIT INT", case=False), "symbol"] = "Cash"
+
+    # Transfers
+    # Transfer cash transactions need to update the proceeds column
+    if (df["buy/sell"] == "IN").any():
+        logger.info("Updating IB TRANSFER transactions")
+        df.loc[df["buy/sell"] == "IN", "proceeds"] = (
+            df.loc[df["buy/sell"] == "IN", "proceeds"] * -1
+        )
+        cash = df[(df["buy/sell"] == "IN") & (df["assetclass"] != "CASH")].copy()
+        cash["type"] = "Cash"
+        cash["symbol"] = "Cash"
+        cash["proceeds"] = cash["proceeds"] * -1
+        df = pd.concat([df, cash]).reset_index()
+        df.loc[df["assetclass"] == "CASH", "proceeds"] = df["tradeprice"]
+        df.loc[df["assetclass"] == "CASH", "symbol"] = "Cash"
+        df.loc[df["assetclass"] == "CASH", "type"] = "Cash"
+
+    # Company Actions
+    # acquisition transactions need to be adjusted
+    # the data from IB is not rich so there is regex to extract the old and new symbols
+    # and then the proceeds and tradeprice are updated from historical price data
+    acquisitions = df[df["type"] == "acquisition"].copy()
+    if not acquisitions.empty:
+        logger.info("Updating IB ACQUISITION transactions")
+        df = df[df["type"] != "acquisition"]
+        orig_symbol_pattern = r"^([^\(]+)"
+        new_symbol_pattern = r"\(([^,(]+),"
+        acquisitions["orig_symbol"] = acquisitions["description"].apply(
+            lambda x: re.search(orig_symbol_pattern, x).group(0)
+        )
+        acquisitions["new_symbol"] = acquisitions["description"].apply(
+            lambda x: re.search(new_symbol_pattern, x).group(1)
+        )
+
+        # remove .OLD from the symbol
+        acquisitions["new_symbol"] = acquisitions["new_symbol"].str.replace(".OLD", "")
+
+        # update the new symbol
+        acquisition_symbol_lkup = acquisitions[
+            acquisitions["orig_symbol"] != acquisitions["new_symbol"]
+        ][["orig_symbol", "new_symbol"]]
+        acquisitions.set_index("orig_symbol", inplace=True)
+        acquisitions.update(acquisition_symbol_lkup.set_index("orig_symbol"))
+        acquisitions = acquisitions.reset_index()
+        acquisitions["date"] = pd.to_datetime(acquisitions["date"], format="mixed")
+
+        # update acquisition tickers transaction prices
+        acquisition_symbol_lkup = acquisitions.reset_index()[
+            ["new_symbol", "orig_symbol", "date"]
+        ].drop_duplicates()
+        df = df.merge(
+            acquisition_symbol_lkup.rename(columns={"orig_symbol": "symbol"})[
+                ["new_symbol", "symbol"]
+            ],
+            on="symbol",
+            how="left",
+        )
+        df["symbol"] = np.where(df["new_symbol"].isna(), df["symbol"], df["new_symbol"])
+        df = df.drop(columns=["new_symbol"])
+        acquisition_tickers = list(acquisition_symbol_lkup["new_symbol"])
+        acquisition_tickers = [
+            tick for tick in acquisition_tickers if tick not in funds + delisted
+        ]
+        acquisition_min_year = acquisition_symbol_lkup["date"].min().year
+        acquisition_price_history = Yahoo().stock_history(
+            tickers=acquisition_tickers, min_year=acquisition_min_year
+        )
+
+        # add in the stock price at transition
+        acquisition_price_history.rename(columns={"ticker": "new_symbol"}, inplace=True)
+        acquisition_price_history["date"] = pd.to_datetime(
+            acquisition_price_history["date"], format="mixed"
+        )
+        acquisition_price_history = acquisition_price_history.sort_values(by="date")
+        acquisitions = pd.merge_asof(
+            acquisitions,
+            acquisition_price_history,
+            on="date",
+            by="new_symbol",
+            direction="nearest",
+        )
+        acquisitions["tradeprice"] = acquisitions["last_price"]
+        acquisitions["proceeds"] = (
+            acquisitions["last_price"] * -acquisitions["quantity"]
+        )
+        acquisitions["type"] = np.where(acquisitions["quantity"] < 0, "SELL", "BUY")
+        acquisitions["type"] = np.where(
+            np.isnan(acquisitions["tradeprice"]), np.nan, acquisitions["type"]
+        )
+        acquisitions["symbol"] = acquisitions["new_symbol"]
+        acquisitions = acquisitions.drop(
+            columns=["orig_symbol", "new_symbol", "last_price", "stock_splits"]
+        )
+
+        # append df with acquisitions
+        df = pd.concat([df, acquisitions]).reset_index()
+        df["date"] = pd.to_datetime(df["datetime"], format="mixed").dt.date
 
     # drop rows that do not have a type
     df = df.dropna(subset=["type"])
