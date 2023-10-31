@@ -100,7 +100,7 @@ def ally(broker_file, output_file=None, broker="ally"):
     )
 
     # check stock dates
-    check_stock_dates(trades, fix=True)
+    trades = check_stock_dates(trades, fix=True)["fix_tx_df"]
     logger.info(
         f"There were {start_df_len} and now there are {len(trades)} rows in "
         f"the {broker} transactions file after cleaning"
@@ -192,7 +192,7 @@ def fidelity(broker_file, output_file=None, broker="fidelity"):
     )
 
     # check stock dates
-    check_stock_dates(trades, fix=True)
+    trades = check_stock_dates(trades, fix=True)["fix_tx_df"]
     logger.info(
         f"There were {start_df_len} and now there are {len(trades)} rows in "
         f"the {broker} transactions file after cleaning"
@@ -416,7 +416,7 @@ def ib(broker_file, output_file=None, broker="ib", funds=[], delisted=[]):
     )
 
     # check stock dates
-    check_stock_dates(trades, fix=True)
+    trades = check_stock_dates(trades, fix=True)["fix_tx_df"]
     logger.info(
         f"There were {start_df_len} and now there are {len(trades)} rows in "
         f"the {broker} transactions file after cleaning"
@@ -459,13 +459,72 @@ def ybr(broker_file, output_file=None, broker="401"):
 
     """
     # lookup table for types of transactions
-    type_lkup = {
-        "DIVIDEND": "DIVIDEND",
-        "CASH DISTRIBUTN": "Cash",
-        "YOU BOUGHT": "BUY",
-        "REINVESTMENT": "BUY",
-        "YOU SOLD": "SELL",
-    }
+    type_lkup = pd.DataFrame(
+        {
+            "activity_type": [
+                "Company Matching Contributions",
+                "Employee 401(k) Contributions",
+                "Employer Supplemental Contributions",
+                "Genworth Fund Reunitization",
+                "Dividends",
+                "Fund Reallocation",
+                "Fund Transfers",
+                "Revenue Sharing",
+            ],
+            "type": [
+                "BUY",
+                "BUY",
+                "BUY",
+                "BOOK",
+                "DIVIDEND",
+                "SELL",
+                "BUY",
+                "DIVIDEND",
+            ],
+        }
+    )
+
+    # lookup table for symbols
+    symbol_lkup = pd.DataFrame(
+        {
+            "fund": [
+                "Dodge and Cox Income",
+                "BlackRock Equity Index",
+                "T.Rowe Price Institutional Large Cap Growth Fund",
+                "Genworth Stock Fund",
+                "T. Rowe Price Stable Value",
+                "BlackRock LifePath Index 2050",
+                "BlackRock Russell 2000 Value Index Fund",
+                "BlackRock LifePath Index 2050 RAF",
+                "BlackRock Russell 2000 Growth Index Fund",
+                "Harding Loevner International Equity",
+            ],
+            "symbol": [
+                "DODIX",
+                "BLKEQIX",
+                "TRPILCG",
+                "TRPSV",
+                "GNW",
+                "LIPIX",
+                "BLKRVIX",
+                "LIPIX",
+                "BLKRGIX",
+                "HLIEIX",
+            ],
+            "relative": [
+                "",
+                "WBREOX/P10080",
+                "TPLGX/P10280",
+                "",
+                "P10230",
+                "P11540",
+                "WBRRDX/NP4199",
+                "",
+                "WBRRFX/P11950",
+                "HLMIX/P11210",
+            ],
+        }
+    )
 
     # read in the transactions file
     try:
@@ -478,36 +537,57 @@ def ybr(broker_file, output_file=None, broker="401"):
     # cleaning dataframe by formatting columns and removing whitespace
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
     df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    df.rename(
+        columns={
+            "amount": "cost",
+            "fund_nav/price": "price",
+            "fund_units": "units",
+        },
+        inplace=True,
+    )
 
     # update date column type
-    df["date"] = pd.to_datetime(df["run_date"], format="%m/%d/%Y").dt.date
+    df["date"] = pd.to_datetime(df["valuation_date"], format="%m-%d-%Y").dt.date
 
-    # Loop through each type_lkup and update type
-    for string, tag in type_lkup.items():
-        df.loc[df["action"].str.contains(string, case=False), "type"] = tag
+    # add in symbol and type
+    df = df.merge(symbol_lkup, on="fund", how="left")
+    df = df.merge(type_lkup, on="activity_type", how="left")
 
-    # SPAXX is actually cash
-    df = df.loc[~((df["symbol"] == "SPAXX") & (df["type"] == "BUY"))]
-    df.loc[(df["symbol"] == "SPAXX"), "symbol"] = "Cash"
+    # change to types to standardize dataset
+    df["cost"] = np.where(df["type"].isin(["BUY", "SELL"]), df["cost"] * -1, df["cost"])
+    df["units"] = np.where(df["type"].isin(["DIVIDEND"]), df["cost"], df["units"])
+
+    # add cash from BUY types
+    cash = df[
+        df["activity_type"].isin(
+            [
+                "Company Matching Contributions",
+                "Employee 401(k) Contributions",
+                "Employer Supplemental Contributions",
+            ]
+        )
+    ].copy()
+    cash["type"] = "Cash"
+    cash["symbol"] = "Cash"
+    cash["cost"] = cash["cost"] * -1
+    cash["units"] = cash["cost"]
+    cash["price"] = 1
+    df = pd.concat([df, cash]).reset_index()
 
     # standardize column and data
     trades = pd.DataFrame(
         {
-            "ticker": np.where(df["type"] == "Cash", "Cash", df["symbol"]),
+            "ticker": df["symbol"],
             "date": df["date"],
             "type": df["type"],
-            "units": np.select(
-                [(df["type"] == "Cash") | (df["type"] == "DIVIDEND")],
-                [df["amount_($)"]],
-                default=df["quantity"],
-            ),
-            "cost": df["amount_($)"],
+            "units": df["units"],
+            "cost": df["cost"],
             "broker": broker,
         }
     )
 
     # check stock dates
-    check_stock_dates(trades, fix=True)
+    trades = check_stock_dates(trades, fix=True)["fix_tx_df"]
     logger.info(
         f"There were {start_df_len} and now there are {len(trades)} rows in "
         f"the {broker} transactions file after cleaning"

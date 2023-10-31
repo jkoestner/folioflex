@@ -65,7 +65,7 @@ def check_stock_dates(tx_df, fix=False, timezone="US/Eastern"):
         )
 
     # date checks
-    tx_df_min = min(tx_df["date"].min(), tx_df["date"].max() - timedelta(days=7))
+    tx_df_min = tx_df_min = tx_df["date"].min() - timedelta(days=7)
     tx_df_max = tx_df["date"].max()
     stock_dates = mcal.get_calendar("NYSE").schedule(
         start_date=tx_df_min, end_date=tx_df_max
@@ -80,16 +80,20 @@ def check_stock_dates(tx_df, fix=False, timezone="US/Eastern"):
     fix_tx_df = tx_df.copy()
 
     # Get dates which are not within market hours
-    invalid_dt = fix_tx_df["date"][~fix_tx_df["date"].isin(stock_dates)].to_list()
+    invalid_dt = fix_tx_df["date"][~fix_tx_df["date"].isin(stock_dates)]
+    invalid_dt_unique = list(invalid_dt.unique())
 
-    if fix and len(invalid_dt) > 0:
-        for i in invalid_dt:
-            fix_tx_df.loc[tx_df["date"] == i, "date"] = stock_dates[stock_dates < i][-1]
+    if fix and len(invalid_dt_unique) > 0:
+        for i in invalid_dt_unique:
+            fix_tx_df.loc[fix_tx_df["date"] == i, "date"] = stock_dates[
+                stock_dates < i
+            ][-1]
         logger.warning(
             f"{len(invalid_dt)} transaction(s) dates were fixed to previous valid date"
-            f" such as {invalid_dt[0]} \n"
+            f" such as {invalid_dt_unique[0]} \n"
         )
 
+    # Checking that dates were fixed
     invalid_dt = fix_tx_df["date"][~fix_tx_df["date"].isin(stock_dates)].to_list()
     invalid_dt = [datetime.strftime(i, "%Y-%m-%d") for i in invalid_dt]
     if len(invalid_dt) > 0:
