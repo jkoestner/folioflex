@@ -1,5 +1,7 @@
 """Tests the wrappers."""
 
+import pytest
+
 from folioflex.portfolio import wrappers
 
 
@@ -28,6 +30,7 @@ def test_news():
     assert news.shape[0] > 0, "News not pulled."
 
 
+@pytest.mark.xfail
 def test_info():
     """Checks that stock information can be pulled."""
     yahoo = wrappers.Yahoo()

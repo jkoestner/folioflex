@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import pandas_market_calendars as mcal
 
-from datetime import timedelta, datetime
+from datetime import timedelta
 from pyxirr import xirr
 
 from folioflex.utils import config_helper
