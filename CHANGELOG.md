@@ -1,6 +1,6 @@
 # Changelog
 
-## [O.1.2](https://github.com/jkoestner/folioflex/tree/v0.1.2)
+## [0.1.2](https://github.com/jkoestner/folioflex/tree/v0.1.2)
 
 [Full Changelog](https://github.com/jkoestner/folioflex/compare/v0.1.0...v0.1.2)
 
