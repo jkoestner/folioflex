@@ -1312,9 +1312,10 @@ class Portfolio:
 
         # equity + dividend
         entry_price["return_txs"] = np.where(
-            entry_price["cost"] == 0,
-            -entry_price["market_value"],
+            entry_price["units"]
+            == entry_price["cumulative_units"],  # initial investment should use cost
             entry_price["cumulative_cost"],
+            -entry_price["market_value"],
         )
         ticker_transactions["return_txs"] = ticker_transactions["cost"]
         current_price["return_txs"] = (
@@ -1551,8 +1552,8 @@ class Portfolio:
             for variable in variables:
                 lookback_df[variable] = (
                     lookback_df.groupby("ticker")[variable]
-                    .fillna(0)  # need to make first record 0 that may have been NaN
-                    .transform(lambda x: x - x.iloc[-1])
+                    .transform(lambda x: x - x.shift(-1))
+                    .fillna(0)
                 )
 
         return lookback_df

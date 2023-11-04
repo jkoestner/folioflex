@@ -1,7 +1,9 @@
 """Tests the portfolio tracker."""
 import numpy as np
 import pandas as pd
+import pandas_market_calendars as mcal
 
+from datetime import timedelta, datetime
 from pyxirr import xirr
 
 from folioflex.utils import config_helper
@@ -197,6 +199,66 @@ def test_calc_realized_return():
     assert round(performance.loc["portfolio", "realized"], 2) == round(
         performance.loc["portfolio", "test_realized"], 2
     ), "Expected realized to be return - unrealized"
+
+
+def test_lookback():
+    """Checks calculations of fund transactions."""
+    lookback = 1
+    ticker = "AMD"
+    performance = pf.get_performance(date=date, lookback=lookback)
+
+    test_tx_hist_df = pf.transactions_history.copy()
+    ticker_df = test_tx_hist_df[test_tx_hist_df["ticker"] == ticker]
+    ticker_df = ticker_df[ticker_df["date"] <= date]
+    cal_start_date = ticker_df["date"].max() - timedelta(days=lookback)
+    buffer_date = cal_start_date - timedelta(days=7)
+    stock_dates = (
+        mcal.get_calendar("NYSE").schedule(start_date=buffer_date, end_date=date).index
+    )
+    start_date = max([date for date in stock_dates if date <= cal_start_date])
+    ticker_df = ticker_df[ticker_df["date"] >= start_date]
+
+    # get the entry price, transactions, current price
+    entry_price = ticker_df[ticker_df["date"] == ticker_df["date"].min()].copy()
+    ticker_transactions = ticker_df[
+        (ticker_df["date"] > ticker_df["date"].min())
+        & (ticker_df["date"] <= date)
+        & ((ticker_df["cost"] != 0) | (ticker_df["dividend"] != 0))
+    ].copy()
+    current_price = ticker_df[(ticker_df["date"] == date)].copy()
+
+    # equity + dividend
+    entry_price["return_txs"] = np.where(
+        entry_price["units"] == entry_price["cumulative_units"],
+        entry_price["cumulative_cost"],
+        -entry_price["market_value"],
+    )
+    ticker_transactions["return_txs"] = ticker_transactions["cost"]
+    current_price["return_txs"] = (
+        current_price["market_value"] + current_price["cumulative_dividend"]
+    )
+
+    # combine the transactions
+    return_transactions = pd.concat(
+        [entry_price, ticker_transactions, current_price], ignore_index=True
+    ).sort_values(by="date", ascending=False)
+    return_transactions["return_txs"] = return_transactions["return_txs"].replace(
+        np.nan, 0
+    )
+
+    # get return pcts
+    start_date = return_transactions["date"].iloc[-1]
+    end_date = return_transactions["date"].iloc[0]
+    days = (end_date - start_date).days
+    dwrr_ann_return_pct = xirr(
+        return_transactions["date"], return_transactions["return_txs"]
+    )
+    test_dwrr_pct = (1 + dwrr_ann_return_pct) ** (days / 365) - 1
+    amd_dwrr_pct = float(performance.at["AMD", "dwrr_pct"].strip("%")) / 100
+
+    assert round(amd_dwrr_pct, 2) == round(
+        test_dwrr_pct, 2
+    ), "Expected return for AMD to match the test return"
 
 
 def test_fund_trans():

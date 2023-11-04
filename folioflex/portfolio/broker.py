@@ -434,7 +434,7 @@ def ib(broker_file, output_file=None, broker="ib", funds=[], delisted=[]):
     return trades
 
 
-def ybr(broker_file, output_file=None, broker="401"):
+def ybr(broker_file, output_file=None, broker="ybr"):
     """Format the transactions made from ybr.
 
     Instructions for downloading transactions:
