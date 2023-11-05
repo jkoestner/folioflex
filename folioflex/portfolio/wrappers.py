@@ -6,16 +6,17 @@ from the larger portfolio project, and allows easier integration.
 
 """
 
-import fredapi
 import logging
-import pandas as pd
-import yfinance as yf
-import requests
 import ssl
-
-from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
+from io import StringIO
 from urllib import request
+
+import fredapi
+import pandas as pd
+import requests
+import yfinance as yf
+from bs4 import BeautifulSoup
 
 from folioflex.utils import config_helper
 
@@ -187,8 +188,8 @@ class Yahoo:
             f"https://finance.yahoo.com/screener/predefined/most_actives?count={count}"
         )
 
-        response = requests.get(url, headers=_get_header())
-        most_active = pd.read_html(response.text)[0]
+        response = requests.get(url, headers=_get_header(), timeout=10)
+        most_active = pd.read_html(StringIO(response.text))[0]
 
         # lower and use underscores for column names
         most_active.columns = (
@@ -341,7 +342,7 @@ class Fred:
         }
         fred_summary = {}
         for key, value in fred_dict.items():
-            fred_summary[key] = fred.get_series(value)[-1]
+            fred_summary[key] = fred.get_series(value).iloc[-1]
 
         return fred_summary
 
@@ -391,6 +392,7 @@ class Finviz:
         r = requests.get(
             f"https://finviz.com/api/map_perf.ashx?t=sec&st={timeframe_map[timeframe]}",
             headers=_get_header(),
+            timeout=10,
         )
         r.raise_for_status()
 
@@ -402,6 +404,7 @@ class Finviz:
         r2 = requests.get(
             "https://finviz.com/maps/sec.json?rev=316",
             headers=_get_header(),
+            timeout=10,
         )
         r2.raise_for_status()
 
@@ -480,7 +483,7 @@ class Web:
             Insider activity data
         """
         url = f"https://markets.businessinsider.com/stocks/{ticker.lower()}-stock"
-        response = requests.get(url, headers=_get_header())
+        response = requests.get(url, headers=_get_header(), timeout=10)
         soup = BeautifulSoup(response.content, "html.parser")
 
         d_insider = dict()

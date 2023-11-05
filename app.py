@@ -22,6 +22,7 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
 from dash.dash_table.Format import Format, Scheme
+from io import StringIO
 
 from folioflex.dashboard import dashboard_helper, layouts
 from folioflex.dashboard.pages import (
@@ -284,7 +285,7 @@ def get_results(task_status, task_id):
 def update_SectorData(sector_status, yf_data):
     """Provide sector data table."""
     if sector_status == "ready":
-        cq_sector_close = pd.read_json(yf_data)
+        cq_sector_close = pd.read_json(StringIO(yf_data))
         min, max, value, marks = dashboard_helper.get_slider_values(
             cq_sector_close.index
         )
@@ -308,7 +309,7 @@ def update_SectorGraph(slide_value, yf_data, sector_status):
     layout = go.Layout(hovermode="closest")
 
     if sector_status == "ready" and slide_value != 0:
-        cq_sector_close = pd.read_json(yf_data)
+        cq_sector_close = pd.read_json(StringIO(yf_data))
         sector_data = cq_sector_close[
             (dashboard_helper.unix_time_millis(cq_sector_close.index) > slide_value[0])
             & (
