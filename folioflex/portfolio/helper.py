@@ -87,7 +87,7 @@ def check_stock_dates(tx_df, fix=False, timezone="US/Eastern"):
         for i in invalid_dt_unique:
             fix_tx_df.loc[fix_tx_df["date"] == i, "date"] = stock_dates[
                 stock_dates < i
-            ][-1]
+            ].iloc[-1]
         logger.warning(
             f"{len(invalid_dt)} transaction(s) dates were fixed to previous valid date"
             f" such as {invalid_dt_unique[0]} \n"

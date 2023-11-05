@@ -662,9 +662,7 @@ class Portfolio:
             )
 
             fund_hist_df = fund_hist_df.groupby(["date", "ticker"]).min().reset_index()
-            fund_hist_df[["price"]] = fund_hist_df.groupby("ticker")[["price"]].fillna(
-                method="ffill"
-            )
+            fund_hist_df[["price"]] = fund_hist_df.groupby("ticker")[["price"]].ffill()
             fund_hist_df.rename(columns={"price": "last_price"}, inplace=True)
             price_history = pd.concat([price_history, fund_hist_df])
 
@@ -753,9 +751,7 @@ class Portfolio:
             tx_hist_df["price"],
             tx_hist_df["last_price"],
         )
-        tx_hist_df["last_price"] = tx_hist_df.groupby("ticker")["last_price"].fillna(
-            method="ffill"
-        )
+        tx_hist_df["last_price"] = tx_hist_df.groupby("ticker")["last_price"].ffill()
         tx_hist_df = tx_hist_df.fillna(0)
 
         # sort values descending
@@ -764,9 +760,7 @@ class Portfolio:
         # fill in missing other_fields values
         for field in other_fields:
             tx_hist_df[field] = tx_hist_df[field].replace(0, np.nan)
-            tx_hist_df[field] = (
-                tx_hist_df[field].fillna(method="ffill").fillna(method="bfill")
-            )
+            tx_hist_df[field] = tx_hist_df[field].ffill().bfill()
 
         return tx_hist_df
 
@@ -1213,7 +1207,7 @@ class Portfolio:
 
         # merge average prices back into df
         df.update(tx["average_price"])
-        df["average_price"] = df["average_price"].fillna(method="ffill")
+        df["average_price"] = df["average_price"].ffill()
         df.loc[df["cumulative_units"] == 0, "average_price"] = 0
         return df
 

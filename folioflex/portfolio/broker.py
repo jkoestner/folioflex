@@ -77,7 +77,7 @@ def ally(broker_file, output_file=None, broker="ally"):
 
     # cleaning dataframe by formatting columns and removing whitespace
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
-    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    df = df.apply(lambda x: x.strip() if isinstance(x, str) else x)
 
     # update date column type and lookup type column
     df["date"] = pd.to_datetime(df["date"], format="%m/%d/%Y").dt.date
@@ -162,7 +162,7 @@ def fidelity(broker_file, output_file=None, broker="fidelity"):
 
     # cleaning dataframe by formatting columns and removing whitespace
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
-    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    df = df.apply(lambda x: x.strip() if isinstance(x, str) else x)
 
     # update date column type
     df["date"] = pd.to_datetime(df["run_date"], format="%m/%d/%Y").dt.date
@@ -280,7 +280,7 @@ def ib(broker_file, output_file=None, broker="ib", funds=[], delisted=[]):
     # cleaning dataframe by formatting columns and removing whitespace
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
     df["description"] = df["description"].fillna("") + " " + df["buy/sell"].fillna("")
-    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    df = df.apply(lambda x: x.strip() if isinstance(x, str) else x)
     df = df[df["symbol"] != "Symbol"]  # remove header rows not first row
     df["quantity"] = df["quantity"].astype(float)
     df["proceeds"] = df["proceeds"].astype(float)
@@ -536,7 +536,7 @@ def ybr(broker_file, output_file=None, broker="ybr"):
 
     # cleaning dataframe by formatting columns and removing whitespace
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
-    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    df = df.apply(lambda x: x.strip() if isinstance(x, str) else x)
     df.rename(
         columns={
             "amount": "cost",
