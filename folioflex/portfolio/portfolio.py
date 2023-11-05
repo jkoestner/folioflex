@@ -315,7 +315,7 @@ class Portfolio:
         # raise error if length of transactions is 0
         if len(transactions) == 0:
             raise ValueError(
-                "There are no transactions in file (look at if filter broker is correct)"
+                f"There are no transactions in file (look at if filter broker `{filter_broker}` is correct)"
             )
 
         # handle multiple transactions on same day by grouping
