@@ -146,6 +146,19 @@ def _create_argparser():
     )
 
     _email_parser.add_argument(
+        "-hp",
+        "--heatmap_port",
+        type=ast.literal_eval,
+        default=None,
+        help=(
+            "Heatmap function `get_heatmap()` dictionary. Keys are:\n"
+            "  - config_path (optional)\n"
+            "  - portfolio (optional)\n"
+            "  - lookback (optional)"
+        ),
+    )
+
+    _email_parser.add_argument(
         "-md",
         "--manager_dict",
         type=ast.literal_eval,
@@ -202,6 +215,7 @@ def cli():
         email_status = mailer.generate_report(
             email_list=args.email_list,
             heatmap_dict=args.heatmap_dict,
+            heatmap_port=args.heatmap_port,
             manager_dict=args.manager_dict,
             portfolio_dict=args.portfolio_dict,
         )
