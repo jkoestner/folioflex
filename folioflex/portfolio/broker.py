@@ -434,7 +434,7 @@ def ib(broker_file, output_file=None, broker="ib", funds=[], delisted=[]):
     return trades
 
 
-def ybr(broker_file, output_file=None, broker="ybr"):
+def ybr(broker_file, output_file=None, broker="ybr", reinvest=True):
     """Format the transactions made from ybr.
 
     Instructions for downloading transactions:
@@ -451,6 +451,8 @@ def ybr(broker_file, output_file=None, broker="ybr"):
         path to trades file that will be created
     broker : str (optional)
         name of the broker
+    reinvest : bool (optional)
+        whether or not to reinvest dividends into the fund, default is True
 
     Returns
     ----------
@@ -573,6 +575,14 @@ def ybr(broker_file, output_file=None, broker="ybr"):
     cash["units"] = cash["cost"]
     cash["price"] = 1
     df = pd.concat([df, cash]).reset_index()
+
+    # add stock from DIVIDEND types that get reinvested
+    if reinvest:
+        reinvest_df = df[df["type"] == "DIVIDEND"].copy()
+        reinvest_df["type"] = "BUY"
+        reinvest_df["units"] = reinvest_df["cost"] / reinvest_df["price"]
+        reinvest_df["cost"] = reinvest_df["cost"] * -1
+        df = pd.concat([df, reinvest_df]).reset_index()
 
     # standardize column and data
     trades = pd.DataFrame(

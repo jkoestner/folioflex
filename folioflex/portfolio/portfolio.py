@@ -1474,7 +1474,7 @@ class Portfolio:
 
         tickers = list(tx_hist_df["ticker"].unique())
 
-        return_pcts = pd.DataFrame()
+        return_data_list = []  # a list to collect data dictionaries
 
         # get return of each ticker
         for ticker in tickers:
@@ -1485,21 +1485,16 @@ class Portfolio:
                 lookback=lookback,
             )
 
-            return_pcts = pd.concat(
-                [
-                    return_pcts,
-                    pd.DataFrame(
-                        {
-                            "ticker": [ticker],
-                            "dwrr_pct": return_dict["dwrr_return_pct"],
-                            "dwrr_ann_pct": return_dict["dwrr_ann_return_pct"],
-                            "div_dwrr_pct": return_dict["div_dwrr_return_pct"],
-                            "div_dwrr_ann_pct": return_dict["div_dwrr_ann_return_pct"],
-                        }
-                    ),
-                ]
-            )
+            filtered_return_dict = {
+                "ticker": ticker,
+                "dwrr_pct": return_dict["dwrr_return_pct"],
+                "dwrr_ann_pct": return_dict["dwrr_ann_return_pct"],
+                "div_dwrr_pct": return_dict["div_dwrr_return_pct"],
+                "div_dwrr_ann_pct": return_dict["div_dwrr_ann_return_pct"],
+            }
+            return_data_list.append(filtered_return_dict)
 
+        return_pcts = pd.DataFrame(return_data_list)
         return_pcts = return_pcts.set_index(["ticker"])
 
         return return_pcts
@@ -1546,7 +1541,11 @@ class Portfolio:
             for variable in variables:
                 lookback_df[variable] = (
                     lookback_df.groupby("ticker")[variable]
-                    .transform(lambda x: x - x.shift(-1))
+                    .transform(
+                        lambda x: np.nan
+                        if x.dropna().empty
+                        else x - x.loc[x.last_valid_index()]
+                    )
                     .fillna(0)
                 )
 
@@ -1620,6 +1619,9 @@ class Manager:
                     index={"portfolio": portfolio.name}
                 )
                 pf = pf.rename(columns={"dwrr_pct": str(lookbacks[i]) + "_dwrr_pct"})
+                pf = pf.rename(
+                    columns={"div_dwrr_pct": str(lookbacks[i]) + "_div_dwrr_pct"}
+                )
                 # adding benchmark to the summary
                 benchmark = performance[
                     performance.index.str.contains("benchmark")

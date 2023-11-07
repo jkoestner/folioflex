@@ -29,6 +29,7 @@ setup(
     include_package_data=True,  # include files from MANIFEST.in
     license="MIT",
     description=("A collection of portfolio tracking capabilities"),
+    # the entry points provide console scripts at command line
     entry_points={
         "console_scripts": [
             "ffx = folioflex.utils.cli:cli",

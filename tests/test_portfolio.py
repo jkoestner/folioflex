@@ -203,7 +203,7 @@ def test_calc_realized_return():
 
 def test_lookback():
     """Checks calculations of fund transactions."""
-    lookback = 1
+    lookback = 10
     ticker = "AMD"
     performance = pf.get_performance(date=date, lookback=lookback)
 
@@ -256,8 +256,15 @@ def test_lookback():
     test_dwrr_pct = (1 + dwrr_ann_return_pct) ** (days / 365) - 1
     amd_dwrr_pct = float(performance.at["AMD", "dwrr_pct"].strip("%")) / 100
 
+    test_return = return_transactions["return_txs"].sum()
+    amd_return = performance.at["AMD", "return"]
+
     assert round(amd_dwrr_pct, 2) == round(
         test_dwrr_pct, 2
+    ), "Expected return pct for AMD to match the test return pct"
+
+    assert round(amd_return, 2) == round(
+        test_return, 2
     ), "Expected return for AMD to match the test return"
 
 
