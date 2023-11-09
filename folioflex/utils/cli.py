@@ -214,10 +214,10 @@ def cli():
     elif args.command == "email":
         email_status = mailer.generate_report(
             email_list=args.email_list,
-            heatmap_dict=args.heatmap_dict,
-            heatmap_port=args.heatmap_port,
-            manager_dict=args.manager_dict,
-            portfolio_dict=args.portfolio_dict,
+            heatmap_market=args.heatmap_market,
+            heatmap_portfolio=args.heatmap_portfolio,
+            manager_performance=args.manager_performance,
+            portfolio_performance=args.portfolio_performance,
         )
         print(f"status sent: {email_status}")
 
