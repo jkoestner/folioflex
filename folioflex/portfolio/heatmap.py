@@ -31,6 +31,10 @@ def get_heatmap(config_path=None, portfolio=None, lookback=None):
         returns = Finviz().get_heatmap_data()
         color = "return_pct"
     else:
+        if config_path is None:
+            raise ValueError(
+                "config_path must be provided if trying to get portfolio heatmap"
+            )
         portfolio_class = Portfolio(config_path=config_path, portfolio=portfolio)
         returns = portfolio_class.get_performance(lookback=lookback, prettify=False)
         returns = returns.reset_index()

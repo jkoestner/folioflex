@@ -133,8 +133,8 @@ def _create_argparser():
     )
 
     _email_parser.add_argument(
-        "-hd",
-        "--heatmap_dict",
+        "-hm",
+        "--heatmap_market",
         type=ast.literal_eval,
         default=None,
         help=(
@@ -147,7 +147,7 @@ def _create_argparser():
 
     _email_parser.add_argument(
         "-hp",
-        "--heatmap_port",
+        "--heatmap_portfolio",
         type=ast.literal_eval,
         default=None,
         help=(
@@ -159,8 +159,8 @@ def _create_argparser():
     )
 
     _email_parser.add_argument(
-        "-md",
-        "--manager_dict",
+        "-mp",
+        "--manager_performance",
         type=ast.literal_eval,
         default=None,
         help=(
@@ -173,8 +173,8 @@ def _create_argparser():
     )
 
     _email_parser.add_argument(
-        "-pd",
-        "--portfolio_dict",
+        "-pp",
+        "--portfolio_performance",
         type=ast.literal_eval,
         default=None,
         help=(

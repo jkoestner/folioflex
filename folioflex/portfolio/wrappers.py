@@ -174,7 +174,7 @@ class Yahoo:
         Parameters
         ----------
         count : int (default=25)
-            portfolio to get heatmap for, if None use sp500
+            number of most active stocks to return
 
         Returns
         -------

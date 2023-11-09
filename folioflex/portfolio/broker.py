@@ -10,14 +10,19 @@ data from brokers as it is already connecting to the brokers automatically.
 """
 
 
+import json  # only yodlee
 import logging
 import numpy as np
 import pandas as pd
 import os
 import re
+import requests  # only yodlee
+
+from flask import jsonify  # only yodlee
 
 from folioflex.portfolio.helper import check_stock_dates
 from folioflex.portfolio.wrappers import Yahoo
+from folioflex.utils import config_helper
 
 # logging options https://docs.python.org/3/library/logging.html
 logger = logging.getLogger(__name__)
@@ -614,6 +619,93 @@ def ybr(broker_file, output_file=None, broker="ybr", reinvest=True):
         trades.to_csv(output_file, index=False)
 
     return trades
+
+
+class Yodlee:
+    """A class that connects to the Yodlee developer platform.
+
+    WARNING: This class is not fully supported as it requires API keys from
+    Yodlee and there is a cost to maintain. If a free tier becomes available
+    or cost is reasonable will use this class to get transactions from brokers.
+
+    The developer site is:
+    https://developer.envestnet.com/yodlee/
+
+    The API documentation is:
+    https://developer.envestnet.com/resources/yodlee/data-model/docs
+
+    The FastLink API documentation is:
+    https://developer.envestnet.com/resources/yodlee/fastlink-4/docs/api_integrations
+
+    There are 2 separate pieces to using the Yodless to provide transactions.
+
+    FastLink - Server to connect to the broker
+    ------------------------------------------
+    FastLink is a server that allows the connection to the broker. The connection
+    was authorized to pull in the following to allow the largest amount of brokers.
+    - Aggregation
+
+    Once a user is logged in and connects to the broker it allows the API to then
+    connect to that broker.
+
+    The Launch tier was selected as it is free and allows for 100 activities, which
+    where an activity is creation of an account, but only available for 90 days.
+
+    Developer can only be used as Production will only work where the app is registered
+    with the providers.
+
+    A way to see which banks are available is by going to the dashboard liveconfig
+    and going to site selection and choosing the banks that are available.
+    https://developer.envestnet.com/yodlee/user/me/dashboard/liveconfig
+
+    This was a helpful resource understanding how to set up:
+    https://web.postman.co/workspace/
+    d3ac0acd-bc2f-4a29-83ef-384ab5f28972/collection/
+    20005268-515b1d2c-453a-4ea3-980c-ce42b25c9590
+
+    API - Query the transactions
+    ----------------------------
+    Once the user has connected to the broker, the API can be used to query the
+    transactions.
+
+    """
+
+    def get_user_token(
+        yodlee_login_name,
+        yodlee_client_id=config_helper.YODLEE_CLIENT_ID,
+        yodlee_secret=config_helper.YODLEE_SECRET,
+        yodlee_endpoint=config_helper.YODLEE_ENDPOINT,
+    ):
+        """Get the user token for the yodlee user.
+
+        Parameters
+        ----------
+        yodlee_login_name : str
+            yodlee login name for the user
+        yodlee_client_id : str
+            yodlee client id from the developer site
+        yodlee_secret : str
+            yodlee secret from the developer site
+        yodlee_endpoint : str
+            yodlee endpoint from the developer site
+
+        Returns
+        ----------
+        yodlee_user_token : str
+            yodlee user token
+
+        """
+        headers = {
+            "Api-Version": "1.1",  # Replace with the appropriate version
+            "Content-Type": "application/x-www-form-urlencoded",
+            "loginName": yodlee_login_name,
+        }
+        payload = {"clientId": yodlee_client_id, "secret": yodlee_secret}
+        response = requests.post(yodlee_endpoint, data=payload, headers=headers)
+        response_data = response.json()
+        user_token = response_data.get("token").get("accessToken")
+
+        return user_token
 
 
 def append_trades(trades, output_file, broker):

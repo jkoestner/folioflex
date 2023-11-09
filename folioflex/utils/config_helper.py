@@ -124,6 +124,9 @@ FFX_PASSWORD = get_config_options(config_file, "credentials")["ffx_password"]
 
 # apis
 FRED_API = get_config_options(config_file, "api")["fred_api"]
+YODLEE_CLIENT_ID = get_config_options(config_file, "api")["yodlee_client_id"]
+YODLEE_SECRET = get_config_options(config_file, "api")["yodlee_secret"]
+YODLEE_ENDPOINT = get_config_options(config_file, "api")["yodlee_endpoint"]
 
 # other
 if os.path.exists(r"/app/tests"):

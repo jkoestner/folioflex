@@ -94,10 +94,10 @@ def send_email(message, subject, email_list, image_list=None):
 
 def generate_report(
     email_list,
-    heatmap_dict=None,
-    heatmap_port=None,
-    manager_dict=None,
-    portfolio_dict=None,
+    heatmap_market=None,
+    heatmap_portfolio=None,
+    manager_performance=None,
+    portfolio_performance=None,
 ):
     """Generate report of portfolio performance and send to email.
 
@@ -105,19 +105,19 @@ def generate_report(
     ----------
     email_list : list
         Email addresses to send email to
-    heatmap_dict : dict
+    heatmap_market : dict
         Market Heatmap dictionary to get values for
             see: folioflex.portfolio.heatmap.get_heatmap for more details
             Keys are:
             - lookback (optional)
-    heatmap_port : dict
+    heatmap_portfolio : dict
         Portfolio Heatmap dictionary to get values for
             see: folioflex.portfolio.heatmap.get_heatmap for more details
             Keys are:
-            - config_path (optional)
-            - portfolio (optional)
+            - config_path (required)
+            - portfolio (required)
             - lookback (optional)
-    manager_dict : dict
+    manager_performance : dict
         Manager dictionary to get values for
             see: folioflex.portfolio.portfolio.Manager.get_summary for more details
             Keys are:
@@ -125,7 +125,7 @@ def generate_report(
             - portfolios (optional)
             - date (optional)
             - lookbacks (optional)
-    portfolio_dict : dict
+    portfolio_performance : dict
         Portfolio dictionary to get values for
             see: folioflex.portfolio.portfolio.Portfolio.get_performance for more details
             Keys are:
@@ -147,8 +147,8 @@ def generate_report(
     image_list = []
     image_idx = 1
 
-    if heatmap_dict is not None:
-        lookback = heatmap_dict.get("lookback", None)
+    if heatmap_market is not None:
+        lookback = heatmap_market.get("lookback", None)
 
         heatmap_summary = heatmap.get_heatmap(lookback=lookback)
         # using plotly kaleido to convert to image into bytes then attach it to the email.
@@ -165,10 +165,10 @@ def generate_report(
 
         image_idx += 1
 
-    if heatmap_port is not None:
-        config_path = heatmap_port.get("config_path", None)
-        portfolio = heatmap_port.get("portfolio", None)
-        lookback = heatmap_port.get("lookback", None)
+    if heatmap_portfolio is not None:
+        config_path = heatmap_portfolio.get("config_path", None)
+        portfolio = heatmap_portfolio.get("portfolio", None)
+        lookback = heatmap_portfolio.get("lookback", None)
 
         heatmap_summary = heatmap.get_heatmap(
             config_path=config_path, portfolio=portfolio, lookback=lookback
@@ -188,11 +188,11 @@ def generate_report(
 
         image_idx += 1
 
-    if manager_dict is not None:
-        config_path = manager_dict.get("config_path")
-        portfolios = manager_dict.get("portfolios", None)
-        date = manager_dict.get("date", None)
-        lookbacks = manager_dict.get("lookbacks", None)
+    if manager_performance is not None:
+        config_path = manager_performance.get("config_path")
+        portfolios = manager_performance.get("portfolios", None)
+        date = manager_performance.get("date", None)
+        lookbacks = manager_performance.get("lookbacks", None)
 
         manager_summary = Manager(
             config_path=config_path, portfolios=portfolios
@@ -202,14 +202,14 @@ def generate_report(
             f"<p>Manager Summary</p>"
             f"<ul>"
             f"<li>lookbacks: {lookbacks}</li>"
-            f"</ul><br>" + manager_summary.to_html() + "<br>"
+            f"</ul><br>{manager_summary.to_html()}<br>"
         )
 
-    if portfolio_dict is not None:
-        config_path = portfolio_dict.get("config_path")
-        portfolio = portfolio_dict.get("portfolio")
-        date = portfolio_dict.get("date", None)
-        lookback = portfolio_dict.get("lookback", None)
+    if portfolio_performance is not None:
+        config_path = portfolio_performance.get("config_path")
+        portfolio = portfolio_performance.get("portfolio")
+        date = portfolio_performance.get("date", None)
+        lookback = portfolio_performance.get("lookback", None)
 
         portfolio_summary = Portfolio(
             config_path=config_path, portfolio=portfolio
@@ -218,14 +218,15 @@ def generate_report(
         # remove rows with 0 market value
         portfolio_summary = portfolio_summary[
             portfolio_summary["market_value"] != 0
-        ].sort_values("market_value", ascending=False)
+        ].sort_values("return", ascending=False)
 
         message += (
             f"<p>Portfolio Summary</p>"
             f"<ul>"
             f"<li>portfolio: {portfolio}</li>"
             f"<li>lookback: {lookback}</li>"
-            f"</ul><br>" + portfolio_summary.to_html() + "<br>"
+            # f"</ul><br>" + portfolio_summary.to_html() + "<br>"
+            f"<ul><br>{portfolio_summary.to_html()}<br></ul>"
         )
 
     return send_email(
