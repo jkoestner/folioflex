@@ -10,15 +10,12 @@ data from brokers as it is already connecting to the brokers automatically.
 """
 
 
-import json  # only yodlee
 import logging
 import numpy as np
 import pandas as pd
 import os
 import re
 import requests  # only yodlee
-
-from flask import jsonify  # only yodlee
 
 from folioflex.portfolio.helper import check_stock_dates
 from folioflex.portfolio.wrappers import Yahoo
@@ -670,24 +667,42 @@ class Yodlee:
 
     """
 
-    def get_user_token(
+    def __init__(
+        self,
         yodlee_login_name,
-        yodlee_client_id=config_helper.YODLEE_CLIENT_ID,
-        yodlee_secret=config_helper.YODLEE_SECRET,
-        yodlee_endpoint=config_helper.YODLEE_ENDPOINT,
     ):
-        """Get the user token for the yodlee user.
+        """Initialize the Yodlee class."""
+        self.yodlee_login_name = yodlee_login_name
+        self.yodlee_client_id = config_helper.YODLEE_CLIENT_ID
+        self.yodlee_secret = config_helper.YODLEE_SECRET
+        self.yodlee_endpoint = config_helper.YODLEE_ENDPOINT
+        for var in [self.yodlee_client_id, self.yodlee_secret, self.yodlee_endpoint]:
+            if not var:
+                raise ValueError(f"Yodlee `{var}` is not set")
+        self.headers = {
+            "Api-Version": "1.1",  # Replace with the appropriate version
+            "Content-Type": "application/x-www-form-urlencoded",
+            "loginName": self.yodlee_login_name,
+        }
 
-        Parameters
-        ----------
-        yodlee_login_name : str
-            yodlee login name for the user
-        yodlee_client_id : str
-            yodlee client id from the developer site
-        yodlee_secret : str
-            yodlee secret from the developer site
-        yodlee_endpoint : str
-            yodlee endpoint from the developer site
+        self.user_token = self.get_user_token()
+        logger.info(f"Yodlee user token created for {self.yodlee_login_name}")
+        self.headers_authorized = {
+            "Api-Version": "1.1",  # Replace with the appropriate version
+            "Authorization": "Bearer " + self.user_token,
+            "Content-Type": "application/json",
+        }
+
+    def refresh_token(self):
+        """Refresh the broker.
+
+        This will refresh the broker to get the latest transactions.
+
+        """
+        self.user_token = self.get_user_token()
+
+    def get_user_token(self):
+        """Get the user token for the yodlee user.
 
         Returns
         ----------
@@ -695,17 +710,207 @@ class Yodlee:
             yodlee user token
 
         """
-        headers = {
-            "Api-Version": "1.1",  # Replace with the appropriate version
-            "Content-Type": "application/x-www-form-urlencoded",
-            "loginName": yodlee_login_name,
-        }
-        payload = {"clientId": yodlee_client_id, "secret": yodlee_secret}
-        response = requests.post(yodlee_endpoint, data=payload, headers=headers)
+        payload = {"clientId": self.yodlee_client_id, "secret": self.yodlee_secret}
+        response = requests.post(
+            self.yodlee_endpoint + "auth/token", data=payload, headers=self.headers
+        )
+
+        # raise error if status code is not 201
+        if response.status_code != 201:
+            raise ValueError(
+                f"Yodlee user token not created for {self.yodlee_login_name} "
+                f"with status code {response.status_code}"
+            )
+
         response_data = response.json()
         user_token = response_data.get("token").get("accessToken")
 
         return user_token
+
+    def get_accounts(self, id=""):
+        """Get the accounts for the yodlee user.
+
+        These are the individual accounts for a user.
+
+        Parameters
+        ----------
+        id : str (optional)
+            account to get transactions for, if '' get all accounts
+
+        Returns
+        ----------
+        accounts : DataFrame
+            accounts dataframe
+
+        """
+        headers = self.headers_authorized
+        response = requests.get(
+            self.yodlee_endpoint + "/accounts/" + id, headers=headers
+        )
+        response_data = response.json()
+        accounts = pd.DataFrame(response_data["account"]).sort_values(
+            by="lastUpdated", ascending=False
+        )
+
+        return accounts
+
+    def get_provider_accounts(self, id=""):
+        """Get the provider accounts for the yodlee user.
+
+        These are the provider accounts for a user and gives information
+        relate to when it has been updated.
+
+        Parameters
+        ----------
+        id : str (optional)
+            provider_accounts to get transactions for, if '' get all provider_accounts
+
+        Returns
+        ----------
+        provider_accounts : DataFrame
+            provider_accounts dataframe
+
+        """
+        headers = self.headers_authorized
+        response = requests.get(
+            self.yodlee_endpoint + "/providerAccounts/" + id, headers=headers
+        )
+        response_data = response.json()
+        provider_accounts = pd.DataFrame(response_data["providerAccount"]).sort_values(
+            by="lastUpdated", ascending=False
+        )
+
+        return provider_accounts
+
+    def delete_provider_accounts(self, id=""):
+        """Delete the provider account for the yodlee user.
+
+        Parameters
+        ----------
+        id : str (optional)
+            provider_accounts to get transactions for, if '' get all provider_accounts
+
+        Returns
+        ----------
+        response : json
+            response from delete request
+
+        """
+        headers = self.headers_authorized
+        response = requests.delete(
+            self.yodlee_endpoint + "/providerAccounts/" + id, headers=headers
+        )
+
+        return response
+
+    def get_providers(self, id=""):
+        """Get the provider accounts for the yodlee user.
+
+        These are the providers and gives information on what the provider is.
+
+        Parameters
+        ----------
+        id : str (optional)
+            providers to get transactions for, if '' get all providers
+
+        Returns
+        ----------
+        providers : DataFrame
+            providers dataframe
+
+        """
+        headers = self.headers_authorized
+        response = requests.get(
+            self.yodlee_endpoint + "/providers/" + id, headers=headers
+        )
+        response_data = response.json()
+        providers = pd.DataFrame(response_data["provider"]).sort_values(
+            by="lastModified", ascending=False
+        )
+
+        return providers
+
+    def get_holdings(self, provider_account_id=""):
+        """Get the holdings accounts for the yodlee user.
+
+        These are the holdings in a specific account
+
+        Parameters
+        ----------
+        provider_account_id : str (optional)
+            providers account id to get holdings for, if '' get all providers
+
+        Returns
+        ----------
+        holdings : DataFrame
+            holdings dataframe
+
+        """
+        headers = self.headers_authorized
+        if provider_account_id:
+            provider_account_id = "?providerAccountId=" + provider_account_id
+        response = requests.get(
+            self.yodlee_endpoint + "/holdings" + provider_account_id, headers=headers
+        )
+        response_data = response.json()
+        holdings = pd.DataFrame(response_data["holding"]).sort_values(
+            by="lastUpdated", ascending=False
+        )
+
+        return holdings
+
+    def get_transactions(self, account_id="", formatter=False):
+        """Get the transactions for accounts for the yodlee user.
+
+        These are the transactions in a specific account
+
+        Parameters
+        ----------
+        account_id : str (optional)
+            account id to get transactions for, if '' get all providers
+        formatter : bool (optional)
+            whether or not to format the transactions
+
+        Returns
+        ----------
+        transactions : DataFrame
+            transactions dataframe
+
+        """
+        headers = self.headers_authorized
+        if account_id:
+            account_id = "?accountId=" + account_id
+        response = requests.get(
+            self.yodlee_endpoint + "/transactions" + account_id, headers=headers
+        )
+        response_data = response.json()
+        transactions = pd.DataFrame(response_data["transaction"]).sort_values(
+            by="lastUpdated", ascending=False
+        )
+
+        # format transactions into standardized format
+        if formatter:
+            formatted_transactions = []
+            for transaction in response_data["transaction"]:
+                flat_transaction = {
+                    "symbol": transaction.get("symbol", None),
+                    "amount": transaction["amount"].get("amount", None)
+                    if "amount" in transaction
+                    else None,
+                    "transactionDate": transaction.get("transactionDate", None),
+                    "type": transaction.get("type", None),
+                    "baseType": transaction.get("baseType", None),
+                    "price": transaction["price"].get("amount", None)
+                    if "price" in transaction
+                    else None,
+                    "quantity": transaction.get("quantity", None),
+                }
+                formatted_transactions.append(flat_transaction)
+            transactions = pd.DataFrame(formatted_transactions).sort_values(
+                by="transactionDate", ascending=False
+            )
+
+        return transactions
 
 
 def append_trades(trades, output_file, broker):
