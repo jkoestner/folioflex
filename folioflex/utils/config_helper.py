@@ -128,6 +128,10 @@ YODLEE_CLIENT_ID = get_config_options(config_file, "api")["yodlee_client_id"]
 YODLEE_SECRET = get_config_options(config_file, "api")["yodlee_secret"]
 YODLEE_ENDPOINT = get_config_options(config_file, "api")["yodlee_endpoint"]
 
+# gpts
+HUGCHAT_LOGIN = get_config_options(config_file, "gpt")["hugchat_login"]
+HUGCHAT_PASSWORD = get_config_options(config_file, "gpt")["hugchat_password"]
+
 # other
 if os.path.exists(r"/app/tests"):
     REDIS_URL = get_config_options(config_file, "other")["redis_url"]

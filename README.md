@@ -5,7 +5,7 @@
 # Portfolio
 Simple investment portfolio tool that will track stock and provide returns and other metrics. It also contains a web dashboard to view the data.
 
-![workflow badge](https://github.com/jkoestner/folioflex/actions/workflows/main.yml/badge.svg)
+![workflow badge](https://github.com/jkoestner/folioflex/actions/workflows/test-and-deploy.yml/badge.svg)
 [![license badge](https://img.shields.io/github/license/jkoestner/folioflex)](https://github.com/jkoestner/folioflex/blob/main/LICENSE.md)
 [![codecov](https://codecov.io/gh/jkoestner/folioflex/branch/main/graph/badge.svg?token=K4RS9LX4UG)](https://codecov.io/gh/jkoestner/folioflex)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -82,7 +82,8 @@ pip install git+https://github.com/jkoestner/folioflex.git
 If wanting to do more and develop on the code, the following command can be run to install the packages in the requirements.txt file.
 
 ```
-pip install -r requirements.txt
+pip install -e .
+pip install -e .[dev]
 ```
 ## Usage
 
@@ -91,7 +92,7 @@ pip install -r requirements.txt
 CLI can be used for easier commands of python scripts for both portfolio or manager. An example of a CLI command is shown below.
 
 ```commandline
-ffx email -el "['yourname@outlook.com']" -hd {}
+ffx email --email_list "['yourname@outlook.com']" --heatmap_market {}
 ```
 
 ### Python

@@ -70,11 +70,16 @@ def layout(login_status, login_alert):
                             html.Label(fedfunds),
                             # creating cpi
                             html.A(
-                                "US Inflation",
+                                "US Inflation - FRED",
                                 href="https://fred.stlouisfed.org/series/CPIAUCSL",
                                 target="_blank",
                             ),
                             html.Label(cpiaucsl),
+                            html.A(
+                                "US Inflation - BLS",
+                                href="https://www.bls.gov/charts/consumer-price-index/consumer-price-index-by-category-line-chart.htm",
+                                target="_blank",
+                            ),
                         ],
                         className="three columns",
                     ),

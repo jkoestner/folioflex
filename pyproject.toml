@@ -1,0 +1,127 @@
+[build-system]
+requires = ["setuptools>=62.6"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "folioflex"
+description = "A collection of portfolio tracking capabilities"
+version = "0.1.2"
+authors = [{ name = "John Koestner", email = "johnkoestner@outlook.com" }]
+readme = 'README.md'
+license = { file = 'LICENSE.md' }
+requires-python = '>=3.8'
+
+dependencies = [
+    "celery>=5.3.1",
+    "dash>=1.0.2",
+    "dash-core-components>=1.0.0",
+    "dash-html-components>=1.0.0",
+    "dash-renderer>=1.0.0",
+    "dash-table>=4.0.2",
+    "ipywidgets>=8.1.0",
+    "Flask>=1.1.1",
+    "Flask-Compress>=1.4.0",
+    "flower>=2.0.0",
+    "fredapi>=0.4.3",
+    "gunicorn>=19.9.0",
+    "jupyter-dash>=0.4.2",
+    "jupyterlab>=4.0.5",
+    "kaleido>=0.1.0,<0.2.0",          # as of Kaleido 0.2.1, the image processig is too slow.
+    "numpy>=1.22.3",
+    "openpyxl>=3.0.7",
+    "pandas>=0.25.0",
+    "pyxirr>=0.7.2",
+    "redis>=3.3.8",
+    "yfinance>=0.2.28",
+    "pandas-market-calendars>=4.1.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=23.7.0",
+    "flake8>=6.1.0",
+    "pydocstyle>=6.3.0",
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "sphinx>=6.0, <7.2",       # 7.2 breaks the docs build
+    "sphinx_rtd_theme>=1.2.2",
+]
+
+[project.scripts]
+ffx = "folioflex.utils.cli:cli" # the entry points provide console scripts at command line
+
+[project.urls]
+homepage = "https://github.com/jkoestner/folioflex"
+documentation = 'https://jkoestner.github.io/folioflex/'
+repository = 'https://github.com/jkoestner/folioflex'
+
+# TODO: Remove after setuptools support is dropped.
+[tool.setuptools]
+include-package-data = true # include files from MANIFEST.in
+
+[tool.setuptools.packages.find]
+exclude = ["tests*"]
+
+# coverage config file for pytest-cov coming from
+# https://pytest-cov.readthedocs.io/en/latest/
+# run using pytest --cov=folioflex --cov-report=html
+[tool.coverage.run]
+data_file = "docs/coverage/.coverage"
+omit = [
+    "folioflex/dashboard/*", # omit everything in /dashboard
+    "__init__.py",           # omit init files
+]
+
+[tool.coverage.html]
+directory = "docs/coverage/htmlcov"
+
+[tool.ruff]
+line-length = 120
+fix = false
+unfixable = []
+
+select = [
+    # pyflakes
+    "F",
+    # pycodestyle
+    "E",
+    "W",
+    # flake8-2020
+    "YTT",
+    # flake8-bugbear
+    "B",
+    # flake8-quotes
+    "Q",
+    # flake8-debugger
+    "T10",
+    # flake8-gettext
+    "INT",
+    # pylint
+    "PL",
+    # misc lints
+    "PIE",
+    # flake8-pyi
+    "PYI",
+    # tidy imports
+    "TID",
+    # implicit string concatenation
+    "ISC",
+    # type-checking imports
+    "TCH",
+    # comprehensions
+    "C4",
+    # pygrep-hooks
+    "PGH",
+    # Ruff-specific rules
+    "RUF",
+    # flake8-bandit: exec-builtin
+    "S102",
+    # numpy-legacy-random
+    "NPY002",
+    # Perflint
+    "PERF",
+    # flynt
+    "FLY",
+    # flake8-logging-format
+    "G",
+]
