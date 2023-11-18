@@ -77,7 +77,10 @@ def layout(login_status, login_alert):
                             html.Label(cpiaucsl),
                             html.A(
                                 "US Inflation - BLS",
-                                href="https://www.bls.gov/charts/consumer-price-index/consumer-price-index-by-category-line-chart.htm",
+                                href=(
+                                    "https://www.bls.gov/charts/consumer-price-index/"
+                                    "consumer-price-index-by-category-line-chart.htm"
+                                ),
                                 target="_blank",
                             ),
                         ],

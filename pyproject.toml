@@ -12,18 +12,8 @@ license = { file = 'LICENSE.md' }
 requires-python = '>=3.8'
 
 dependencies = [
-    "celery>=5.3.1",
-    "dash>=1.0.2",
-    "dash-core-components>=1.0.0",
-    "dash-html-components>=1.0.0",
-    "dash-renderer>=1.0.0",
-    "dash-table>=4.0.2",
     "ipywidgets>=8.1.0",
-    "Flask>=1.1.1",
-    "Flask-Compress>=1.4.0",
-    "flower>=2.0.0",
     "fredapi>=0.4.3",
-    "gunicorn>=19.9.0",
     "jupyter-dash>=0.4.2",
     "jupyterlab>=4.0.5",
     "kaleido>=0.1.0,<0.2.0",          # as of Kaleido 0.2.1, the image processig is too slow.
@@ -31,7 +21,6 @@ dependencies = [
     "openpyxl>=3.0.7",
     "pandas>=0.25.0",
     "pyxirr>=0.7.2",
-    "redis>=3.3.8",
     "yfinance>=0.2.28",
     "pandas-market-calendars>=4.1.4",
 ]
@@ -45,6 +34,19 @@ dev = [
     "pytest-cov>=4.1.0",
     "sphinx>=6.0, <7.2",       # 7.2 breaks the docs build
     "sphinx_rtd_theme>=1.2.2",
+]
+
+worker = ["celery>=5.3.1", "flower>=2.0.0", "redis>=3.3.8"]
+
+web = [
+    "dash>=1.0.2",
+    "dash-core-components>=1.0.0",
+    "dash-html-components>=1.0.0",
+    "dash-renderer>=1.0.0",
+    "dash-table>=4.0.2",
+    "Flask>=1.1.1",
+    "Flask-Compress>=1.4.0",
+    "gunicorn>=19.9.0",
 ]
 
 [project.scripts]
