@@ -103,23 +103,44 @@ def _config_reference(config, section, option, **kwargs):
     `$`: reference to an environment variable
     """
     raw_value = config.get(section, option, **kwargs)
+    # removing comments
+    raw_value = raw_value.split("# ", 1)[0].strip()
+    # handling complex structures such as lists and dicts
     value = (
         ast.literal_eval(raw_value) if is_complex_structure(raw_value) else raw_value
     )
     if raw_value.startswith("static"):  # If value is a static reference
         ref_section, ref_option = raw_value.split(".")
         section_value = config.get(ref_section, ref_option, **kwargs)
+        section_value = section_value.split("# ", 1)[0].strip()
         if section_value.startswith("$"):
             return os.getenv(section_value[1:])
         else:
-            return section_value
+            return (
+                ast.literal_eval(section_value)
+                if is_complex_structure(section_value)
+                else section_value
+            )
     elif raw_value.startswith("$"):  # If value is an environment variable
-        return os.getenv(raw_value[1:])
+        return os.getenv(value[1:])
     else:
         return value
 
 
 def is_complex_structure(s):
+    """Check if string is a complex structure.
+
+    Parameters
+    ----------
+    s : str
+        the string to check
+
+    Returns
+    --------
+    bool
+        whether the string is a complex structure
+
+    """
     s = s.strip("'\"")
     if s.startswith(("[", "(", "{")) and s.endswith(("]", ")", "}")):
         return True

@@ -79,7 +79,7 @@ class Portfolio:
         """Initialize the Portfolio class."""
         config_dict = config_helper.get_config_options(config_path, portfolio)
         self.file = self.load_filename(config_dict["tx_file"])
-        logger.info(f"read {self.file}")
+        logger.info(f"retrieved filename {self.file}")
         self.name = config_dict["name"]
         logger.info(f"creating '{self.name}' portfolio")
         self.filter_type = config_dict["filter_type"]
@@ -294,7 +294,7 @@ class Portfolio:
             elif self.file.endswith(".xlsx"):
                 transactions = pd.read_excel(self.file, engine="openpyxl")
             else:
-                raise ValueError("Unsupported file format")
+                raise ValueError(f"Unsupported file format for {self.file}")
         except FileNotFoundError:
             raise FileNotFoundError(f"File not found at {self.file}")
         except Exception as e:
