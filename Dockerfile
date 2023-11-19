@@ -1,7 +1,7 @@
 # this docker file is used to create a docker image for the web.
-# It currently is being built on dockerhub at dmbymdt/folioflex-web and
+# It currently is being built on dockerhub at dmbymdt/folioflex and
 # then pulled down into a web container.
-# To run dockerfile and create own image `docker build --no-cache -t folioflex-web -f Dockerfile.web .` 
+# To run dockerfile and create own image `docker build --no-cache -t folioflex .` 
 # from where the dockerfile is located.
 FROM python:3.8-slim
 
@@ -19,14 +19,13 @@ COPY . .
 # Install requirements
 RUN pip install .
 RUN pip install .[web]
+RUN pip install .[worker]
+RUN pip install .[redis]
 
 # Create new user
 RUN adduser --disabled-password --gecos '' ffx
 RUN chown -R ffx:ffx /code
 USER ffx
 
-# Make port 8000 available to the outside world
+# Using port 8001 for web
 EXPOSE 8001
-
-# Define command to run the app using Gunicorn
-CMD ["gunicorn", "-b", "0.0.0.0:8001", "app:server"]

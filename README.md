@@ -48,7 +48,7 @@ Simple investment portfolio tool that will track stock and provide returns and o
 
 **🎥 See It In Action:**
 
-- **FolioFlex Demo**: Visit a dashboard (https://koestner.fly.dev/) of FolioFlex and witness the magic! 🌟
+- **FolioFlex Demo**: Visit a dashboard (https://invest.koestner.fun/) of FolioFlex and witness the magic! 🌟
 
 **🤝 Contribute:**
 - Love FolioFlex? Feel free to contribute and make it even better! Every bit of help is appreciated. ❤️
@@ -111,7 +111,7 @@ pf.get_performance()
 
 ### Web Dashboard
 
-A demo of the app can be seen at https://koestner.fly.dev/.
+A demo of the app can be seen at https://invest.koestner.fun/.
 
 
 It also can be run locally by going to the project root folder and running below.
