@@ -183,16 +183,27 @@ class Fred:
         fred_summary : dict
             provides dictionary of FRED data
         """
-        fred = fredapi.Fred(api_key=config_helper.FRED_API)
-        fred_dict = {
+        fred_lkup = {
             "recession": "RECPROUSM156N",
             "unemployment": "UNRATE",
             "inflation": "CPIAUCSL",
             "fed_funds": "FEDFUNDS",
             "housing_starts": "HOUST",
         }
-        fred_summary = {}
-        for key, value in fred_dict.items():
+        fred_summary = {
+            "recession": None,
+            "unemployment": None,
+            "inflation": None,
+            "fed_funds": None,
+            "housing_starts": None,
+        }
+        if config_helper.FRED_API is None:
+            logger.warning(
+                "No FRED API key found you can sign up free here http://research.stlouisfed.org/fred2/"
+            )
+            return fred_summary
+        fred = fredapi.Fred(api_key=config_helper.FRED_API)
+        for key, value in fred_lkup.items():
             fred_summary[key] = fred.get_series(value).iloc[-1]
 
         return fred_summary
