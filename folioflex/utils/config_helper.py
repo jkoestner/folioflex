@@ -102,19 +102,21 @@ def _config_reference(config, section, option, **kwargs):
     `static`: reference to static section
     `$`: reference to an environment variable
     """
-    value = config.get(section, option, **kwargs)
-    if value.startswith("static"):  # If value is a static reference
-        ref_section, ref_option = value.split(".")
-        value = config.get(ref_section, ref_option, **kwargs)
-        value = ast.literal_eval(value) if is_complex_structure(value) else value
-        if value.startswith("$"):
-            return os.getenv(value[1:])
+    raw_value = config.get(section, option, **kwargs)
+    value = (
+        ast.literal_eval(raw_value) if is_complex_structure(raw_value) else raw_value
+    )
+    if raw_value.startswith("static"):  # If value is a static reference
+        ref_section, ref_option = raw_value.split(".")
+        section_value = config.get(ref_section, ref_option, **kwargs)
+        if section_value.startswith("$"):
+            return os.getenv(section_value[1:])
         else:
-            return value
-    elif value.startswith("$"):  # If value is an environment variable
-        return os.getenv(value[1:])
+            return section_value
+    elif raw_value.startswith("$"):  # If value is an environment variable
+        return os.getenv(raw_value[1:])
     else:
-        return ast.literal_eval(value) if is_complex_structure(value) else value
+        return value
 
 
 def is_complex_structure(s):
