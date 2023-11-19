@@ -10,22 +10,23 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Create new user
-RUN adduser --disabled-password --gecos '' ffx
-
 # Set work directory
 WORKDIR /code
+
+# Copy the current directory contents into the container
+COPY . .
 
 # Install requirements
 RUN pip install .
 RUN pip install .[web]
 
+# Create new user
+RUN adduser --disabled-password --gecos '' ffx
 RUN chown -R ffx:ffx /code
-
 USER ffx
 
 # Make port 8000 available to the outside world
 EXPOSE 8001
 
 # Define command to run the app using Gunicorn
-CMD ["gunicorn", "-b", "0.0.0.0:8000", "app:server"]
+CMD ["gunicorn", "-b", "0.0.0.0:8001", "app:server"]

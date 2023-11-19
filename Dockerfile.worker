@@ -10,17 +10,20 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Create new user
-RUN adduser --disabled-password --gecos '' cq
-
 # Set work directory
 WORKDIR /code
+
+# Copy the current directory contents into the container
+COPY ./pyproject.toml .
+COPY ./setup.py .
+COPY ./MANIFEST.in .
 
 # Install requirements
 RUN pip install .
 RUN pip install .[worker]
 RUN pip install .[redis]
 
+# Create new user
+RUN adduser --disabled-password --gecos '' cq
 RUN chown -R cq:cq /code
-
 USER cq

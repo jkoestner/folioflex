@@ -106,14 +106,22 @@ def _config_reference(config, section, option, **kwargs):
     if value.startswith("static"):  # If value is a static reference
         ref_section, ref_option = value.split(".")
         value = config.get(ref_section, ref_option, **kwargs)
+        value = ast.literal_eval(value) if is_complex_structure(value) else value
         if value.startswith("$"):
             return os.getenv(value[1:])
         else:
-            return ast.literal_eval(value)
+            return value
     elif value.startswith("$"):  # If value is an environment variable
         return os.getenv(value[1:])
     else:
-        return ast.literal_eval(value)
+        return ast.literal_eval(value) if is_complex_structure(value) else value
+
+
+def is_complex_structure(s):
+    s = s.strip("'\"")
+    if s.startswith(("[", "(", "{")) and s.endswith(("]", ")", "}")):
+        return True
+    return False
 
 
 config_file = CONFIG_PATH / "config.ini"
