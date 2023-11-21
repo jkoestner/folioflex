@@ -65,7 +65,7 @@ Inspiration:
 
 ## Installation
 
-### Install packages
+### Local Install
 To install, this repository can be installed by running the following command in 
 the environment of choice.
 
@@ -85,6 +85,55 @@ If wanting to do more and develop on the code, the following command can be run 
 pip install -e .
 pip install -e .[dev]
 ```
+### Docker Install
+The package can also be run in docker which provides a containerized environment, and can host the web dashboard.
+
+To run the web dashboard there are a few prerequisites.
+  - Docker
+  - Redis
+  - Worker
+  - Flower (optional)
+
+The following can be used in a `docker-compose.yml`. 
+
+```bash
+version: "3.8"
+services:
+  folioflex-web:
+    image: dmbymdt/folioflex:latest
+    container_name: folioflex-web
+    command: gunicorn -b 0.0.0.0:8001 app:server
+    restart: unless-stopped
+    environment:
+      FFX_CONFIG_PATH: /code/folioflex/configs
+    ports:
+      - '8001:8001'
+    volumes:
+      - $DOCKERDIR/folioflex-web/configs:/code/folioflex/configs
+```
+
+The docker container has a configuration file that can read in environment variables or
+could specify within file. 
+
+There is also an environment variable that can specify the path to the configuration folder.
+
+<details>
+  <summary>ENVIRONMENT VARIABLES</summary>
+
+  <table>
+      <tr>
+          <th>Variable</th>
+          <th>Description</th>
+          <th>Default</th>
+      </tr>
+      <tr>
+          <td>FFX_CONFIG_PATH</td>
+          <td>The path to the configuration folder</td>
+          <td>folioflex/folioflex/configs</td>
+      </tr>
+  </table>
+</details>
+
 ## Usage
 
 ### CLI

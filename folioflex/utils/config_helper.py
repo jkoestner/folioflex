@@ -151,7 +151,7 @@ def is_complex_structure(s):
     return False
 
 
-config_file = CONFIG_PATH / "config.ini"
+config_file = os.path.join(CONFIG_PATH, "config.ini")
 
 # credentials
 FFX_USERNAME = get_config_options(config_file, "credentials")["ffx_username"]
