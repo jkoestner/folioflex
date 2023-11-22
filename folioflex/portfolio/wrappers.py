@@ -189,6 +189,7 @@ class Fred:
             "inflation": "CPIAUCSL",
             "fed_funds": "FEDFUNDS",
             "housing_starts": "HOUST",
+            "10_year": "DGS10",
         }
         fred_summary = {
             "recession": None,
@@ -196,6 +197,7 @@ class Fred:
             "inflation": None,
             "fed_funds": None,
             "housing_starts": None,
+            "10_year": None,
         }
         if config_helper.FRED_API is None:
             logger.warning(
@@ -555,7 +557,7 @@ class Yahoo:
         max_count = 101
         if count <= min_count or count >= max_count:
             logger.warning(
-                "Count should be between 1 and 100 and the count was %s", count
+                f"Count should be between 1 and 100 and the count was {count}"
             )
 
         url = (
@@ -613,8 +615,10 @@ class Yahoo:
         change_percent : float
             the percentage change of the stock over the given number of days
         """
-        end_date = datetime.today().strftime("%Y-%m-%d")
         start_date = (datetime.today() - timedelta(days=days)).strftime("%Y-%m-%d")
+        # yfinance is exclusive of end date so add 1 day
+        # https://github.com/ranaroussi/yfinance/wiki/Ticker#history
+        end_date = (datetime.today() + timedelta(days=1)).strftime("%Y-%m-%d")
 
         data = yf.download(ticker, start=start_date, end=end_date)
 

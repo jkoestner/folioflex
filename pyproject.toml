@@ -127,3 +127,11 @@ select = [
     # flake8-logging-format
     "G",
 ]
+
+ignore = [
+    ### Intentionally disabled
+    # logging statement uses f-string
+    "G004",
+]
+
+exclude = ["*.ipynb"]

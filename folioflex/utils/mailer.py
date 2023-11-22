@@ -14,7 +14,7 @@ from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from folioflex.portfolio import heatmap
+from folioflex.portfolio import heatmap, helper, wrappers
 from folioflex.portfolio.portfolio import Portfolio, Manager
 from folioflex.utils import config_helper
 
@@ -142,8 +142,15 @@ def generate_report(
     # building the email message
 
     today = datetime.date.today()
+    spy_pct = wrappers.Yahoo().get_change_percent(ticker="SPY", days=1)
     subject = f"Summary as of {today}"
-    message = f"Below is your financial summary as of {today}.<br><br>"
+    message = (
+        f"Below is your financial summary as of {today}."
+        "<br>"
+        f"The SPY return is {spy_pct:.2%}"
+        "<br>"
+        "<br>"
+    )
     image_list = []
     image_idx = 1
 
@@ -156,11 +163,12 @@ def generate_report(
         image_list.append(image)
 
         message += (
-            f"<p>Market Heatmap Summary</p>"
-            f"<ul>"
+            "<p>Market Heatmap Summary</p>"
+            "<ul>"
             f"<li>lookback: {lookback}</li>"
-            f"</ul>"
-            f"<img src='cid:image{image_idx}' alt='heatmap market'/>" + "<br>"
+            "</ul>"
+            f"<img src='cid:image{image_idx}' alt='heatmap market'/>"
+            "<br>"
         )
 
         image_idx += 1
@@ -178,12 +186,13 @@ def generate_report(
         image_list.append(image)
 
         message += (
-            f"<p>Portfolio Heatmap Summary</p>"
-            f"<ul>"
+            "<p>Portfolio Heatmap Summary</p>"
+            "<ul>"
             f"<li>portfolio: {portfolio}</li>"
             f"<li>lookback: {lookback}</li>"
-            f"</ul>"
-            f"<img src='cid:image{image_idx}' alt='heatmap portfolio'/>" + "<br>"
+            "</ul>"
+            f"<img src='cid:image{image_idx}' alt='heatmap portfolio'/>"
+            "<br>"
         )
 
         image_idx += 1
@@ -198,11 +207,24 @@ def generate_report(
             config_path=config_path, portfolios=portfolios
         ).get_summary(date=date, lookbacks=lookbacks)
 
+        columns_to_keep = manager_summary.filter(like="_dwrr_pct").columns.tolist()
+        columns_to_keep = [col for col in columns_to_keep if "div" not in col]
+        columns_to_keep = [
+            "date",
+            "market_value",
+            "equity",
+            "cash",
+            "return",
+            *columns_to_keep,
+        ]
+
+        manager_condensed_summary = manager_summary[columns_to_keep]
+
         message += (
             f"<p>Manager Summary</p>"
             f"<ul>"
             f"<li>lookbacks: {lookbacks}</li>"
-            f"</ul><br>{manager_summary.to_html()}<br>"
+            f"</ul><br>{manager_condensed_summary.to_html()}<br>"
         )
 
     if portfolio_performance is not None:
@@ -213,20 +235,49 @@ def generate_report(
 
         portfolio_summary = Portfolio(
             config_path=config_path, portfolio=portfolio
-        ).get_performance(date=date, lookback=lookback)
+        ).get_performance(date=date, lookback=lookback, prettify=False)
 
         # remove rows with 0 market value
         portfolio_summary = portfolio_summary[
             portfolio_summary["market_value"] != 0
         ].sort_values("return", ascending=False)
+        portfolio_pct = portfolio_summary.loc["portfolio"]["dwrr_pct"]
+
+        # gainers/losers
+        nbr_of_tickers = 5
+        conditions = ~portfolio_summary.index.str.contains("Cash|benchmark|portfolio")
+        gainers = (
+            portfolio_summary[conditions & (portfolio_summary["dwrr_pct"] > 0)]
+            .sort_values(by="dwrr_pct", ascending=False)
+            .head(nbr_of_tickers)[["dwrr_pct", "return"]]
+        )
+        gainers = helper.prettify_dataframe(gainers)
+        losers = (
+            portfolio_summary[conditions & (portfolio_summary["dwrr_pct"] < 0)]
+            .sort_values(by="dwrr_pct", ascending=False)
+            .head(nbr_of_tickers)[["dwrr_pct", "return"]]
+        )
+        losers = helper.prettify_dataframe(losers)
 
         message += (
-            f"<p>Portfolio Summary</p>"
-            f"<ul>"
+            "<p>Portfolio Summary</p>"
+            "<ul>"
             f"<li>portfolio: {portfolio}</li>"
             f"<li>lookback: {lookback}</li>"
-            # f"</ul><br>" + portfolio_summary.to_html() + "<br>"
-            f"<ul><br>{portfolio_summary.to_html()}<br></ul>"
+            f"<li>return: {portfolio_pct:.2%}</li>"
+            "</ul>"
+            "<br>"
+            "<table style='width:100%;'>"
+            "<tr>"
+            "<th>Gainers</th>"
+            "<th>Losers</th>"
+            "</tr>"
+            "<tr>"
+            f"<td>{gainers.to_html()}</td>"
+            f"<td>{losers.to_html()}</td>"
+            "</tr>"
+            "</table>"
+            "<br>"
         )
 
     return send_email(

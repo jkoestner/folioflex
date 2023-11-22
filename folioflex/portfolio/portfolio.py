@@ -180,9 +180,7 @@ class Portfolio:
             condition, "market_value"
         ].sum()
 
-        condition = ~performance.index.str.contains(
-            "|".join(["Cash", "benchmark", "portfolio"])
-        )
+        condition = ~performance.index.str.contains("Cash|benchmark|portfolio")
         performance.loc["portfolio", "equity"] = performance.loc[
             condition, "market_value"
         ].sum()

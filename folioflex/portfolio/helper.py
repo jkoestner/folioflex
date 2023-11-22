@@ -52,7 +52,7 @@ def check_stock_dates(tx_df, fix=False, timezone="US/Eastern"):
                 transactions dataframe with fixed dates if fix=True
 
     """
-    if isinstance(tx_df, str) or isinstance(tx_df, date):
+    if isinstance(tx_df, (str, date)):
         logger.info("Checking a single date or string")
         tx_df = pd.DataFrame({"date": [pd.to_datetime(tx_df)]})
 
@@ -102,3 +102,28 @@ def check_stock_dates(tx_df, fix=False, timezone="US/Eastern"):
             f"dates such as {invalid_dt[0]} \n"
         )
     return {"invalid_dt": invalid_dt, "fix_tx_df": fix_tx_df}
+
+
+def prettify_dataframe(dataframe):
+    """Prettify a dataframe with formatting.
+
+    Parameters
+    ----------
+    dataframe : DataFrame
+        dataframe to prettify
+
+    Returns
+    -------
+    DataFrame
+        prettified dataframe
+    """
+    if not isinstance(dataframe, pd.DataFrame):
+        raise ValueError("dataframe must be a pandas DataFrame")
+
+    pct_cols = dataframe.filter(like="pct").columns
+    for pct_col in pct_cols:
+        dataframe[pct_col] = dataframe[pct_col].apply(
+            lambda x: "{:.2%}".format(x) if x is not None else "NaN"
+        )
+
+    return dataframe
