@@ -4,11 +4,10 @@ Provides functions for common used functions in app.
 """
 
 import datetime
+
 import pandas as pd
 import plotly.graph_objs as go
-
-from dash import dcc
-from dash import html
+from dash import dcc, html
 from dateutil.relativedelta import relativedelta
 
 
@@ -83,10 +82,8 @@ def get_defaults():
 def make_dash_table(df):
     """Return a dash definition of an HTML table for a Pandas dataframe."""
     table = []
-    for index, row in df.iterrows():
-        html_row = []
-        for i in range(len(row)):
-            html_row.append(html.Td([row[i]]))
+    for _index, row in df.iterrows():
+        html_row = [html.Td([cell]) for cell in row]
         table.append(html.Tr(html_row))
     return table
 
@@ -115,7 +112,7 @@ def getMarks(start, end, nth=365):
         the range to create a new mark
 
     Returns
-    ----------
+    -------
     marks : series
         the values that will have marks
     """
@@ -140,7 +137,7 @@ def get_slider_values(daterange):
         series of dates to calculate values on
 
     Returns
-    ----------
+    -------
     min : date
         minimum date
     max : date
@@ -207,6 +204,6 @@ def update_graph(slide_value, view_return, view_cost):
             )
         )
 
-    fig = dict(data=res, layout=layout)
+    fig = {"data": res, "layout": layout}
 
     return fig

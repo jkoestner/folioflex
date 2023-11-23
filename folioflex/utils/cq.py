@@ -1,5 +1,4 @@
-"""
-Worker connections.
+"""Worker connections.
 
 note: there are two resources that are needed to use the worker processes.
 
@@ -18,15 +17,14 @@ If wanting to look at monitoring celery, use the following command which is avai
    celery -A folioflex.utils.cq flower
 """
 
-import yfinance as yf
-
-from celery import Celery
 from datetime import datetime
+
+import yfinance as yf
+from celery import Celery
 
 from folioflex.dashboard import layouts
 from folioflex.portfolio import portfolio
 from folioflex.utils import config_helper
-
 
 celery_app = Celery(
     "tasks",
@@ -112,7 +110,7 @@ def manager_query(config_file, lookbacks=None):
     ----------
     config_file : str
        config file name
-    lookback : int (optional)
+    lookbacks : int (optional)
         amount of days to lookback
 
     Returns

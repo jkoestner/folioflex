@@ -1,13 +1,13 @@
 """Tests the portfolio tracker."""
+from datetime import timedelta
+
 import numpy as np
 import pandas as pd
 import pandas_market_calendars as mcal
-
-from datetime import timedelta
 from pyxirr import xirr
 
-from folioflex.utils import config_helper
 from folioflex.portfolio import portfolio
+from folioflex.utils import config_helper
 
 date = "05-02-2022"  # date to test for performance
 config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_portfolio.ini"
@@ -87,7 +87,6 @@ def test_calc_return_pct():
         [ticker_transactions, current_price], ignore_index=True
     )
     return_pct = xirr(ticker_transactions["date"], ticker_transactions["market_value"])
-    return_pct
 
     assert round(performance.loc["AMD", "dwrr_ann_pct"], 4) == round(
         return_pct, 4

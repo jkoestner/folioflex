@@ -1,5 +1,4 @@
-"""
-Creates integrations from different repositories.
+"""Creates integrations from different repositories.
 
 This section will be a work in progress as integrations will be refined
 over time depending on the openness and reliability of the data sources are.
@@ -61,7 +60,7 @@ class HugChatProvider(ChatBotProvider):
             the password
 
         Returns
-        ----------
+        -------
         chatbot : chatbot
             the chatbot object
         """
@@ -90,7 +89,7 @@ class HugChatProvider(ChatBotProvider):
             the query to send to the chatbot
 
         Returns
-        ----------
+        -------
         formatted_response : str
             the response from the chatbot
         """
@@ -118,7 +117,7 @@ class GPTchat:
     Class that provides functions that use HugChat.
     """
 
-    def __init__(self, provider=HugChatProvider()):
+    def __init__(self, provider=None):
         """Initialize the Gptchat class.
 
         Parameters
@@ -126,6 +125,8 @@ class GPTchat:
         provider : ChatBotProvider
             the name of the provider
         """
+        if provider is None:
+            provider = HugChatProvider()
         self.provider = provider
 
     def chat(self, query):

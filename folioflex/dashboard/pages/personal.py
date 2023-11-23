@@ -1,8 +1,6 @@
 """Personal dashboard."""
 
-from dash import dash_table
-from dash import dcc
-from dash import html
+from dash import dash_table, dcc, html
 
 from folioflex.dashboard import dashboard_helper
 

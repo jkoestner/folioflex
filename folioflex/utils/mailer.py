@@ -1,5 +1,4 @@
-"""
-Email module.
+"""Email module.
 
 This module contains functions to send emails as well as generate reports
 to send in the emails.
@@ -9,15 +8,13 @@ to send in the emails.
 import datetime
 import logging
 import smtplib
-
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from folioflex.portfolio import heatmap, helper, wrappers
-from folioflex.portfolio.portfolio import Portfolio, Manager
+from folioflex.portfolio.portfolio import Manager, Portfolio
 from folioflex.utils import config_helper
-
 
 # logging options https://docs.python.org/3/library/logging.html
 logger = logging.getLogger(__name__)
@@ -50,7 +47,7 @@ def send_email(message, subject, email_list, image_list=None):
         Images to attach to email
 
     Returns
-    ----------
+    -------
     bool
         True if email was sent successfully, False otherwise.
 
@@ -135,7 +132,7 @@ def generate_report(
             - lookback (optional)
 
     Returns
-    ----------
+    -------
     bool
         True if email was sent successfully, False otherwise.
     """

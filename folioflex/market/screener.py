@@ -5,7 +5,6 @@ Provides market screeners
 
 import logging
 
-
 # logging options https://docs.python.org/3/library/logging.html
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)

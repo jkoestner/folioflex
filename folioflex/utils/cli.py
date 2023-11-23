@@ -2,10 +2,9 @@
 
 import argparse
 import ast
-
 from argparse import ArgumentDefaultsHelpFormatter
 
-from folioflex.portfolio.portfolio import Portfolio, Manager
+from folioflex.portfolio.portfolio import Manager, Portfolio
 from folioflex.utils import mailer
 
 #
@@ -27,7 +26,7 @@ def _parse_input_to_list(input_str):
         string to parse
 
     Returns
-    ----------
+    -------
     result : list
         list of parsed input
     """
@@ -40,8 +39,8 @@ def _parse_input_to_list(input_str):
             return result
         else:
             raise argparse.ArgumentTypeError(f"'{input_str}' is not a valid list")
-    except ValueError:
-        raise argparse.ArgumentTypeError(f"'{input_str}' is not a valid list")
+    except ValueError as err:
+        raise argparse.ArgumentTypeError(f"'{input_str}' is not a valid list") from err
 
 
 def _create_argparser():
