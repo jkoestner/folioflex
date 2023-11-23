@@ -1,5 +1,4 @@
-"""
-Creates classes and functions to analyze a portfolio of stocks.
+"""Creates classes and functions to analyze a portfolio of stocks.
 
 The Portfolio class has a number of objects, such as:
    - file : the transaction file locations
@@ -20,17 +19,17 @@ The Manager class has a number of objects, such as:
 """
 
 import logging
-import numpy as np
 import os
+from datetime import timedelta
+
+import numpy as np
 import pandas as pd
 import pandas_market_calendars as mcal
-
-from datetime import timedelta
 from pyxirr import xirr
 
-from folioflex.utils import config_helper
-from folioflex.portfolio.wrappers import Yahoo
 from folioflex.portfolio.helper import check_stock_dates
+from folioflex.portfolio.wrappers import Yahoo
+from folioflex.utils import config_helper
 
 pd.options.display.float_format = "{:,.2f}".format
 
@@ -127,7 +126,7 @@ class Portfolio:
             whether to prettify the output
 
         Returns
-        ----------
+        -------
         performance : DataFrame
             the performance of individual assets as well as portfolio
                 - date
@@ -274,7 +273,7 @@ class Portfolio:
             additional fields to include
 
         Returns
-        ----------
+        -------
         transactions : DataFrame
             the transactions made on portfolio
 
@@ -293,14 +292,14 @@ class Portfolio:
                 transactions = pd.read_excel(self.file, engine="openpyxl")
             else:
                 raise ValueError(f"Unsupported file format for {self.file}")
-        except FileNotFoundError:
-            raise FileNotFoundError(f"File not found at {self.file}")
-        except Exception as e:
-            raise ValueError(f"Error loading file: {e}")
+        except FileNotFoundError as err:
+            raise FileNotFoundError(f"File not found at {self.file}") from err
+        except Exception as err:
+            raise ValueError(f"Error loading file: {err}") from err
 
         logger.info(f"there are {len(transactions)} transactions in file")
 
-        cols = ["date", "ticker", "type", "units", "cost"] + other_fields
+        cols = ["date", "ticker", "type", "units", "cost", *other_fields]
         missing_cols = set(cols) - set(transactions.columns)
         if missing_cols:
             raise ValueError(f"Missing columns in file: {missing_cols}")
@@ -319,7 +318,7 @@ class Portfolio:
         # handle multiple transactions on same day by grouping
         transactions = (
             transactions.groupby(
-                by=["date", "ticker", "type"] + other_fields, dropna=False
+                by=["date", "ticker", "type", *other_fields], dropna=False
             )
             .sum()
             .reset_index()
@@ -334,7 +333,7 @@ class Portfolio:
         # sort values descending
         transactions = transactions.sort_values(by="date", ascending=False)
 
-        transactions = transactions[cols + ["price"]]
+        transactions = transactions[[*cols, "price"]]
 
         logger.info(
             f"after filtering and grouping there are {len(transactions)} transactions in file"
@@ -355,9 +354,11 @@ class Portfolio:
             Price history DataFrame
         other_fields : list (optional)
             additional fields to include
+        benchmarks : list (optional)
+            list of tickers to add as benchmarks
 
         Returns
-        ----------
+        -------
         transactions_history : DataFrame
             the price history of stock transactions
         """
@@ -414,12 +415,12 @@ class Portfolio:
             dataframe to get return percent from
 
         Returns
-        ----------
+        -------
         view_df : DataFrame
         """
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
-        cols = ["ticker", "date"] + [view]
+        cols = ["ticker", "date", view]
         view_df = tx_hist_df[cols]
         view_df = view_df.pivot_table(
             index="date", columns="ticker", values=view, aggfunc="sum"
@@ -439,7 +440,7 @@ class Portfolio:
             dataframe to performe checks on
 
         Returns
-        ----------
+        -------
         portfolio_checks_failed : int
         """
         if tx_df is None:
@@ -584,9 +585,12 @@ class Portfolio:
         offline_location : str (optional)
             location of the csv price history. This is useful when not connected
             to internet and the price history is already available.
+        history_offline : str (optional)
+            location of the csv price history. This is useful when not connected
+            to internet and the price history is already available.
 
         Returns
-        ----------
+        -------
         price_history : DataFrame
             the price history
                - ticker
@@ -601,10 +605,10 @@ class Portfolio:
                     )
                 else:
                     raise ValueError("Unsupported file format needs to be .csv")
-            except FileNotFoundError:
-                raise FileNotFoundError(f"File not found at {history_offline}")
-            except Exception as e:
-                raise ValueError(f"Error loading file: {e}")
+            except FileNotFoundError as err:
+                raise FileNotFoundError(f"File not found at {history_offline}") from err
+            except Exception as err:
+                raise ValueError(f"Error loading file: {err}") from err
 
             return price_history
 
@@ -710,7 +714,7 @@ class Portfolio:
             additional fields to include
 
         Returns
-        ----------
+        -------
         tx_hist_df : DataFrame
             DataFrame that has transactions and price history
         """
@@ -723,7 +727,7 @@ class Portfolio:
         tickers = list(tx_df["ticker"].unique())
 
         tx_df = (
-            tx_df.groupby(by=["date", "ticker"] + other_fields)
+            tx_df.groupby(by=["date", "ticker", *other_fields])
             .sum(numeric_only=True)
             .reset_index()
         )
@@ -738,7 +742,7 @@ class Portfolio:
 
         tx_hist_df = pd.merge(
             price_history,
-            tx_df[["date", "ticker", "price", "units", "cost"] + other_fields],
+            tx_df[["date", "ticker", "price", "units", "cost", *other_fields]],
             how="outer",
             on=["date", "ticker"],
         ).sort_values(by=["ticker", "date"], ignore_index=True)
@@ -773,7 +777,7 @@ class Portfolio:
             additional fields to include
 
         Returns
-        ----------
+        -------
         tx_df : DataFrame
             DataFrame that has cash included
         """
@@ -819,7 +823,7 @@ class Portfolio:
             Price history DataFrame
 
         Returns
-        ----------
+        -------
         tx_df : DataFrame
             DataFrame that has adjusted transactions for splits
         """
@@ -865,7 +869,7 @@ class Portfolio:
             additional fields to include
 
         Returns
-        ----------
+        -------
         tx_hist_df : DataFrame
             DataFrame that has dividend column included
         """
@@ -875,7 +879,7 @@ class Portfolio:
         dividends = tx_df[tx_df["type"] == "DIVIDEND"]
 
         dividends = (
-            dividends.groupby(by=["date", "ticker"] + other_fields)
+            dividends.groupby(by=["date", "ticker", *other_fields])
             .sum(numeric_only=True)
             .reset_index()
         )
@@ -913,7 +917,7 @@ class Portfolio:
             Transactions history to calculate metrics on
 
         Returns
-        ----------
+        -------
         transaction_metrics : DataFrame
             DataFrame containing updated metrics
             - cumulative_units
@@ -999,7 +1003,8 @@ class Portfolio:
     def _add_benchmark(self, tx_df, ticker, price_history=None, other_fields=None):
         """Add a benchmark with transaction history dataframe.
 
-        Notes:
+        Notes
+        -----
         Benchmark does not include any dividends from the benchmark, but
         does include investing dividends from portfolio
 
@@ -1015,7 +1020,7 @@ class Portfolio:
             additional fields to include
 
         Returns
-        ----------
+        -------
         benchmark_tx_hist : DataFrame
             DataFrame containing transaction history for dataframe
         """
@@ -1037,7 +1042,7 @@ class Portfolio:
         benchmark_tx["cost"] = -benchmark_tx["cost"]
 
         benchmark_tx = (
-            benchmark_tx.groupby(by=["date", "ticker"] + other_fields)
+            benchmark_tx.groupby(by=["date", "ticker", *other_fields])
             .sum(numeric_only=True)
             .reset_index()
         )
@@ -1057,8 +1062,15 @@ class Portfolio:
             pd.merge(
                 price_history,
                 benchmark_tx[
-                    ["date", "ticker", "price", "units", "cost", "dividend"]
-                    + other_fields
+                    [
+                        "date",
+                        "ticker",
+                        "price",
+                        "units",
+                        "cost",
+                        "dividend",
+                        *other_fields,
+                    ]
                 ],
                 how="outer",
                 on=["date", "ticker"],
@@ -1103,11 +1115,11 @@ class Portfolio:
 
         Parameters
         ----------
-        tx__hist_df : DataFrame
+        tx_hist_df : DataFrame
             Transactions history
 
         Returns
-        ----------
+        -------
         portfolio_tx_hist : DataFrame
             DataFrame containing portfolio transaction history
         """
@@ -1126,7 +1138,7 @@ class Portfolio:
             "cumulative_dividend",
         ]
         for view in views:
-            cols = ["ticker", "date"] + [view]
+            cols = ["ticker", "date", view]
             view_df = tx_hist_df[cols]
             view_df = view_df.pivot_table(
                 index="date", columns="ticker", values=view, aggfunc="sum"
@@ -1150,7 +1162,7 @@ class Portfolio:
             dataframe to apply calculation to
 
         Returns
-        ----------
+        -------
         df : DataFrame
             dataframe that includes the "average price"
         """
@@ -1180,7 +1192,7 @@ class Portfolio:
             dataframe to apply calculation to
 
         Returns
-        ----------
+        -------
         df : DataFrame
             dataframe that includes the "average price"
         """
@@ -1216,8 +1228,8 @@ class Portfolio:
 
         TODO same day transactions do mess up the calculation of returns
 
-        Notes:
-        ------
+        Notes
+        -----
            Dollar Weighted Return (DWRR)
              This is annualized
              Using the xirr function to calculate dwrr
@@ -1255,7 +1267,7 @@ class Portfolio:
             if True, then will return the transactions used to calculate the return
 
         Returns
-        ----------
+        -------
         return_dict : dict
             dictionary of returns
         """
@@ -1386,6 +1398,10 @@ class Portfolio:
             end_date = return_transactions["date"].iloc[0]
             days = (end_date - start_date).days
 
+            # the annual percentage can be high when the days are low
+            # e.g. 2% return in 1 day is greater than 1000% annualized
+            max_percentage = 1000
+
             # calculating the dwrr return
             # ---------------------------
             dwrr_ann_return_pct = xirr(
@@ -1394,7 +1410,7 @@ class Portfolio:
             # where dwrr can't be calculated
             if dwrr_ann_return_pct is None:
                 pass
-            elif dwrr_ann_return_pct > 1000:
+            elif dwrr_ann_return_pct > max_percentage:
                 dwrr_return_pct = (1 + dwrr_ann_return_pct) ** (days / 365) - 1
                 dwrr_ann_return_pct = np.NaN
             else:
@@ -1408,7 +1424,7 @@ class Portfolio:
             # where dwrr can't be calculated
             if dwrr_div_ann_return_pct is None:
                 pass
-            elif dwrr_div_ann_return_pct > 1000:
+            elif dwrr_div_ann_return_pct > max_percentage:
                 dwrr_div_return_pct = (1 + dwrr_div_ann_return_pct) ** (days / 365) - 1
                 dwrr_div_ann_return_pct = np.NaN
             else:
@@ -1428,7 +1444,7 @@ class Portfolio:
             # where mdrr can't be calculated
             if mdrr_return_pct is None:
                 pass
-            elif mdrr_return_pct > 1000:
+            elif mdrr_return_pct > max_percentage:
                 pass
             elif mdrr_return_pct < -1:
                 pass
@@ -1461,7 +1477,7 @@ class Portfolio:
             the number of days to look back (uses a calendar day and not stock)
 
         Returns
-        ----------
+        -------
         return_pcts : DataFrame
             returns of all transactions
         """
@@ -1510,7 +1526,7 @@ class Portfolio:
             stock dataframe to get return percent from
 
         Returns
-        ----------
+        -------
         lookback_df : DataFrame
             dataframe that includes the lookback period
         """
@@ -1587,7 +1603,7 @@ class Manager:
             the number of days to look back
 
         Returns
-        ----------
+        -------
         summary : DataFrame
             the summary of portfolios
                 - cash
@@ -1682,7 +1698,7 @@ class Manager:
                - e.g. "market_value", "return", "cumulative_cost", "realized"
 
         Returns
-        ----------
+        -------
         view_df : DataFrame
 
         """

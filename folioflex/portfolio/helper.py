@@ -1,5 +1,4 @@
-"""
-Helpers.
+"""Helpers.
 
 There are a number of functions that are used across the portfolio
 module.
@@ -7,10 +6,10 @@ module.
 """
 
 import logging
+from datetime import date, datetime, timedelta
+
 import pandas as pd
 import pandas_market_calendars as mcal
-
-from datetime import date, datetime, timedelta
 
 # logging options https://docs.python.org/3/library/logging.html
 logger = logging.getLogger(__name__)
@@ -31,16 +30,22 @@ logger.addHandler(console_handler)
 def check_stock_dates(tx_df, fix=False, timezone="US/Eastern"):
     """Check that the transaction dates are valid.
 
+    This function checks that the transaction dates are valid stock market
+    dates. If the dates are not valid, then the dates will be fixed to the
+    previous valid date.
+
     Note:
         Currently using date as the check, but may move to datetime,
-        and therfore leaving in timezone.
+        and therefore leaving in timezone.
 
     Parameters
     ----------
-    tx_df : DataFrame
+    tx_df : DataFrame (with date column), str, or date
         transactions dataframe
     fix : bool (optional)
         if True then the dates will be fixed to previous valid date
+    timezone : str (optional)
+        timezone to use for checking dates
 
     Returns
     -------
@@ -52,8 +57,13 @@ def check_stock_dates(tx_df, fix=False, timezone="US/Eastern"):
                 transactions dataframe with fixed dates if fix=True
 
     """
+    if not isinstance(tx_df, pd.DataFrame) and not isinstance(tx_df, (str, date)):
+        raise ValueError(
+            f"tx_df must be a pandas DataFrame, str, or date and not `{type(tx_df)}`)"
+        )
+
     if isinstance(tx_df, (str, date)):
-        logger.info("Checking a single date or string")
+        logger.info("Checking a single string or date")
         tx_df = pd.DataFrame({"date": [pd.to_datetime(tx_df)]})
 
     # Check if dates are valid

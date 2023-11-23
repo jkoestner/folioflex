@@ -1,5 +1,4 @@
-"""
-Building plotly dashboard.
+"""Building plotly dashboard.
 
 Builds plotly pages with call backs. There are 2 options the user has for running code.
 1. Fly.io build set up
@@ -12,31 +11,29 @@ To run locally:
 The ascii text is generated using https://patorjk.com/software/taag/ with "standard font"
 """
 
+from io import StringIO
+
 import dash
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
-
 from celery.result import AsyncResult
-from dash import dcc
-from dash import html
-from dash.dependencies import Input, Output, State
+from dash import dcc, html
 from dash.dash_table.Format import Format, Scheme
-from io import StringIO
+from dash.dependencies import Input, Output, State
 
 from folioflex.dashboard import dashboard_helper, layouts
 from folioflex.dashboard.pages import (
-    stocks,
-    sectors,
     ideas,
-    macro,
-    tracker,
-    personal,
     login,
+    macro,
+    personal,
+    sectors,
+    stocks,
+    tracker,
 )
-from folioflex.utils import config_helper, cq
 from folioflex.portfolio import heatmap, wrappers
-
+from folioflex.utils import config_helper, cq
 
 #      _    ____  ____
 #     / \  |  _ \|  _ \
@@ -330,7 +327,7 @@ def update_SectorGraph(slide_value, yf_data, sector_status):
     else:
         "could not load"
 
-    fig = dict(data=res, layout=layout)
+    fig = {"data": res, "layout": layout}
 
     return fig
 
@@ -343,7 +340,7 @@ def update_SectorGraph(slide_value, yf_data, sector_status):
 def initialize_HeatmapGraph(n_clicks):
     """Provide heatmap graph."""
     if n_clicks == 0:
-        fig = dict(data=[], layout=go.Layout(hovermode="closest"))
+        fig = {"data": [], "layout": go.Layout(hovermode="closest")}
     else:
         fig = heatmap.get_heatmap()
 
@@ -487,18 +484,26 @@ def update_TrackerGraph(dropdown, tracker_status, cq_portfolio_dict):
         px_line.update_xaxes(
             title_text="Date",
             rangeslider_visible=True,
-            rangeselector=dict(
-                buttons=list(
-                    [
-                        dict(count=5, label="5D", step="day", stepmode="backward"),
-                        dict(count=1, label="1M", step="month", stepmode="backward"),
-                        dict(count=6, label="6M", step="month", stepmode="backward"),
-                        dict(count=1, label="YTD", step="year", stepmode="todate"),
-                        dict(count=1, label="1Y", step="year", stepmode="backward"),
-                        dict(step="all"),
-                    ]
-                )
-            ),
+            rangeselector={
+                "buttons": [
+                    {"count": 5, "label": "5D", "step": "day", "stepmode": "backward"},
+                    {
+                        "count": 1,
+                        "label": "1M",
+                        "step": "month",
+                        "stepmode": "backward",
+                    },
+                    {
+                        "count": 6,
+                        "label": "6M",
+                        "step": "month",
+                        "stepmode": "backward",
+                    },
+                    {"count": 1, "label": "YTD", "step": "year", "stepmode": "todate"},
+                    {"count": 1, "label": "1Y", "step": "year", "stepmode": "backward"},
+                    {"step": "all"},
+                ]
+            },
         )
 
         px_line.update_yaxes(title_text=dropdown, autorange=True, fixedrange=False)
@@ -670,7 +675,7 @@ def update_PersonalGraph(slide_value, personal_status, cq_portfolio_dict):
         )
     else:
         "could not load"
-        fig = dict(data=[], layout=go.Layout(hovermode="closest"))
+        fig = {"data": [], "layout": go.Layout(hovermode="closest")}
 
     return fig
 

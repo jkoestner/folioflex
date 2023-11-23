@@ -1,5 +1,4 @@
-"""
-Creates wrappers for different data sources.
+"""Creates wrappers for different data sources.
 
 The data sources or api may change or become obsolete. This wrapper abstracts the data
 from the larger portfolio project, and allows easier integration.
@@ -8,7 +7,7 @@ from the larger portfolio project, and allows easier integration.
 
 import logging
 import ssl
-from datetime import datetime, timedelta, time
+from datetime import datetime, time, timedelta
 from io import StringIO
 from urllib import request
 
@@ -18,6 +17,7 @@ import requests
 import yfinance as yf
 from bs4 import BeautifulSoup
 
+from folioflex.portfolio import helper
 from folioflex.utils import config_helper
 
 pd.options.display.float_format = "{:,.2f}".format
@@ -59,7 +59,6 @@ class BLS:
         cpi : dict
             dictionary of CPI information
         """
-
         # Series ID for CPI-U (U.S. city average, All items)
         series_id = "CUSR0000SA0"
         url = f"https://api.bls.gov/publicAPI/v1/timeseries/data/{series_id}"
@@ -179,7 +178,7 @@ class Fred:
         """Get a summary of FRED data.
 
         Returns
-        ----------
+        -------
         fred_summary : dict
             provides dictionary of FRED data
         """
@@ -430,7 +429,7 @@ class Yahoo:
             the minimum year to get data for
 
         Returns
-        ----------
+        -------
         stock_data : DataFrame
             the stock history
                - ticker
@@ -467,7 +466,7 @@ class Yahoo:
             symbol to get data for
 
         Returns
-        ----------
+        -------
         news : DataFrame
             provides news articles on ticker
         """
@@ -489,7 +488,7 @@ class Yahoo:
             symbol to get data for
 
         Returns
-        ----------
+        -------
         info : DataFrame
             provides info on ticker
         """
@@ -509,7 +508,7 @@ class Yahoo:
             symbol to get data for
 
         Returns
-        ----------
+        -------
         fast_info : dict
             provides dictionary of info on ticker
         """
@@ -526,7 +525,7 @@ class Yahoo:
             symbol to get data for
 
         Returns
-        ----------
+        -------
         quote : DataFrame
             provides quote on ticker
         """
@@ -615,10 +614,18 @@ class Yahoo:
         change_percent : float
             the percentage change of the stock over the given number of days
         """
-        start_date = (datetime.today() - timedelta(days=days)).strftime("%Y-%m-%d")
+        # fixing the date to the last valid stock date
+        today = datetime.today()
+        end_date = helper.check_stock_dates(today, fix=True)["fix_tx_df"]["date"][0]
         # yfinance is exclusive of end date so add 1 day
         # https://github.com/ranaroussi/yfinance/wiki/Ticker#history
-        end_date = (datetime.today() + timedelta(days=1)).strftime("%Y-%m-%d")
+        end_date = end_date + timedelta(days=1)
+        start_date = end_date - timedelta(days=days + 1)
+        start_date = helper.check_stock_dates(start_date, fix=True)["fix_tx_df"][
+            "date"
+        ][0]
+        end_date = end_date.strftime("%Y-%m-%d")
+        start_date = start_date.strftime("%Y-%m-%d")
 
         data = yf.download(ticker, start=start_date, end=end_date)
 
@@ -626,7 +633,7 @@ class Yahoo:
         start_price = data["Adj Close"].iloc[0]
         end_price = data["Adj Close"].iloc[-1]
 
-        # Calculate the 1-year change percentage
+        # Calculate the change percentage
         change_percent = (end_price - start_price) / start_price
 
         return change_percent
@@ -669,7 +676,7 @@ class Yahoo:
             when only using 1 ticker that ticker needs to be passed to create a multiIndex column
 
         Returns
-        ----------
+        -------
         clean_df : DataFrame
             a clean DataFrame
         """

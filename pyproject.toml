@@ -21,17 +21,16 @@ dependencies = [
     "openpyxl>=3.0.7",
     "pandas>=0.25.0",
     "pyxirr>=0.7.2",
-    "yfinance>=0.2.28",
+    "yfinance>=0.2.32",
     "pandas-market-calendars>=4.1.4",
 ]
 
 [project.optional-dependencies]
 dev = [
     "black>=23.7.0",
-    "flake8>=6.1.0",
-    "pydocstyle>=6.3.0",
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
+    "ruff>=0.1.5",
     "sphinx>=6.0, <7.2",       # 7.2 breaks the docs build
     "sphinx_rtd_theme>=1.2.2",
 ]
@@ -88,6 +87,10 @@ select = [
     # pycodestyle
     "E",
     "W",
+    # isort
+    "I",
+    # pydocstyle
+    "D",
     # flake8-2020
     "YTT",
     # flake8-bugbear

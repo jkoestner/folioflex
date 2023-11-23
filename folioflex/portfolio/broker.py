@@ -1,5 +1,4 @@
-"""
-Broker data formatters.
+"""Broker data formatters.
 
 There are a number of brokers that a user can have an account with and this
 module contains data formatters for them. It is a growing list.
@@ -11,10 +10,11 @@ data from brokers as it is already connecting to the brokers automatically.
 
 
 import logging
-import numpy as np
-import pandas as pd
 import os
 import re
+
+import numpy as np
+import pandas as pd
 import requests  # only yodlee
 
 from folioflex.portfolio.helper import check_stock_dates
@@ -57,7 +57,7 @@ def ally(broker_file, output_file=None, broker="ally"):
         name of the broker
 
     Returns
-    ----------
+    -------
     trades : DataFrame
         trades dataframe
 
@@ -141,7 +141,7 @@ def fidelity(broker_file, output_file=None, broker="fidelity"):
         name of the broker
 
     Returns
-    ----------
+    -------
     trades : DataFrame
         trades dataframe
 
@@ -254,7 +254,7 @@ def ib(broker_file, output_file=None, broker="ib", funds=[], delisted=[]):
         list of tickers that are delisted
 
     Returns
-    ----------
+    -------
     trades : DataFrame
         trades dataframe
 
@@ -458,7 +458,7 @@ def ybr(broker_file, output_file=None, broker="ybr", reinvest=True):
         whether or not to reinvest dividends into the fund, default is True
 
     Returns
-    ----------
+    -------
     trades : DataFrame
         trades dataframe
 
@@ -705,7 +705,7 @@ class Yodlee:
         """Get the user token for the yodlee user.
 
         Returns
-        ----------
+        -------
         yodlee_user_token : str
             yodlee user token
 
@@ -716,7 +716,8 @@ class Yodlee:
         )
 
         # raise error if status code is not 201
-        if response.status_code != 201:
+        response_success = 201
+        if response.status_code != response_success:
             raise ValueError(
                 f"Yodlee user token not created for {self.yodlee_login_name} "
                 f"with status code {response.status_code}"
@@ -738,7 +739,7 @@ class Yodlee:
             account to get transactions for, if '' get all accounts
 
         Returns
-        ----------
+        -------
         accounts : DataFrame
             accounts dataframe
 
@@ -766,7 +767,7 @@ class Yodlee:
             provider_accounts to get transactions for, if '' get all provider_accounts
 
         Returns
-        ----------
+        -------
         provider_accounts : DataFrame
             provider_accounts dataframe
 
@@ -791,7 +792,7 @@ class Yodlee:
             provider_accounts to get transactions for, if '' get all provider_accounts
 
         Returns
-        ----------
+        -------
         response : json
             response from delete request
 
@@ -814,7 +815,7 @@ class Yodlee:
             providers to get transactions for, if '' get all providers
 
         Returns
-        ----------
+        -------
         providers : DataFrame
             providers dataframe
 
@@ -841,7 +842,7 @@ class Yodlee:
             providers account id to get holdings for, if '' get all providers
 
         Returns
-        ----------
+        -------
         holdings : DataFrame
             holdings dataframe
 
@@ -872,7 +873,7 @@ class Yodlee:
             whether or not to format the transactions
 
         Returns
-        ----------
+        -------
         transactions : DataFrame
             transactions dataframe
 
@@ -926,7 +927,7 @@ def append_trades(trades, output_file, broker):
         name of the broker
 
     Returns
-    ----------
+    -------
     trades : DataFrame
         trades dataframe
 

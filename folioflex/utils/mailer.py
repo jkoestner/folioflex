@@ -254,7 +254,7 @@ def generate_report(
         gainers = helper.prettify_dataframe(gainers)
         losers = (
             portfolio_summary[conditions & (portfolio_summary["dwrr_pct"] < 0)]
-            .sort_values(by="dwrr_pct", ascending=False)
+            .sort_values(by="dwrr_pct", ascending=True)
             .head(nbr_of_tickers)[["dwrr_pct", "return"]]
         )
         losers = helper.prettify_dataframe(losers)

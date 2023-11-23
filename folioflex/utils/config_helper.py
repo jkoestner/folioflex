@@ -3,7 +3,6 @@
 import ast
 import configparser
 import os
-
 from pathlib import Path
 
 ROOT_PATH = Path(__file__).resolve().parent.parent.parent
@@ -24,7 +23,7 @@ def get_config(path):
        path to the config file
 
     Returns
-    ----------
+    -------
     config : configparser.ConfigParser
         the config parser
 
@@ -64,7 +63,7 @@ def get_config_options(path, section):
        the section of the config file to load
 
     Returns
-    ----------
+    -------
     options : dict
         dictionary of options
 
@@ -96,12 +95,12 @@ def _config_reference(config, section, option, **kwargs):
         additional keyword arguments to pass to the config.get() method
 
     Returns
-    ----------
+    -------
     value : str
         the value of the option
 
     Notes
-    ----------
+    -----
     There are certain special characters
     `static`: reference to static section
     `$`: reference to an environment variable
@@ -140,7 +139,7 @@ def is_complex_structure(s):
         the string to check
 
     Returns
-    --------
+    -------
     bool
         whether the string is a complex structure
 
