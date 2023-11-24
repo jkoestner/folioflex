@@ -192,157 +192,157 @@ yahoo_info = {
 
 # set up table formats
 active_fmt = [
-    dict(id="symbol", name="symbol"),
-    dict(id="name", name="name"),
-    dict(
-        id="price_intraday",
-        name="price_intraday",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="change",
-        name="change",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="%_change",
-        name="%_change",
-        type="numeric",
-        format=Format(precision=0, scheme=Scheme.percentage),
-    ),
-    dict(
-        id="volume",
-        name="volume",
-        type="numeric",
-        format=Format(precision=0, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="avg_vol_3_month",
-        name="avg_vol_3_month",
-        type="numeric",
-        format=Format(precision=0, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="market_cap",
-        name="market_cap",
-        type="numeric",
-        format=Format(precision=0, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="vol_delta",
-        name="vol_delta",
-        type="numeric",
-        format=Format(precision=0, scheme=Scheme.percentage),
-    ),
-    dict(
-        id="vol_price",
-        name="vol_price",
-        type="numeric",
-        format=Format(precision=0, scheme=Scheme.fixed).group(True),
-    ),
+    {"id": "symbol", "name": "symbol"},
+    {"id": "name", "name": "name"},
+    {
+        "id": "price_intraday",
+        "name": "price_intraday",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.fixed).group(True),
+    },
+    {
+        "id": "change",
+        "name": "change",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.fixed).group(True),
+    },
+    {
+        "id": "%_change",
+        "name": "%_change",
+        "type": "numeric",
+        "format": Format(precision=0, scheme=Scheme.percentage),
+    },
+    {
+        "id": "volume",
+        "name": "volume",
+        "type": "numeric",
+        "format": Format(precision=0, scheme=Scheme.fixed).group(True),
+    },
+    {
+        "id": "avg_vol_3_month",
+        "name": "avg_vol_3_month",
+        "type": "numeric",
+        "format": Format(precision=0, scheme=Scheme.fixed).group(True),
+    },
+    {
+        "id": "market_cap",
+        "name": "market_cap",
+        "type": "numeric",
+        "format": Format(precision=0, scheme=Scheme.fixed).group(True),
+    },
+    {
+        "id": "vol_delta",
+        "name": "vol_delta",
+        "type": "numeric",
+        "format": Format(precision=0, scheme=Scheme.percentage),
+    },
+    {
+        "id": "vol_price",
+        "name": "vol_price",
+        "type": "numeric",
+        "format": Format(precision=0, scheme=Scheme.fixed).group(True),
+    },
 ]
 
 performance_fmt = [
-    dict(id="ticker", name="ticker"),
-    dict(id="date", name="date"),
-    dict(id="lookback_date", name="lookback_date"),
-    dict(
-        id="average_price",
-        name="average_price",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="last_price",
-        name="last_price",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="cumulative_units",
-        name="cumulative_units",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="cumulative_cost",
-        name="cumulative_cost",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="market_value",
-        name="market_value",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="return",
-        name="return",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="dwrr_pct",
-        name="dwrr_pct",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.percentage),
-    ),
-    dict(
-        id="dwrr_ann_pct",
-        name="dwrr_ann_pct",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.percentage),
-    ),
-    dict(
-        id="realized",
-        name="realized",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="unrealized",
-        name="unrealized",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
+    {"id": "ticker", "name": "ticker"},
+    {"id": "date", "name": "date"},
+    {"id": "lookback_date", "name": "lookback_date"},
+    {
+        "id": "average_price",
+        "name": "average_price",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.fixed).group(True),
+    },
+    {
+        "id": "last_price",
+        "name": "last_price",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.fixed).group(True),
+    },
+    {
+        "id": "cumulative_units",
+        "name": "cumulative_units",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.fixed).group(True),
+    },
+    {
+        "id": "cumulative_cost",
+        "name": "cumulative_cost",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.fixed).group(True),
+    },
+    {
+        "id": "market_value",
+        "name": "market_value",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.fixed).group(True),
+    },
+    {
+        "id": "return",
+        "name": "return",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.fixed).group(True),
+    },
+    {
+        "id": "dwrr_pct",
+        "name": "dwrr_pct",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.percentage),
+    },
+    {
+        "id": "dwrr_ann_pct",
+        "name": "dwrr_ann_pct",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.percentage),
+    },
+    {
+        "id": "realized",
+        "name": "realized",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.fixed).group(True),
+    },
+    {
+        "id": "unrealized",
+        "name": "unrealized",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.fixed).group(True),
+    },
 ]
 
 transactions_fmt = [
-    dict(
-        id="date",
-        name="date",
-    ),
-    dict(
-        id="ticker",
-        name="ticker",
-    ),
-    dict(
-        id="type",
-        name="type",
-    ),
-    dict(
-        id="units",
-        name="units",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="cost",
-        name="cost",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
-    dict(
-        id="broker",
-        name="broker",
-    ),
-    dict(
-        id="price",
-        name="price",
-        type="numeric",
-        format=Format(precision=2, scheme=Scheme.fixed).group(True),
-    ),
+    {
+        "id": "date",
+        "name": "date",
+    },
+    {
+        "id": "ticker",
+        "name": "ticker",
+    },
+    {
+        "id": "type",
+        "name": "type",
+    },
+    {
+        "id": "units",
+        "name": "units",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.fixed).group(True),
+    },
+    {
+        "id": "cost",
+        "name": "cost",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.fixed).group(True),
+    },
+    {
+        "id": "broker",
+        "name": "broker",
+    },
+    {
+        "id": "price",
+        "name": "price",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.fixed).group(True),
+    },
 ]
