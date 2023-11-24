@@ -1,4 +1,5 @@
-"""Utilities for app.
+"""
+Utilities for app.
 
 Provides functions for common used functions in app.
 """
@@ -100,7 +101,8 @@ def unixToDatetime(unix):
 
 
 def getMarks(start, end, nth=365):
-    """Return Nth marks for labeling.
+    """
+    Return Nth marks for labeling.
 
     Parameters
     ----------
@@ -129,7 +131,8 @@ def getMarks(start, end, nth=365):
 
 
 def get_slider_values(daterange):
-    """Return slider values.
+    """
+    Return slider values.
 
     Parameters
     ----------
@@ -160,7 +163,8 @@ def get_slider_values(daterange):
 
 
 def update_graph(slide_value, view_return, view_cost):
-    """Create a performance return graph.
+    """
+    Create a performance return graph.
 
     Parameters
     ----------

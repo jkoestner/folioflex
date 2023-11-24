@@ -1,4 +1,5 @@
-"""Creates integrations from different repositories.
+"""
+Creates integrations from different repositories.
 
 This section will be a work in progress as integrations will be refined
 over time depending on the openness and reliability of the data sources are.
@@ -29,6 +30,8 @@ logger.addHandler(console_handler)
 
 
 class ChatBotProvider:
+    """Wrapper for GPT providers."""
+
     def get_chatbot(self):
         raise NotImplementedError("Subclasses must implement this method")
 
@@ -37,7 +40,8 @@ class ChatBotProvider:
 
 
 class HugChatProvider(ChatBotProvider):
-    """Wrapper for Hugging Face gpt - HugChat.
+    """
+    Wrapper for Hugging Face gpt - HugChat.
 
     Class that provides functions that use HugChat.
 
@@ -50,7 +54,8 @@ class HugChatProvider(ChatBotProvider):
     """
 
     def get_chatbot(self, hugchat_login=None, hugchat_password=None):
-        """Login to HugChat.
+        """
+        Login to HugChat.
 
         Parameters
         ----------
@@ -81,7 +86,8 @@ class HugChatProvider(ChatBotProvider):
         return self.chatbot
 
     def get_query(self, query):
-        """Get query from chatbot.
+        """
+        Get query from chatbot.
 
         Parameters
         ----------
@@ -112,13 +118,15 @@ class HugChatProvider(ChatBotProvider):
 
 
 class GPTchat:
-    """Generic wrapper for gpt chat providers.
+    """
+    Generic wrapper for gpt chat providers.
 
     Class that provides functions that use HugChat.
     """
 
     def __init__(self, provider=None):
-        """Initialize the Gptchat class.
+        """
+        Initialize the Gptchat class.
 
         Parameters
         ----------

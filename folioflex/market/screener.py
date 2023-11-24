@@ -1,4 +1,5 @@
-"""Market Screeners.
+"""
+Market Screeners.
 
 Provides market screeners
 """

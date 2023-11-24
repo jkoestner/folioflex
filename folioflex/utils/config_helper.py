@@ -15,7 +15,8 @@ TESTS_PATH = ROOT_PATH / "tests" / "files"
 
 
 def get_config(path):
-    """Get the config path.
+    """
+    Get the config path.
 
     Parameters
     ----------
@@ -53,7 +54,8 @@ def get_config(path):
 
 
 def get_config_options(path, section):
-    """Load the configuration options.
+    """
+    Load the configuration options.
 
     Parameters
     ----------
@@ -81,7 +83,8 @@ def get_config_options(path, section):
 
 
 def _config_reference(config, section, option, **kwargs):
-    """Get the value of references in config.
+    """
+    Get the value of references in config.
 
     Parameters
     ----------
@@ -131,7 +134,8 @@ def _config_reference(config, section, option, **kwargs):
 
 
 def is_complex_structure(s):
-    """Check if string is a complex structure.
+    """
+    Check if string is a complex structure.
 
     Parameters
     ----------

@@ -1,4 +1,5 @@
-"""Creates wrappers for different data sources.
+"""
+Creates wrappers for different data sources.
 
 The data sources or api may change or become obsolete. This wrapper abstracts the data
 from the larger portfolio project, and allows easier integration.
@@ -39,7 +40,8 @@ logger.addHandler(console_handler)
 
 
 class BLS:
-    """Wrapper for bureau of labor statistics.
+    """
+    Wrapper for bureau of labor statistics.
 
     Class that provides functions that use data from bureau of labor statistics.
     https://www.bls.gov/cpi/
@@ -52,7 +54,8 @@ class BLS:
         pass
 
     def get_cpi(self):
-        """Get the latest CPI information.
+        """
+        Get the latest CPI information.
 
         Returns
         -------
@@ -79,7 +82,8 @@ class BLS:
 
 
 class Finviz:
-    """Wrapper for FinViz data.
+    """
+    Wrapper for FinViz data.
 
     Class that provides functions that use data from FinViz data.
 
@@ -89,7 +93,8 @@ class Finviz:
         pass
 
     def get_heatmap_data(self, timeframe="day"):
-        """Get heatmap data from finviz.
+        """
+        Get heatmap data from finviz.
 
         [Source: FinViz]
         [Snippet Source: OpenBB - function `get_heatmap_data`]
@@ -163,7 +168,8 @@ class Finviz:
 
 
 class Fred:
-    """Wrapper for federal reserve data.
+    """
+    Wrapper for federal reserve data.
 
     Class that provides functions that use data from federal reserve.
 
@@ -175,7 +181,8 @@ class Fred:
         pass
 
     def get_summary(self):
-        """Get a summary of FRED data.
+        """
+        Get a summary of FRED data.
 
         Returns
         -------
@@ -211,7 +218,8 @@ class Fred:
 
 
 class TradingView:
-    """Wrapper for Trading View api.
+    """
+    Wrapper for Trading View api.
 
     Class that provides functions that use data from TradingView.
     https://www.tradingview.com
@@ -222,7 +230,8 @@ class TradingView:
         pass
 
     def get_economic_calendar(self, to_date=None, from_date=None, minImportance=1):
-        """Get the latest economic calendar.
+        """
+        Get the latest economic calendar.
 
         This is sourced from the following site:
         https://www.tradingview.com/economic-calendar/
@@ -279,7 +288,8 @@ class TradingView:
 
 
 class Web:
-    """Wrapper for web data.
+    """
+    Wrapper for web data.
 
     Class that provides functions that use data from web data.
 
@@ -289,7 +299,8 @@ class Web:
         pass
 
     def get_sp500_tickers(self):
-        """Provide sp500 tickers with sectors.
+        """
+        Provide sp500 tickers with sectors.
 
         Returns
         -------
@@ -314,7 +325,8 @@ class Web:
         return sp500_tickers
 
     def insider_activity(self, ticker):
-        """Get insider activity.
+        """
+        Get insider activity.
 
         [Source: Business Insider]
         [Snippet Source: OpenBB - function `get_insider_activity`]
@@ -368,7 +380,8 @@ class Web:
 
 
 def _get_header():
-    """Get header for requests.
+    """
+    Get header for requests.
 
     Returns
     -------
@@ -384,7 +397,8 @@ def _get_header():
 
 
 def _convert_to_number(s):
-    """Convert string to number.
+    """
+    Convert string to number.
 
     Parameters
     ----------
@@ -410,7 +424,8 @@ def _convert_to_number(s):
 
 
 class Yahoo:
-    """Wrapper for yahoo finance data.
+    """
+    Wrapper for yahoo finance data.
 
     Class that provides functions that use data from yahoo finance.
     """
@@ -419,7 +434,8 @@ class Yahoo:
         pass
 
     def stock_history(self, tickers, min_year):
-        """Get stock history data for a set of tickers.
+        """
+        Get stock history data for a set of tickers.
 
         Parameters
         ----------
@@ -458,7 +474,8 @@ class Yahoo:
         return stock_data
 
     def news(self, ticker):
-        """Get the news for ticker.
+        """
+        Get the news for ticker.
 
         Parameters
         ----------
@@ -480,7 +497,8 @@ class Yahoo:
         return news
 
     def info(self, ticker):
-        """Get the info for ticker.
+        """
+        Get the info for ticker.
 
         Parameters
         ----------
@@ -500,7 +518,8 @@ class Yahoo:
         return info
 
     def fast_info(self, ticker):
-        """Get the info for ticker.
+        """
+        Get the info for ticker.
 
         Parameters
         ----------
@@ -517,7 +536,8 @@ class Yahoo:
         return fast_info
 
     def quote(self, ticker):
-        """Get the quote for ticker.
+        """
+        Get the quote for ticker.
 
         Parameters
         ----------
@@ -540,7 +560,8 @@ class Yahoo:
         return quote
 
     def most_active(self, count=25):
-        """Provide a dataframe of the most active stocks for the most recent trading day.
+        """
+        Provide a dataframe of the most active stocks for the most recent trading day.
 
         Parameters
         ----------
@@ -600,7 +621,8 @@ class Yahoo:
         return most_active
 
     def get_change_percent(self, ticker, days=365):
-        """Get the percentage change of a stock over a given number of days.
+        """
+        Get the percentage change of a stock over a given number of days.
 
         Parameters
         ----------
@@ -639,7 +661,8 @@ class Yahoo:
         return change_percent
 
     def get_sma(self, ticker, days=365):
-        """Get the percentage change of a stock over a given number of days.
+        """
+        Get the percentage change of a stock over a given number of days.
 
         Parameters
         ----------
@@ -664,7 +687,8 @@ class Yahoo:
         return sma
 
     def _clean_index(self, clean_df, lvl, tickers):
-        """Clean the index of DataFrame.
+        """
+        Clean the index of DataFrame.
 
         Parameters
         ----------

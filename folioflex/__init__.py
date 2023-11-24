@@ -1,3 +1,5 @@
+"""Top level entry of folioflex."""
+
 # importing modules to be available at the package level namespace
 
 from . import version

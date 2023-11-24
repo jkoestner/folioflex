@@ -1,4 +1,5 @@
-"""Creates classes and functions to analyze a portfolio of stocks.
+"""
+Creates classes and functions to analyze a portfolio of stocks.
 
 The Portfolio class has a number of objects, such as:
    - file : the transaction file locations
@@ -50,7 +51,8 @@ logger.addHandler(console_handler)
 
 
 class Portfolio:
-    """A Portfolio class used to provide analysis of a portfolio.
+    """
+    A Portfolio class used to provide analysis of a portfolio.
 
     The class requires a transaction file to be provided. The transaction file
     will have sales and buys to then develop a return of the portfolio as well
@@ -111,7 +113,8 @@ class Portfolio:
         self.cost_view = self.get_view(view="cumulative_cost")
 
     def get_performance(self, date=None, tx_hist_df=None, lookback=None, prettify=True):
-        """Get performance of portfolio and stocks traded at certain point of time.
+        """
+        Get performance of portfolio and stocks traded at certain point of time.
 
         Parameters
         ----------
@@ -238,7 +241,8 @@ class Portfolio:
         return performance
 
     def load_filename(self, tx_file):
-        """Load transaction file.
+        """
+        Load transaction file.
 
         Parameters
         ----------
@@ -260,7 +264,8 @@ class Portfolio:
         return file_path
 
     def get_transactions(self, filter_type=None, filter_broker=None, other_fields=None):
-        """Get the transactions made.
+        """
+        Get the transactions made.
 
         Parameters
         ----------
@@ -344,7 +349,8 @@ class Portfolio:
     def get_transactions_history(
         self, tx_df, price_history=None, other_fields=None, benchmarks=None
     ):
-        """Get the history of stock transcations by merging transaction and price history.
+        """
+        Get the history of stock transcations by merging transaction and price history.
 
         Parameters
         ----------
@@ -402,7 +408,8 @@ class Portfolio:
         return transactions_history
 
     def get_view(self, view="market_value", tx_hist_df=None):
-        """Get the a specific view of the portfolio.
+        """
+        Get the a specific view of the portfolio.
 
         Useful for plotting returns visually.
 
@@ -432,7 +439,8 @@ class Portfolio:
         return view_df
 
     def check_tx(self, tx_df=None):
-        """Check that transactions have correct data.
+        """
+        Check that transactions have correct data.
 
         Parameters
         ----------
@@ -578,7 +586,8 @@ class Portfolio:
         return portfolio_checks_failed
 
     def _get_price_history(self, history_offline=None):
-        """Get the history of prices.
+        """
+        Get the history of prices.
 
         Parameters
         ----------
@@ -702,7 +711,8 @@ class Portfolio:
         return price_history
 
     def _add_price_history(self, tx_df, price_history=None, other_fields=None):
-        """Add price history to transactions DataFrame.
+        """
+        Add price history to transactions DataFrame.
 
         Parameters
         ----------
@@ -767,7 +777,8 @@ class Portfolio:
         return tx_hist_df
 
     def _add_cash_tx(self, tx_df, other_fields=None):
-        """Add cash transactions to transactions DataFrame.
+        """
+        Add cash transactions to transactions DataFrame.
 
         Parameters
         ----------
@@ -813,7 +824,8 @@ class Portfolio:
         return tx_df
 
     def _add_stock_splits(self, tx_df, price_history=None):
-        """Add stock splits to transactions.
+        """
+        Add stock splits to transactions.
 
         Parameters
         ----------
@@ -857,7 +869,8 @@ class Portfolio:
         return tx_df
 
     def _add_dividend(self, tx_df, tx_hist_df, other_fields=None):
-        """Add dividend column to transactions history DataFrame.
+        """
+        Add dividend column to transactions history DataFrame.
 
         Parameters
         ----------
@@ -906,7 +919,8 @@ class Portfolio:
         return tx_hist_df
 
     def _calc_tx_metrics(self, tx_hist_df):
-        """Calculate summation metrics on transactions DataFrame.
+        """
+        Calculate summation metrics on transactions DataFrame.
 
         Note:
         does not include metrics for entire 'portfolio' but only for each ticker
@@ -1001,7 +1015,8 @@ class Portfolio:
         return transaction_metrics
 
     def _add_benchmark(self, tx_df, ticker, price_history=None, other_fields=None):
-        """Add a benchmark with transaction history dataframe.
+        """
+        Add a benchmark with transaction history dataframe.
 
         Notes
         -----
@@ -1111,7 +1126,8 @@ class Portfolio:
         return benchmark_tx_hist
 
     def _add_portfolio(self, tx_hist_df=None):
-        """Add the portfolio with transaction history dataframe.
+        """
+        Add the portfolio with transaction history dataframe.
 
         Parameters
         ----------
@@ -1154,7 +1170,8 @@ class Portfolio:
         return portfolio_tx_hist
 
     def _calc_average_price(self, df):
-        """Calculate the average cost basis.
+        """
+        Calculate the average cost basis.
 
         Parameters
         ----------
@@ -1184,7 +1201,8 @@ class Portfolio:
         return df
 
     def _calc_average_price_speed(self, df):
-        """Calculate the average cost basis.
+        """
+        Calculate the average cost basis.
 
         Parameters
         ----------
@@ -1224,7 +1242,8 @@ class Portfolio:
     def _get_return_pct(
         self, ticker, date, tx_hist_df=None, lookback=None, debug=False
     ):
-        """Get the dollar and time weighted return of a ticker.
+        """
+        Get the dollar and time weighted return of a ticker.
 
         TODO same day transactions do mess up the calculation of returns
 
@@ -1465,7 +1484,8 @@ class Portfolio:
         return return_dict
 
     def _get_return_pcts(self, date=None, tx_hist_df=None, lookback=None):
-        """Get the dollar weighted return of transactions.
+        """
+        Get the dollar weighted return of transactions.
 
         Parameters
         ----------
@@ -1514,7 +1534,8 @@ class Portfolio:
         return return_pcts
 
     def _filter_lookback(self, lookback, adjust_vars=False, tx_hist_df=None):
-        """Modify the transactions history dataframe to only include lookback.
+        """
+        Modify the transactions history dataframe to only include lookback.
 
         Parameters
         ----------
@@ -1567,7 +1588,8 @@ class Portfolio:
 
 
 class Manager:
-    """Manager is a class that analyzes multiple portfolios.
+    """
+    Manager is a class that analyzes multiple portfolios.
 
     Parameters
     ----------
@@ -1592,7 +1614,8 @@ class Manager:
         ]
 
     def get_summary(self, date=None, lookbacks=None):
-        """Get summary of portfolios.
+        """
+        Get summary of portfolios.
 
         Parameters
         ----------
@@ -1687,7 +1710,8 @@ class Manager:
         return summary_all
 
     def get_view(self, view="market_value"):
-        """Get the view of portfolios.
+        """
+        Get the view of portfolios.
 
         Useful for plotting returns visually.
 

@@ -1,4 +1,5 @@
-"""Heatmap for app.
+"""
+Heatmap for app.
 
 Provides the heatmap
 """
@@ -11,7 +12,8 @@ from folioflex.portfolio.wrappers import Finviz, Web
 
 
 def get_heatmap(config_path=None, portfolio=None, lookback=None):
-    """Provide figure for heatmap.
+    """
+    Provide figure for heatmap.
 
     Parameters
     ----------

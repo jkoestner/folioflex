@@ -1,4 +1,5 @@
-"""Helpers.
+"""
+Helpers.
 
 There are a number of functions that are used across the portfolio
 module.
@@ -28,7 +29,8 @@ logger.addHandler(console_handler)
 
 
 def check_stock_dates(tx_df, fix=False, timezone="US/Eastern"):
-    """Check that the transaction dates are valid.
+    """
+    Check that the transaction dates are valid.
 
     This function checks that the transaction dates are valid stock market
     dates. If the dates are not valid, then the dates will be fixed to the
@@ -115,7 +117,8 @@ def check_stock_dates(tx_df, fix=False, timezone="US/Eastern"):
 
 
 def prettify_dataframe(dataframe):
-    """Prettify a dataframe with formatting.
+    """
+    Prettify a dataframe with formatting.
 
     Parameters
     ----------

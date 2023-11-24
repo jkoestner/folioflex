@@ -18,7 +18,8 @@ from folioflex.utils import mailer
 
 
 def _parse_input_to_list(input_str):
-    """Parse the input string.
+    """
+    Parse the input string.
 
     Parameters
     ----------

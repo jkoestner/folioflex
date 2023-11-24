@@ -1,4 +1,5 @@
-"""Broker data formatters.
+"""
+Broker data formatters.
 
 There are a number of brokers that a user can have an account with and this
 module contains data formatters for them. It is a growing list.
@@ -38,7 +39,8 @@ logger.addHandler(console_handler)
 
 
 def ally(broker_file, output_file=None, broker="ally"):
-    """Format the transactions made from Ally.
+    """
+    Format the transactions made from Ally.
 
     Instructions for downloading transactions:
     ------------------------------------------
@@ -122,7 +124,8 @@ def ally(broker_file, output_file=None, broker="ally"):
 
 
 def fidelity(broker_file, output_file=None, broker="fidelity"):
-    """Format the transactions made from Fidelity.
+    """
+    Format the transactions made from Fidelity.
 
     Instructions for downloading transactions:
     ------------------------------------------
@@ -214,7 +217,8 @@ def fidelity(broker_file, output_file=None, broker="fidelity"):
 
 
 def ib(broker_file, output_file=None, broker="ib", funds=[], delisted=[]):
-    """Format the transactions made from Investment Bankers.
+    """
+    Format the transactions made from Investment Bankers.
 
     Instructions for downloading transactions:
     ------------------------------------------
@@ -438,7 +442,8 @@ def ib(broker_file, output_file=None, broker="ib", funds=[], delisted=[]):
 
 
 def ybr(broker_file, output_file=None, broker="ybr", reinvest=True):
-    """Format the transactions made from ybr.
+    """
+    Format the transactions made from ybr.
 
     Instructions for downloading transactions:
     ------------------------------------------
@@ -619,7 +624,8 @@ def ybr(broker_file, output_file=None, broker="ybr", reinvest=True):
 
 
 class Yodlee:
-    """A class that connects to the Yodlee developer platform.
+    """
+    A class that connects to the Yodlee developer platform.
 
     WARNING: This class is not fully supported as it requires API keys from
     Yodlee and there is a cost to maintain. If a free tier becomes available
@@ -694,7 +700,8 @@ class Yodlee:
         }
 
     def refresh_token(self):
-        """Refresh the broker.
+        """
+        Refresh the broker.
 
         This will refresh the broker to get the latest transactions.
 
@@ -702,7 +709,8 @@ class Yodlee:
         self.user_token = self.get_user_token()
 
     def get_user_token(self):
-        """Get the user token for the yodlee user.
+        """
+        Get the user token for the yodlee user.
 
         Returns
         -------
@@ -729,7 +737,8 @@ class Yodlee:
         return user_token
 
     def get_accounts(self, id=""):
-        """Get the accounts for the yodlee user.
+        """
+        Get the accounts for the yodlee user.
 
         These are the individual accounts for a user.
 
@@ -756,7 +765,8 @@ class Yodlee:
         return accounts
 
     def get_provider_accounts(self, id=""):
-        """Get the provider accounts for the yodlee user.
+        """
+        Get the provider accounts for the yodlee user.
 
         These are the provider accounts for a user and gives information
         relate to when it has been updated.
@@ -784,7 +794,8 @@ class Yodlee:
         return provider_accounts
 
     def delete_provider_accounts(self, id=""):
-        """Delete the provider account for the yodlee user.
+        """
+        Delete the provider account for the yodlee user.
 
         Parameters
         ----------
@@ -805,7 +816,8 @@ class Yodlee:
         return response
 
     def get_providers(self, id=""):
-        """Get the provider accounts for the yodlee user.
+        """
+        Get the provider accounts for the yodlee user.
 
         These are the providers and gives information on what the provider is.
 
@@ -832,7 +844,8 @@ class Yodlee:
         return providers
 
     def get_holdings(self, provider_account_id=""):
-        """Get the holdings accounts for the yodlee user.
+        """
+        Get the holdings accounts for the yodlee user.
 
         These are the holdings in a specific account
 
@@ -861,7 +874,8 @@ class Yodlee:
         return holdings
 
     def get_transactions(self, account_id="", formatter=False):
-        """Get the transactions for accounts for the yodlee user.
+        """
+        Get the transactions for accounts for the yodlee user.
 
         These are the transactions in a specific account
 
@@ -915,7 +929,8 @@ class Yodlee:
 
 
 def append_trades(trades, output_file, broker):
-    """Append trades to existing trades file.
+    """
+    Append trades to existing trades file.
 
     Parameters
     ----------

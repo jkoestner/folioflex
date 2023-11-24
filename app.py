@@ -1,4 +1,5 @@
-"""Building plotly dashboard.
+"""
+Building plotly dashboard.
 
 Builds plotly pages with call backs. There are 2 options the user has for running code.
 1. Fly.io build set up
@@ -948,7 +949,8 @@ def toggle_interval_speed(
     tracker_task_status,
     tracker_task_id,
 ):
-    """Triggered by changes in task-id and task-status divs.
+    """
+    Triggered by changes in task-id and task-status divs.
 
     It switches the page refresh interval to fast (1 sec) if a task is running, or slow (24 hours) if a task is
     pending or complete.

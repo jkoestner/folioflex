@@ -1,4 +1,5 @@
-"""Worker connections.
+"""
+Worker connections.
 
 note: there are two resources that are needed to use the worker processes.
 
@@ -39,7 +40,8 @@ celery_app = Celery(
 
 @celery_app.task
 def sector_query(start="2023-01-01"):
-    """Provide the sector historical stock prices.
+    """
+    Provide the sector historical stock prices.
 
     Parameters
     ----------
@@ -61,7 +63,8 @@ def sector_query(start="2023-01-01"):
 
 @celery_app.task
 def portfolio_query(config_file, broker="all", lookback=None):
-    """Query for worker to generate portfolio.
+    """
+    Query for worker to generate portfolio.
 
     Parameters
     ----------
@@ -104,7 +107,8 @@ def portfolio_query(config_file, broker="all", lookback=None):
 
 @celery_app.task
 def manager_query(config_file, lookbacks=None):
-    """Query for worker to generate manager.
+    """
+    Query for worker to generate manager.
 
     Parameters
     ----------

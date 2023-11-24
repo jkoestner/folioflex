@@ -1,4 +1,5 @@
-"""Email module.
+"""
+Email module.
 
 This module contains functions to send emails as well as generate reports
 to send in the emails.
@@ -33,7 +34,8 @@ logger.addHandler(console_handler)
 
 
 def send_email(message, subject, email_list, image_list=None):
-    """Send summary of portfolios to email.
+    """
+    Send summary of portfolios to email.
 
     Parameters
     ----------
@@ -96,7 +98,8 @@ def generate_report(
     manager_performance=None,
     portfolio_performance=None,
 ):
-    """Generate report of portfolio performance and send to email.
+    """
+    Generate report of portfolio performance and send to email.
 
     Parameters
     ----------
