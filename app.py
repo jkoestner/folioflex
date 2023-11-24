@@ -117,8 +117,9 @@ def update_stockanalysis(n_clicks, input_value):
         stock.columns = ["Variable", "Value"]
         stock = stock[stock["Variable"].isin(layouts.yahoo_info["info"])]
 
-        stock_table = [{"name": i, "id": i} for i in stock.columns], stock.to_dict(
-            "records"
+        stock_table = (
+            [{"name": i, "id": i} for i in stock.columns],
+            stock.to_dict("records"),
         )
 
     return stock_table
@@ -140,8 +141,9 @@ def update_quoteanalysis(n_clicks, input_value):
         quote = wrappers.Yahoo().quote(input_value)
         quote = quote.reset_index()
 
-        quote_table = [{"name": i, "id": i} for i in quote.columns], quote.to_dict(
-            "records"
+        quote_table = (
+            [{"name": i, "id": i} for i in quote.columns],
+            quote.to_dict("records"),
         )
 
     return quote_table
@@ -164,9 +166,10 @@ def update_newsanalysis(n_clicks, input_value):
         news_table.drop(columns=["relatedTickers"], inplace=True)
         news_table = news_table.reset_index()
 
-        news_table = [
-            {"name": i, "id": i} for i in news_table.columns
-        ], news_table.to_dict("records")
+        news_table = (
+            [{"name": i, "id": i} for i in news_table.columns],
+            news_table.to_dict("records"),
+        )
 
     return news_table
 
@@ -208,9 +211,10 @@ def update_insidersummaryanalysis(n_clicks, input_value):
         insider = insider.reset_index()
         insider = insider.head(10)
 
-        insider_summary_table = [
-            {"name": i, "id": i} for i in insider.columns
-        ], insider.to_dict("records")
+        insider_summary_table = (
+            [{"name": i, "id": i} for i in insider.columns],
+            insider.to_dict("records"),
+        )
 
     return insider_summary_table
 
@@ -849,21 +853,26 @@ def update_ManagerTable(manager_status, cq_pm):
         cq_pm["lookback_date"] = pd.to_datetime(cq_pm["lookback_date"], unit="ms")
         # formatting floats
         # TODO: put this in dashboard_helper function
-        manager_table = [
-            {
-                "name": i,
-                "id": i,
-                **(
-                    {
-                        "type": "numeric",
-                        "format": Format(precision=2, scheme=Scheme.fixed).group(True),
-                    }
-                    if cq_pm[i].dtype == "float64"
-                    else {}
-                ),
-            }
-            for i in cq_pm.columns
-        ], cq_pm.to_dict("records")
+        manager_table = (
+            [
+                {
+                    "name": i,
+                    "id": i,
+                    **(
+                        {
+                            "type": "numeric",
+                            "format": Format(precision=2, scheme=Scheme.fixed).group(
+                                True
+                            ),
+                        }
+                        if cq_pm[i].dtype == "float64"
+                        else {}
+                    ),
+                }
+                for i in cq_pm.columns
+            ],
+            cq_pm.to_dict("records"),
+        )
     else:
         manager_table = (None, None)
 
