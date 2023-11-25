@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT_PATH = Path(__file__).resolve().parent.parent.parent
 CONFIG_PATH = (
-    os.getenv("FFX_CONFIG_PATH")
+    Path(os.getenv("FFX_CONFIG_PATH"))
     if os.getenv("FFX_CONFIG_PATH")
     else ROOT_PATH / "folioflex" / "configs"
 )
