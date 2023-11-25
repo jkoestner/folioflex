@@ -191,7 +191,8 @@ class Portfolio:
         duplicates = performance[performance.index.duplicated()].index
         if len(duplicates) > 0:
             logger.warning(
-                f"found {len(duplicates)} duplicate tickers in performance such as {duplicates[0]} on {date}"
+                f"found {len(duplicates)} duplicate tickers in performance such as "
+                f"{duplicates[0]} on {date}"
             )
 
         performance = pd.concat([performance, return_pcts], axis=1, join="inner")
@@ -317,7 +318,8 @@ class Portfolio:
         # raise error if length of transactions is 0
         if len(transactions) == 0:
             raise ValueError(
-                f"There are no transactions in file (look at if filter broker `{filter_broker}` is correct)"
+                "There are no transactions in file (look at if filter broker "
+                f"`{filter_broker}` is correct)"
             )
 
         # handle multiple transactions on same day by grouping
@@ -341,7 +343,8 @@ class Portfolio:
         transactions = transactions[[*cols, "price"]]
 
         logger.info(
-            f"after filtering and grouping there are {len(transactions)} transactions in file"
+            f"after filtering and grouping there are {len(transactions)} transactions "
+            "in file"
         )
 
         return transactions
@@ -1049,7 +1052,8 @@ class Portfolio:
         benchmark_tx = transactions[transactions["ticker"] == "Cash"].copy()
         if benchmark_tx.empty:
             logger.warning(
-                "There were no transactions in benchmark. Please include cash transactions"
+                "There were no transactions in benchmark. Please include cash "
+                "transactions"
             )
 
         # add benchmark from cash transactions
@@ -1262,7 +1266,8 @@ class Portfolio:
               Using the formula from wikipedia
               https://en.wikipedia.org/wiki/Modified_Dietz_method
               Formula is:
-              (end_value - start_value - cash_flows) / (start_value + time_weighted_cash_flows)
+              (end_value - start_value - cash_flows) /
+              (start_value + time_weighted_cash_flows)
 
            Time Weighted Return (TWRR)
               TODO - although not a big fan as it doesn't take into account cash flows
@@ -1571,8 +1576,8 @@ class Portfolio:
             # List of variables to modify
             variables = ["return", "unrealized", "realized", "cumulative_dividend"]
 
-            # Grouping the DataFrame by 'ticker' and applying the operation to each group
-            # that will subtract the prior value from the current value.
+            # Grouping the DataFrame by 'ticker' and applying the operation to
+            # each group that will subtract the prior value from the current value.
             for variable in variables:
                 lookback_df[variable] = (
                     lookback_df.groupby("ticker")[variable]
@@ -1604,6 +1609,7 @@ class Manager:
         config_path,
         portfolios=None,
     ):
+        """Initialize the Manager class."""
         # create list of portfolios in configuration
         if portfolios is None:
             sections = config_helper.get_config(config_path).sections()
@@ -1642,7 +1648,8 @@ class Manager:
             lookbacks = [lookbacks]
         portfolio_repr = ", ".join([portfolio.name for portfolio in self.portfolios])
         logger.info(
-            f"Summarizing following portfolios: [{portfolio_repr}] with lookbacks {lookbacks}"
+            f"Summarizing following portfolios: [{portfolio_repr}] "
+            f"with lookbacks {lookbacks}"
         )
 
         for i in range(len(lookbacks)):

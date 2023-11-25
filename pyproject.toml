@@ -80,6 +80,7 @@ directory = "docs/coverage/htmlcov"
 line-length = 88
 fix = false
 unfixable = []
+extend-include = ["*.ipynb"]
 
 select = [
     # pyflakes
@@ -140,4 +141,5 @@ ignore = [
     "ISC001",
 ]
 
+[tool.ruff.lint]
 exclude = ["*.ipynb"]
