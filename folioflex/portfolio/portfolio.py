@@ -26,6 +26,7 @@ from datetime import timedelta
 import numpy as np
 import pandas as pd
 import pandas_market_calendars as mcal
+import plotly.express as px
 from pyxirr import xirr
 
 from folioflex.portfolio.helper import check_stock_dates
@@ -458,101 +459,107 @@ class Portfolio:
             tx_df = self.transactions.copy()
 
         portfolio_checks_failed = 0
-        # buy checks
-        if any(tx_df[tx_df["type"] == "SELL"]["units"] > 0):
-            err_df = tx_df[(tx_df["type"] == "SELL") & (tx_df["units"] > 0)]
-            logger.warning(
-                f"There were transactions that had positive units for SELL "
-                f"type such as {err_df.iloc[0]['ticker']} with "
-                f"{err_df.iloc[0]['units']} units"
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
 
-        if any(tx_df[tx_df["type"] == "SELL"]["cost"] < 0):
-            err_df = tx_df[(tx_df["type"] == "SELL") & (tx_df["cost"] < 0)]
-            logger.warning(
-                f"There were transactions that had negative cost for SELL "
-                f"type such as {err_df.iloc[0]['ticker']} with "
-                f"{err_df.iloc[0]['cost']} cost"
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
+        # Helper function to check conditions and log warnings
+        def check_condition(condition, message_template, filtered_df=None):
+            nonlocal portfolio_checks_failed
+            if condition:
+                if filtered_df:
+                    message = message_template.format(
+                        ticker=filtered_df.iloc[0]["ticker"],
+                        units=filtered_df.iloc[0]["units"],
+                        cost=filtered_df.iloc[0]["cost"],
+                    )
+                else:
+                    message = message_template
+                logger.warning(message)
+                portfolio_checks_failed += 1
+
+        # sell checks
+        filtered_df = tx_df[(tx_df["type"] == "SELL") & (tx_df["units"] > 0)]
+        check_condition(
+            not filtered_df.empty,
+            "There were transactions that had positive units for SELL type "
+            "such as {ticker} with {units} units",
+            filtered_df,
+        )
+
+        filtered_df = tx_df[(tx_df["type"] == "SELL") & (tx_df["cost"] < 0)]
+        check_condition(
+            not filtered_df.empty,
+            "There were transactions that had negative cost for SELL type "
+            "such as {ticker} with {cost} cost",
+            filtered_df,
+        )
 
         # sell short checks
-        if any(tx_df[tx_df["type"] == "SELL SHORT"]["units"] > 0):
-            err_df = tx_df[(tx_df["type"] == "SELL SHORT") & (tx_df["units"] > 0)]
-            logger.warning(
-                f"There were transactions that had positive units for SELL "
-                f"SHORT type such as {err_df.iloc[0]['ticker']} "
-                f"with {err_df.iloc[0]['units']} units"
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
+        filtered_df = tx_df[(tx_df["type"] == "SELL SHORT") & (tx_df["units"] > 0)]
+        check_condition(
+            not filtered_df.empty,
+            "There were transactions that had positive units for SELL SHORT type "
+            "such as {ticker} with {units} units",
+            filtered_df,
+        )
 
-        if any(tx_df[tx_df["type"] == "SELL SHORT"]["cost"] < 0):
-            err_df = tx_df[(tx_df["type"] == "SELL SHORT") & (tx_df["cost"] < 0)]
-            logger.warning(
-                f"There were transactions that had negative cost for SELL SHORT "
-                f"type such as {err_df.iloc[0]['ticker']} with "
-                f"{err_df.iloc[0]['cost']} cost"
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
+        filtered_df = tx_df[(tx_df["type"] == "SELL SHORT") & (tx_df["cost"] < 0)]
+        check_condition(
+            not filtered_df.empty,
+            "There were transactions that had negative cost for SELL SHORT type "
+            "such as {ticker} with {cost} cost",
+            filtered_df,
+        )
 
-        # buy
-        if any(tx_df[tx_df["type"] == "BUY"]["units"] < 0):
-            err_df = tx_df[(tx_df["type"] == "BUY") & (tx_df["units"] < 0)]
-            logger.warning(
-                f"There were transactions that had negative units for BUY type "
-                f"such as {err_df.iloc[0]['ticker']} with "
-                f"{err_df.iloc[0]['units']} units "
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
+        # buy checks
+        filtered_df = tx_df[(tx_df["type"] == "BUY") & (tx_df["units"] < 0)]
+        check_condition(
+            not filtered_df.empty,
+            "There were transactions that had negative units for BUY type "
+            "such as {ticker} with {units} units",
+            filtered_df,
+        )
 
-        if any(tx_df[tx_df["type"] == "BUY"]["cost"] > 0):
-            err_df = tx_df[(tx_df["type"] == "BUY") & (tx_df["cost"] > 0)]
-            logger.warning(
-                f"There were transactions that had positive cost for BUY type "
-                f"such as {err_df.iloc[0]['ticker']} with "
-                f"{err_df.iloc[0]['cost']} cost "
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
+        filtered_df = tx_df[(tx_df["type"] == "BUY") & (tx_df["cost"] > 0)]
+        check_condition(
+            not filtered_df.empty,
+            "There were transactions that had positive cost for BUY type "
+            "such as {ticker} with {cost} cost",
+            filtered_df,
+        )
 
-        # buy cover
-        if any(tx_df[tx_df["type"] == "BUY COVER"]["units"] < 0):
-            err_df = tx_df[(tx_df["type"] == "BUY COVER") & (tx_df["units"] < 0)]
-            logger.warning(
-                f"There were transactions that had negative units for BUY "
-                f"COVER type such as {err_df.iloc[0]['ticker']} with "
-                f"{err_df.iloc[0]['units']} units "
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
+        filtered_df = tx_df[(tx_df["type"] == "BUY COVER") & (tx_df["units"] < 0)]
+        # buy cover checks
+        check_condition(
+            not filtered_df.empty,
+            "There were transactions that had negative units for BUY COVER type "
+            "such as {ticker} with {units} units",
+            filtered_df,
+        )
 
-        if any(tx_df[tx_df["type"] == "BUY COVER"]["cost"] > 0):
-            err_df = tx_df[(tx_df["type"] == "BUY COVER") & (tx_df["cost"] > 0)]
-            logger.warning(
-                f"There were transactions that had positive cost for BUY COVER type "
-                f"such as {err_df.iloc[0]['ticker']} with "
-                f"{err_df.iloc[0]['cost']} cost "
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
+        filtered_df = tx_df[(tx_df["type"] == "BUY COVER") & (tx_df["cost"] > 0)]
+        check_condition(
+            not filtered_df.empty,
+            "There were transactions that had positive cost for BUY COVER type "
+            "such as {ticker} with {cost} cost",
+            filtered_df,
+        )
 
         # dividend
         dividend_tx = tx_df[tx_df["type"] == "DIVIDEND"]
-        if any(dividend_tx["cost"] != dividend_tx["units"]):
-            err_df = dividend_tx[dividend_tx["units"] != dividend_tx["cost"]]
-            logger.warning(
-                f"There were transactions that had cost not equal to units for "
-                f"DIVIDEND type such as {err_df.iloc[0]['ticker']} with "
-                f"{err_df.iloc[0]['units']} units and {err_df.iloc[0]['cost']} cost"
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
+        filtered_df = dividend_tx[(dividend_tx["cost"] != dividend_tx["units"])]
+        check_condition(
+            not filtered_df.empty,
+            "There were transactions that had cost not equal to units for DIVIDEND "
+            "type such as {ticker} with {units} units and {cost} cost",
+            filtered_df,
+        )
 
-        if any(dividend_tx["cost"] < 0):
-            err_df = dividend_tx[dividend_tx["units"] < 0]
-            logger.warning(
-                f"There were transactions that had cost less than 0 for "
-                f"DIVIDEND type such as {err_df.iloc[0]['ticker']} with "
-                f"{err_df.iloc[0]['units']} units"
-            )
-            portfolio_checks_failed = portfolio_checks_failed + 1
+        filtered_df = dividend_tx[(dividend_tx["cost"] < 0)]
+        check_condition(
+            not filtered_df.empty,
+            "There were transactions that had cost less than 0 for DIVIDEND "
+            "type such as {ticker} with {units} units",
+            filtered_df,
+        )
 
         # type checks
         tx_allowed_types = [
@@ -574,17 +581,14 @@ class Portfolio:
         tx_needed_columns = ["ticker", "date", "type", "units", "cost"]
         tx_columns = list(tx_df.columns)
         for tx_needed_column in tx_needed_columns:
-            if tx_needed_column not in tx_columns:
-                logger.warning(
-                    f"This column '{tx_needed_column}' is needed, and not "
-                    f"in {tx_columns}"
-                )
-                portfolio_checks_failed = portfolio_checks_failed + 1
+            check_condition(
+                tx_needed_column not in tx_columns,
+                f"This column '{tx_needed_column}' is needed, and not in {tx_columns}",
+            )
 
         # date checks
         invalid_dt = check_stock_dates(tx_df, fix=False)["invalid_dt"]
-        if len(invalid_dt) > 0:
-            portfolio_checks_failed = portfolio_checks_failed + 1
+        check_condition(len(invalid_dt) > 0, "Invalid dates found in transactions")
 
         return portfolio_checks_failed
 
@@ -1652,19 +1656,17 @@ class Manager:
             f"with lookbacks {lookbacks}"
         )
 
-        for i in range(len(lookbacks)):
+        for i, lookback in enumerate(lookbacks):
             pfs = []
             # getting summary of each portfolio
             for portfolio in self.portfolios:
-                performance = portfolio.get_performance(
-                    date=date, lookback=lookbacks[i]
-                )
+                performance = portfolio.get_performance(date=date, lookback=lookback)
                 pf = performance[performance.index == "portfolio"].rename(
                     index={"portfolio": portfolio.name}
                 )
-                pf = pf.rename(columns={"dwrr_pct": str(lookbacks[i]) + "_dwrr_pct"})
+                pf = pf.rename(columns={"dwrr_pct": str(lookback) + "_dwrr_pct"})
                 pf = pf.rename(
-                    columns={"div_dwrr_pct": str(lookbacks[i]) + "_div_dwrr_pct"}
+                    columns={"div_dwrr_pct": str(lookback) + "_div_dwrr_pct"}
                 )
                 # adding benchmark to the summary
                 benchmark = performance[
@@ -1675,9 +1677,9 @@ class Manager:
                     benchmark_dict["benchmark"] = benchmark.index.values[0].split("-")[
                         1
                     ]
-                    benchmark_dict[
-                        str(lookbacks[i]) + "_benchmark_dwrr_pct"
-                    ] = benchmark["dwrr_pct"].values[0]
+                    benchmark_dict[str(lookback) + "_benchmark_dwrr_pct"] = benchmark[
+                        "dwrr_pct"
+                    ].values[0]
 
                 pf = pf.assign(**benchmark_dict)
                 pfs.append(pf)
@@ -1687,11 +1689,11 @@ class Manager:
             if i == 0:
                 columns_to_keep = [
                     "date",
+                    "lookback_date",
                     "market_value",
                     "equity",
                     "cash",
                     "cumulative_cost",
-                    "lookback_date",
                     "return",
                     "realized",
                     "unrealized",
@@ -1744,3 +1746,75 @@ class Manager:
         view_df = pd.concat(dfs, axis=1)
 
         return view_df
+
+    def get_return_chart(self, lookback_date=None, benchmarks=None):
+        """
+        Get the return chart of manager portfolios.
+
+        Useful for plotting returns visually.
+
+        Parameters
+        ----------
+        lookback_date : date (optional)
+            the date the chart should lookback to.
+            If none we use the min date.
+        benchmarks : list (optional)
+            list of tickers to add as benchmarks
+
+        Returns
+        -------
+        return_chart : plotly chart
+
+        """
+        portfolio_repr = ", ".join([portfolio.name for portfolio in self.portfolios])
+        logger.info(f"Return chart of following portfolios: [{portfolio_repr}]")
+
+        return_view = self.get_view(view="return")
+        cost_view = self.get_view(view="cumulative_cost") * -1
+        if lookback_date is None:
+            lookback_date = return_view.index.min()
+
+        return_view_filtered = return_view[return_view.index >= lookback_date].copy()
+        cost_view_filtered = cost_view[cost_view.index >= lookback_date].copy()
+        for col in return_view_filtered.columns:
+            # calculates return % over time
+            return_view_filtered.loc[return_view_filtered[col] != 0, "change"] = (
+                return_view_filtered[col] + cost_view_filtered[col]
+            ) / cost_view_filtered[col] - 1
+            return_view_filtered.drop([col], axis=1, inplace=True)
+            return_view_filtered = return_view_filtered.rename(columns={"change": col})
+            return_view_filtered[col] = return_view_filtered[col].fillna(0)
+            return_view_filtered[col] = (
+                return_view_filtered[col] - return_view_filtered[col].iloc[0]
+            )
+
+        if benchmarks:
+            # get benchmark data and add to return view
+            wrapper = Yahoo()
+            min_year = return_view_filtered.index.min().year
+            price_history = wrapper.stock_history(tickers=benchmarks, min_year=min_year)
+            benchmarks = price_history[price_history["date"] >= lookback_date].copy()
+            benchmarks["ticker"] = benchmarks["ticker"].apply(
+                lambda x: "benchmark_" + x
+            )
+            benchmarks = benchmarks.pivot(
+                index="date", columns="ticker", values="last_price"
+            )
+            for col in benchmarks.columns:
+                # calculates return % over time
+                benchmarks[col] = (benchmarks[col] / benchmarks[col].iloc[0]) - 1
+
+            return_view_filtered = pd.concat([return_view_filtered, benchmarks], axis=1)
+
+        return_view_filtered = return_view_filtered.reset_index()
+
+        # create plotly line chart from dataframe
+        return_chart = px.line(
+            return_view_filtered,
+            x="date",
+            y=return_view_filtered.columns,
+            title="Manager Return Chart",
+        )
+        return_chart.update_yaxes(tickformat=".1%")
+
+        return return_chart

@@ -136,6 +136,9 @@ ignore = [
     ### Intentionally disabled
     # logging statement uses f-string
     "G004",
+    # ignore __init__ docstring
+    "D107",
+    # these are conflicting errors
     "D203",
     "D212",
     "ISC001",

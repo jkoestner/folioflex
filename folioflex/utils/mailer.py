@@ -119,15 +119,21 @@ def generate_report(
             - lookback (optional)
     manager_performance : dict
         Manager dictionary to get values for
-            see: folioflex.portfolio.portfolio.Manager.get_summary for more details
+            see: folioflex.portfolio.portfolio.Manager.get_summary and
+                 folioflex.portfolio.portfolio.Manager.get_return_chart
+                 for more details
             Keys are:
             - config_path
             - portfolios (optional)
             - date (optional)
             - lookbacks (optional)
+            - get_chart (optional)
+            - chart_lookback (optional)
+            - chart_benchmarks (optional)
     portfolio_performance : dict
         Portfolio dictionary to get values for
-            see: folioflex.portfolio.portfolio.Portfolio.get_performance for more details
+            see: folioflex.portfolio.portfolio.Portfolio.get_performance for
+                 more details
             Keys are:
             - config_path
             - portfolio
@@ -158,7 +164,8 @@ def generate_report(
         lookback = heatmap_market.get("lookback", None)
 
         heatmap_summary = heatmap.get_heatmap(lookback=lookback)
-        # using plotly kaleido to convert to image into bytes then attach it to the email.
+        # using plotly kaleido to convert to image into bytes then attach it
+        # to the email.
         image = heatmap_summary.to_image(format="png")
         image_list.append(image)
 
@@ -181,7 +188,8 @@ def generate_report(
         heatmap_summary = heatmap.get_heatmap(
             config_path=config_path, portfolio=portfolio, lookback=lookback
         )
-        # using plotly kaleido to convert to image into bytes then attach it to the email.
+        # using plotly kaleido to convert to image into bytes then attach it
+        # to the email.
         image = heatmap_summary.to_image(format="png")
         image_list.append(image)
 
@@ -202,10 +210,12 @@ def generate_report(
         portfolios = manager_performance.get("portfolios", None)
         date = manager_performance.get("date", None)
         lookbacks = manager_performance.get("lookbacks", None)
+        get_chart = manager_performance.get("get_chart", False)
+        chart_lookback = manager_performance.get("chart_lookback", None)
+        chart_benchmarks = manager_performance.get("chart_benchmarks", None)
 
-        manager_summary = Manager(
-            config_path=config_path, portfolios=portfolios
-        ).get_summary(date=date, lookbacks=lookbacks)
+        manager = Manager(config_path=config_path, portfolios=portfolios)
+        manager_summary = manager.get_summary(date=date, lookbacks=lookbacks)
 
         columns_to_keep = manager_summary.filter(like="_dwrr_pct").columns.tolist()
         columns_to_keep = [col for col in columns_to_keep if "div" not in col]
@@ -226,6 +236,28 @@ def generate_report(
             f"<li>lookbacks: {lookbacks}</li>"
             f"</ul><br>{manager_condensed_summary.to_html()}<br>"
         )
+
+        if get_chart:
+            return_chart = manager.get_return_chart(
+                lookback_date=chart_lookback,
+                benchmarks=chart_benchmarks,
+            )
+            # using plotly kaleido to convert to image into bytes then attach it
+            # to the email.
+            image = return_chart.to_image(format="png")
+            image_list.append(image)
+
+            message += (
+                "<p>Manager Return Chart</p>"
+                "<ul>"
+                f"<li>lookback_date: {chart_lookback}</li>"
+                f"<li>benchmarks: {chart_benchmarks}</li>"
+                "</ul>"
+                f"<img src='cid:image{image_idx}' alt='manager return chart'/>"
+                "<br>"
+            )
+
+            image_idx += 1
 
     if portfolio_performance is not None:
         config_path = portfolio_performance.get("config_path")

@@ -168,7 +168,10 @@ def _create_argparser():
             "  - config_path\n"
             "  - portfolios (optional)\n"
             "  - date (optional)\n"
-            "  - lookbacks (optional)"
+            "  - lookbacks (optional)\n"
+            "  - get_chart (optional)\n"
+            "  - chart_lookback (optional)\n"
+            "  - chart_benchmarks (optional)"
         ),
     )
 

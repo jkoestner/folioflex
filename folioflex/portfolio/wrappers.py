@@ -697,7 +697,8 @@ class Yahoo:
         lvl : int
             the level of index to clean
         tickers : list (optional)
-            when only using 1 ticker that ticker needs to be passed to create a multiIndex column
+            when only using 1 ticker that ticker needs to be passed to create a
+            multiIndex column
 
         Returns
         -------
