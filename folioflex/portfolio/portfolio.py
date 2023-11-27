@@ -29,7 +29,7 @@ import pandas_market_calendars as mcal
 import plotly.express as px
 from pyxirr import xirr
 
-from folioflex.portfolio.helper import check_stock_dates
+from folioflex.portfolio.helper import check_stock_dates, convert_lookback
 from folioflex.portfolio.wrappers import Yahoo
 from folioflex.utils import config_helper
 
@@ -164,6 +164,7 @@ class Portfolio:
 
         # if lookback provided only calculate performance within lookback
         if lookback is not None:
+            lookback = convert_lookback(lookback)
             tx_hist_df = self._filter_lookback(
                 lookback=lookback, adjust_vars=True, tx_hist_df=tx_hist_df
             )
@@ -1304,6 +1305,7 @@ class Portfolio:
 
         # if lookback provided then filter history to only include that period
         if lookback is not None:
+            lookback = convert_lookback(lookback)
             tx_hist_df = self._filter_lookback(
                 lookback=lookback, adjust_vars=False, tx_hist_df=tx_hist_df
             )
@@ -1514,6 +1516,8 @@ class Portfolio:
             date = self._max_date
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
+        if lookback is not None:
+            lookback = convert_lookback(lookback)
 
         tickers = list(tx_hist_df["ticker"].unique())
 
@@ -1562,6 +1566,7 @@ class Portfolio:
         """
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
+        lookback = convert_lookback(lookback)
         lookback_df = tx_hist_df.copy()
 
         # Using calendar lookback, but getting closest trading day
@@ -1657,16 +1662,21 @@ class Manager:
         )
 
         for i, lookback in enumerate(lookbacks):
+            converted_lookback = convert_lookback(lookback)
             pfs = []
             # getting summary of each portfolio
             for portfolio in self.portfolios:
-                performance = portfolio.get_performance(date=date, lookback=lookback)
+                performance = portfolio.get_performance(
+                    date=date, lookback=converted_lookback
+                )
                 pf = performance[performance.index == "portfolio"].rename(
                     index={"portfolio": portfolio.name}
                 )
-                pf = pf.rename(columns={"dwrr_pct": str(lookback) + "_dwrr_pct"})
                 pf = pf.rename(
-                    columns={"div_dwrr_pct": str(lookback) + "_div_dwrr_pct"}
+                    columns={"dwrr_pct": str(converted_lookback) + "_dwrr_pct"}
+                )
+                pf = pf.rename(
+                    columns={"div_dwrr_pct": str(converted_lookback) + "_div_dwrr_pct"}
                 )
                 # adding benchmark to the summary
                 benchmark = performance[
@@ -1677,9 +1687,9 @@ class Manager:
                     benchmark_dict["benchmark"] = benchmark.index.values[0].split("-")[
                         1
                     ]
-                    benchmark_dict[str(lookback) + "_benchmark_dwrr_pct"] = benchmark[
-                        "dwrr_pct"
-                    ].values[0]
+                    benchmark_dict[
+                        str(converted_lookback) + "_benchmark_dwrr_pct"
+                    ] = benchmark["dwrr_pct"].values[0]
 
                 pf = pf.assign(**benchmark_dict)
                 pfs.append(pf)
@@ -1747,7 +1757,7 @@ class Manager:
 
         return view_df
 
-    def get_return_chart(self, lookback_date=None, benchmarks=None):
+    def get_return_chart(self, lookback=None, benchmarks=None):
         """
         Get the return chart of manager portfolios.
 
@@ -1755,7 +1765,7 @@ class Manager:
 
         Parameters
         ----------
-        lookback_date : date (optional)
+        lookback : date (optional)
             the date the chart should lookback to.
             If none we use the min date.
         benchmarks : list (optional)
@@ -1771,7 +1781,10 @@ class Manager:
 
         return_view = self.get_view(view="return")
         cost_view = self.get_view(view="cumulative_cost") * -1
-        if lookback_date is None:
+        if lookback is not None:
+            lookback = convert_lookback(lookback)
+            lookback_date = return_view.index.max() - timedelta(days=lookback)
+        else:
             lookback_date = return_view.index.min()
 
         return_view_filtered = return_view[return_view.index >= lookback_date].copy()

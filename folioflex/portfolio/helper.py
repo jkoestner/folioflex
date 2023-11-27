@@ -11,6 +11,7 @@ from datetime import date, datetime, timedelta
 
 import pandas as pd
 import pandas_market_calendars as mcal
+from dateutil.parser import parse
 
 # logging options https://docs.python.org/3/library/logging.html
 logger = logging.getLogger(__name__)
@@ -140,3 +141,41 @@ def prettify_dataframe(dataframe):
         )
 
     return dataframe
+
+
+def convert_lookback(lookback):
+    """
+    Convert lookback to an integer.
+
+    Parameters
+    ----------
+    lookback : str, int, or date
+        lookback to convert
+
+    Returns
+    -------
+    converted_lookback : int
+        converted lookback
+    """
+
+    def is_string_a_date(string):
+        try:
+            parse(string)
+            return True
+        except ValueError:
+            return False
+
+    if isinstance(lookback, str):
+        if is_string_a_date(lookback):
+            converted_lookback = (date.today() - pd.to_datetime(lookback).date()).days
+        else:
+            converted_lookback = int(lookback)
+    elif isinstance(lookback, int):
+        converted_lookback = lookback
+    elif isinstance(lookback, date):
+        converted_lookback = (date.today() - lookback).days
+    else:
+        raise ValueError(
+            f"lookback must be a string, int, or date and not {type(lookback)}"
+        )
+    return converted_lookback
