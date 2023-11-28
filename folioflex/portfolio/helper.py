@@ -13,9 +13,11 @@ import pandas as pd
 import pandas_market_calendars as mcal
 from dateutil.parser import parse
 
+from folioflex.utils import config_helper
+
 # logging options https://docs.python.org/3/library/logging.html
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(config_helper.LOG_LEVEL)
 if logger.hasHandlers():
     logger.handlers.clear()
 
@@ -97,13 +99,14 @@ def check_stock_dates(tx_df, fix=False, timezone="US/Eastern"):
     invalid_dt_unique = list(invalid_dt.unique())
 
     if fix and len(invalid_dt_unique) > 0:
+        fix_dt_unique = []
         for i in invalid_dt_unique:
-            fix_tx_df.loc[fix_tx_df["date"] == i, "date"] = stock_dates[
-                stock_dates < i
-            ].iloc[-1]
+            fix_dt = stock_dates[stock_dates < i].iloc[-1]
+            fix_dt_unique.append(fix_dt)
+            fix_tx_df.loc[fix_tx_df["date"] == i, "date"] = fix_dt
         logger.warning(
             f"{len(invalid_dt)} transaction(s) dates were fixed to previous valid date"
-            f" such as {invalid_dt_unique[0]} \n"
+            f" such as {invalid_dt_unique[0]} updated to {fix_dt_unique[0]} \n"
         )
 
     # Checking that dates were fixed
@@ -115,6 +118,14 @@ def check_stock_dates(tx_df, fix=False, timezone="US/Eastern"):
             f"dates such as {invalid_dt[0]} \n"
         )
     return {"invalid_dt": invalid_dt, "fix_tx_df": fix_tx_df}
+
+
+def most_recent_stock_date():
+    """Get the most recent stock date."""
+    stock_dates = mcal.get_calendar("NYSE").schedule(
+        start_date=date.today() - timedelta(days=7), end_date=date.today()
+    )
+    return stock_dates["market_open"].max().date()
 
 
 def prettify_dataframe(dataframe):

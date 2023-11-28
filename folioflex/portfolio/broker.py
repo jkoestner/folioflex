@@ -24,7 +24,7 @@ from folioflex.utils import config_helper
 
 # logging options https://docs.python.org/3/library/logging.html
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(config_helper.LOG_LEVEL)
 if logger.hasHandlers():
     logger.handlers.clear()
 
@@ -216,7 +216,7 @@ def fidelity(broker_file, output_file=None, broker="fidelity"):
     return trades
 
 
-def ib(broker_file, output_file=None, broker="ib", funds=[], delisted=[]):
+def ib(broker_file, output_file=None, broker="ib", funds=None, delisted=None):
     """
     Format the transactions made from Investment Bankers.
 
@@ -263,6 +263,10 @@ def ib(broker_file, output_file=None, broker="ib", funds=[], delisted=[]):
         trades dataframe
 
     """
+    if funds is None:
+        funds = []
+    if delisted is None:
+        delisted = []
     # lookup table for types of transactions
     type_lkup = {
         "BUY": "BUY",

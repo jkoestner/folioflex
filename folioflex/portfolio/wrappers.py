@@ -637,8 +637,7 @@ class Yahoo:
             the percentage change of the stock over the given number of days
         """
         # fixing the date to the last valid stock date
-        today = datetime.today()
-        end_date = helper.check_stock_dates(today, fix=True)["fix_tx_df"]["date"][0]
+        end_date = helper.most_recent_stock_date()
         # yfinance is exclusive of end date so add 1 day
         # https://github.com/ranaroussi/yfinance/wiki/Ticker#history
         end_date = end_date + timedelta(days=1)

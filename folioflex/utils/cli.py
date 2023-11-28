@@ -7,15 +7,6 @@ from argparse import ArgumentDefaultsHelpFormatter
 from folioflex.portfolio.portfolio import Manager, Portfolio
 from folioflex.utils import mailer
 
-#
-#    _____ _      _____
-#   / ____| |    |_   _|
-#  | |    | |      | |
-#  | |    | |      | |
-#  | |____| |____ _| |_
-#   \_____|______|_____|
-#
-
 
 def _parse_input_to_list(input_str):
     """

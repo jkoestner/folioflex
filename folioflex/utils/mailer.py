@@ -19,7 +19,7 @@ from folioflex.utils import config_helper
 
 # logging options https://docs.python.org/3/library/logging.html
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(config_helper.LOG_LEVEL)
 if logger.hasHandlers():
     logger.handlers.clear()
 
@@ -251,7 +251,7 @@ def generate_report(
             message += (
                 "<p>Manager Return Chart</p>"
                 "<ul>"
-                f"<li>lookback_date: {chart_lookback}</li>"
+                f"<li>lookback: {chart_lookback}</li>"
                 f"<li>benchmarks: {chart_benchmarks}</li>"
                 "</ul>"
                 f"<img src='cid:image{image_idx}' alt='manager return chart'/>"

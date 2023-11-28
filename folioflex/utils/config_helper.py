@@ -2,6 +2,7 @@
 
 import ast
 import configparser
+import logging
 import os
 from pathlib import Path
 
@@ -12,6 +13,27 @@ CONFIG_PATH = (
     else ROOT_PATH / "folioflex" / "configs"
 )
 TESTS_PATH = ROOT_PATH / "tests" / "files"
+LOG_LEVEL = logging.WARNING
+
+
+def set_log_level(new_level):
+    """
+    Set the log level.
+
+    Parameters
+    ----------
+    new_level : int
+        the new log level
+
+    """
+    global LOG_LEVEL
+    LOG_LEVEL = new_level
+    # update the log level for all folioflex loggers
+    for logger_name, logger in logging.Logger.manager.loggerDict.items():
+        # Check if the logger's name starts with the specified prefix
+        if logger_name.startswith("folioflex"):
+            if isinstance(logger, logging.Logger):
+                logger.setLevel(new_level)
 
 
 def get_config(path):
@@ -44,8 +66,9 @@ def get_config(path):
         except FileNotFoundError:
             continue
     else:
+        paths_str = ", ".join(map(str, paths_to_try))
         raise FileNotFoundError(
-            f"Config file not found at any of the following paths: {', '.join(map(str, paths_to_try))}"
+            f"Config file not found at any of the following paths: {paths_str}"
         )
 
     config.read(path_to_try)

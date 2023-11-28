@@ -37,7 +37,7 @@ pd.options.display.float_format = "{:,.2f}".format
 
 # logging options https://docs.python.org/3/library/logging.html
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(config_helper.LOG_LEVEL)
 if logger.hasHandlers():
     logger.handlers.clear()
 
