@@ -148,6 +148,7 @@ def generate_report(
     # building the email message
 
     today = datetime.date.today()
+    logger.info("Retrieving SPY return from last valid day")
     spy_pct = wrappers.Yahoo().get_change_percent(ticker="SPY", days=1)
     subject = f"Summary as of {today}"
     message = (
@@ -239,7 +240,7 @@ def generate_report(
 
         if get_chart:
             return_chart = manager.get_return_chart(
-                lookback_date=chart_lookback,
+                lookback=chart_lookback,
                 benchmarks=chart_benchmarks,
             )
             # using plotly kaleido to convert to image into bytes then attach it
