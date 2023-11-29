@@ -3,6 +3,7 @@
 # importing modules to be available at the package level namespace
 
 from . import version
+from .portfolio.utils import config_helper
 from .portfolio import broker, heatmap, portfolio, wrappers
 
 __version__ = version.version

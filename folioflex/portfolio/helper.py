@@ -17,6 +17,8 @@ from dateutil.parser import parse
 
 from folioflex.utils import config_helper
 
+print(config_helper.CONFIG_PATH)
+
 # create logger
 logging.config.fileConfig(
     os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
