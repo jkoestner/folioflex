@@ -183,11 +183,8 @@ python -m ipykernel install --user --name=folioflex
 
 If wanting to get more detail in output of messages the logging can increased
 ```python
-import logging
-logger = logging.getLogger('folioflex.portfolio.portfolio')
-logger.setLevel(logging.WARNING)  # default: only print WARNINGS and above
-logger.setLevel(logging.CRITICAL)  # disable printing
-logger.setLevel(logging.DEBUG)  # verbose: print errors & debug info
+from folioflex.utils import config_helper
+config_helper.set_log_level("DEBUG")
 ```
 
 ### Coverage

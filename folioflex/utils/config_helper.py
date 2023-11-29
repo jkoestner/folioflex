@@ -13,7 +13,6 @@ CONFIG_PATH = (
     else ROOT_PATH / "folioflex" / "configs"
 )
 TESTS_PATH = ROOT_PATH / "tests" / "files"
-LOG_LEVEL = logging.WARNING
 
 
 def set_log_level(new_level):
@@ -26,8 +25,9 @@ def set_log_level(new_level):
         the new log level
 
     """
-    global LOG_LEVEL
-    LOG_LEVEL = new_level
+    options = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    if new_level not in options:
+        raise ValueError(f"Log level must be one of {options}")
     # update the log level for all folioflex loggers
     for logger_name, logger in logging.Logger.manager.loggerDict.items():
         # Check if the logger's name starts with the specified prefix

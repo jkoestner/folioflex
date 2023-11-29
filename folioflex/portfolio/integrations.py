@@ -7,26 +7,19 @@ over time depending on the openness and reliability of the data sources are.
 """
 
 import logging
+import logging.config
+import os
 
 from hugchat import hugchat
 from hugchat.login import Login
 
 from folioflex.utils import config_helper
 
-# logging options https://docs.python.org/3/library/logging.html
+# create logger
+logging.config.fileConfig(
+    os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
+)
 logger = logging.getLogger(__name__)
-logger.setLevel(config_helper.LOG_LEVEL)
-if logger.hasHandlers():
-    logger.handlers.clear()
-
-formatter = logging.Formatter(fmt="%(levelname)s: %(message)s")
-
-# provides the logging to the console
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
-console_handler.setFormatter(formatter)
-
-logger.addHandler(console_handler)
 
 
 class ChatBotProvider:
@@ -73,7 +66,8 @@ class HugChatProvider(ChatBotProvider):
         self.hugchat_password = hugchat_password or config_helper.HUGCHAT_PASSWORD
         if not self.hugchat_login or not self.hugchat_password:
             raise ValueError(
-                "Please provide a HugChat login and password or set them in the config file."
+                "Please provide a HugChat login and password "
+                "or set them in the config file."
             )
 
         logger.info("logging in to HugChat with {}")
@@ -146,7 +140,10 @@ class GPTchat:
     def get_stock_news(self):
         # Use the provider's methods to process the chat
         self.provider.get_chatbot()
-        query = "what's the stock market news today and only use wsj.com, reuters.com, and yahoo.finance"
+        query = (
+            "what's the stock market news today and only use wsj.com, "
+            "reuters.com, and yahoo.finance"
+        )
         response = self.provider.get_query(query)
 
         return response

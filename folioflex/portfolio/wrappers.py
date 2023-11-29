@@ -7,6 +7,8 @@ from the larger portfolio project, and allows easier integration.
 """
 
 import logging
+import logging.config
+import os
 import ssl
 from datetime import datetime, time, timedelta
 from io import StringIO
@@ -23,20 +25,11 @@ from folioflex.utils import config_helper
 
 pd.options.display.float_format = "{:,.2f}".format
 
-# logging options https://docs.python.org/3/library/logging.html
+# create logger
+logging.config.fileConfig(
+    os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
+)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
-if logger.hasHandlers():
-    logger.handlers.clear()
-
-formatter = logging.Formatter(fmt="%(levelname)s: %(message)s")
-
-# provides the logging to the console
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
-console_handler.setFormatter(formatter)
-
-logger.addHandler(console_handler)
 
 
 class BLS:
@@ -261,12 +254,12 @@ class TradingView:
             return normalize_date
 
         to_date = (
-            datetime.utcnow()
+            datetime.utcnow() + timedelta(days=7)
             if to_date is None
             else datetime.strptime(to_date, "%Y-%m-%d")
         )
         from_date = (
-            to_date - timedelta(days=7)
+            to_date - timedelta(days=14)
             if from_date is None
             else datetime.strptime(from_date, "%Y-%m-%d")
         )

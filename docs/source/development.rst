@@ -5,7 +5,7 @@ To run some of the development tools, you'll need to install the development dep
 
 .. code-block:: bash
 
-    pip install -r requirements_ci.txt
+    pip install .[dev]
 
 Testing
 -------
@@ -43,11 +43,8 @@ the following commands and switch the level to the desired level:
 
 .. code-block:: python
 
-    import logging
-    logger = logging.getLogger('folioflex.portfolio.portfolio')
-    logger.setLevel(logging.WARNING)
-    logger = logging.getLogger('folioflex.utils.mailer')
-    logger.setLevel(logging.INFO)
+    from folioflex.utils import config_helper
+    config_helper.set_log_level("DEBUG")
 
 
 
