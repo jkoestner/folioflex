@@ -42,18 +42,16 @@ Simple investment portfolio tool that will track stock and provide returns and o
 - [Installation Guide](https://jkoestner.github.io/folioflex/installation.html): Get started with FolioFlex in no time! 🛠️
 - [Usage Guide](https://jkoestner.github.io/folioflex/usage.html): Learn how to make the most out of FolioFlex. 🤓
 
-**🔬 Examples:**
-
-- [Portfolio Example](https://nbviewer.jupyter.org/github/jkoestner/folioflex/blob/main/notebook/portfolio_example.ipynb): Explore a sample portfolio and see FolioFlex in action! 📔
-
 **🎥 See It In Action:**
 
 - **FolioFlex Demo**: Visit a dashboard (https://invest.koestner.fun/) of FolioFlex and witness the magic! 🌟
 
+**🔬 Jupyter Notebook:**
+
+- [Portfolio Example](https://nbviewer.jupyter.org/github/jkoestner/folioflex/blob/main/notebook/portfolio_example.ipynb): Explore a sample portfolio and see FolioFlex in action! 📔
+
 **🤝 Contribute:**
 - Love FolioFlex? Feel free to contribute and make it even better! Every bit of help is appreciated. ❤️
-
-Full documentation can be seen here: https://jkoestner.github.io/folioflex
 
 Data sources:
 - https://pypi.org/project/yahoo-finance/
