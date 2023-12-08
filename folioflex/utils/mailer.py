@@ -15,6 +15,7 @@ from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from folioflex.chatbot import providers
 from folioflex.portfolio import heatmap, helper, wrappers
 from folioflex.portfolio.portfolio import Manager, Portfolio
 from folioflex.utils import config_helper
@@ -90,6 +91,7 @@ def generate_report(
     heatmap_portfolio=None,
     manager_performance=None,
     portfolio_performance=None,
+    chatbot=False,
 ):
     """
     Generate report of portfolio performance and send to email.
@@ -132,6 +134,8 @@ def generate_report(
             - portfolio
             - date (optional)
             - lookback (optional)
+    chatbot : bool
+        Whether to use the chatbot to get the query
 
     Returns
     -------
@@ -275,13 +279,13 @@ def generate_report(
         gainers = (
             portfolio_summary[conditions & (portfolio_summary["dwrr_pct"] > 0)]
             .sort_values(by="dwrr_pct", ascending=False)
-            .head(nbr_of_tickers)[["dwrr_pct", "return"]]
+            .head(nbr_of_tickers)[["dwrr_pct", "return", "last_price"]]
         )
         gainers = helper.prettify_dataframe(gainers)
         losers = (
             portfolio_summary[conditions & (portfolio_summary["dwrr_pct"] < 0)]
             .sort_values(by="dwrr_pct", ascending=True)
-            .head(nbr_of_tickers)[["dwrr_pct", "return"]]
+            .head(nbr_of_tickers)[["dwrr_pct", "return", "last_price"]]
         )
         losers = helper.prettify_dataframe(losers)
 
@@ -305,6 +309,30 @@ def generate_report(
             "</table>"
             "<br>"
         )
+
+    if chatbot:
+        chatbot = providers.GPTchat(provider="openai")
+        # get todays date and make sure it's a valid trading day to use in url
+        now = datetime.datetime.now()
+        start_hour = 8
+        if now.hour < start_hour:
+            today = datetime.date.today() - datetime.timedelta(days=1)
+        else:
+            today = datetime.date.today()
+        helper.check_stock_dates(today, fix=True)["fix_tx_df"]["date"][0]
+        formatted_today = today.strftime("%m-%d-%Y")
+
+        # get the url to scrape
+        scrape_url = f"https://www.wsj.com/livecoverage/stock-market-today-dow-jones-{formatted_today}"
+
+        # get the query
+        response = chatbot.chat(
+            query="could you summarize this ",
+            scrape_url=scrape_url,
+        )
+        response = response.replace("\n", "<br>")
+
+        message += f"<p>Chatbot Response</p><ul><li>{response}</li></ul>"
 
     return send_email(
         message, subject=subject, email_list=email_list, image_list=image_list

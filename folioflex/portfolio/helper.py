@@ -125,6 +125,8 @@ def prettify_dataframe(dataframe):
     """
     Prettify a dataframe with formatting.
 
+    Changes columns with pct to have percentage formatting.
+
     Parameters
     ----------
     dataframe : DataFrame

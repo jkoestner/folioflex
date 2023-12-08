@@ -193,6 +193,8 @@ YODLEE_ENDPOINT = get_config_options(config_file, "api")["yodlee_endpoint"]
 HUGCHAT_LOGIN = get_config_options(config_file, "gpt")["hugchat_login"]
 HUGCHAT_PASSWORD = get_config_options(config_file, "gpt")["hugchat_password"]
 OPENAI_API_KEY = get_config_options(config_file, "gpt")["openai_api_key"]
+BROWSER_LOCATION = get_config_options(config_file, "gpt")["browser_location"]
+BROWSER_EXTENSION = get_config_options(config_file, "gpt")["browser_extension"]
 
 # other
 if os.path.exists(r"/app/tests"):

@@ -46,12 +46,14 @@ def uc_create_options(location=None, extension=None):
     """
     # list of options https://peter.sh/experiments/chromium-command-line-switches/
     options = uc.ChromeOptions()
-    if location:
+    if location or config_helper.BROWSER_LOCATION:
         logger.info("using binary location for browser")
-        options.binary_location = location
-    if extension:
+        options.binary_location = location or config_helper.BROWSER_LOCATION
+    if extension or config_helper.BROWSER_EXTENSION:
         logger.info("using extension location for browser")
-        options.add_argument(f"--load-extension={extension}")
+        options.add_argument(
+            f"--load-extension={extension or config_helper.BROWSER_EXTENSION}"
+        )
     options.add_argument("enable-automation")
     # options.add_argument("--disable-extensions")
     options.add_argument("--disable-browser-side-navigation")
@@ -82,7 +84,7 @@ def create_driver(options, version=None):
     """
     try:
         # try to create a driver with the latest ChromeDriver version
-        return uc.Chrome(options=options, version_main=version)
+        return uc.Chrome(options=options, version_main=version, headless=True)
     except WebDriverException as e:
         if "This version of ChromeDriver only supports Chrome version" in e.msg:
             try:
