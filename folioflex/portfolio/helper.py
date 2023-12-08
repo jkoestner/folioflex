@@ -17,8 +17,6 @@ from dateutil.parser import parse
 
 from folioflex.utils import config_helper
 
-print(config_helper.CONFIG_PATH)
-
 # create logger
 logging.config.fileConfig(
     os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
@@ -171,11 +169,20 @@ def convert_lookback(lookback):
         except ValueError:
             return False
 
+    def is_string_a_number(string):
+        return string.isdigit()
+
     if isinstance(lookback, str):
         if is_string_a_date(lookback):
             converted_lookback = (date.today() - pd.to_datetime(lookback).date()).days
-        else:
+        elif is_string_a_number(lookback):
             converted_lookback = int(lookback)
+        elif lookback == "ytd":
+            converted_lookback = (date.today() - date(date.today().year, 1, 1)).days
+        else:
+            raise ValueError(
+                f"lookback string must be a date, number, or ytd and not `{lookback}`"
+            )
     elif isinstance(lookback, int):
         converted_lookback = lookback
     elif isinstance(lookback, date):

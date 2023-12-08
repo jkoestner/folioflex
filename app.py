@@ -9,7 +9,8 @@ To run locally:
 1. cd into root directory
 2. run plotly dashboard - `python app.py`
 
-The ascii text is generated using https://patorjk.com/software/taag/ with "standard font"
+The ascii text is generated using https://patorjk.com/software/taag/
+with "standard font"
 """
 
 from io import StringIO
@@ -48,6 +49,8 @@ app = dash.Dash(
 server = app.server
 app.config.suppress_callback_exceptions = True
 
+app.title = "FolioFlex"
+app._favicon = "folioflex_logo.ico"
 app.layout = html.Div(
     [
         dcc.Location(id="url", refresh=False),
@@ -961,8 +964,8 @@ def toggle_interval_speed(
     """
     Triggered by changes in task-id and task-status divs.
 
-    It switches the page refresh interval to fast (1 sec) if a task is running, or slow (24 hours) if a task is
-    pending or complete.
+    It switches the page refresh interval to fast (1 sec) if a task is running,
+    or slow (24 hours) if a task is pending or complete.
     """
     if (
         (task_id != "none" and task_status in ["waiting", "PENDING"])
@@ -979,4 +982,4 @@ def toggle_interval_speed(
 
 
 if __name__ == "__main__":
-    app.run_server(debug=False, host="0.0.0.0")
+    app.run_server(debug=True, host="0.0.0.0")

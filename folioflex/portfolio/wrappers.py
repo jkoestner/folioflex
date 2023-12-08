@@ -62,6 +62,10 @@ class BLS:
 
         data = response.json()
 
+        if data["status"] != "REQUEST_SUCCEEDED":
+            logger.warning(data["message"])
+            return {"cpi": None, "year": None, "month": None}
+
         # Process the data as needed
         cpi = {
             "cpi": (
@@ -276,6 +280,23 @@ class TradingView:
         }
         response = requests.get(url, params=payload).json()
         calendar = pd.DataFrame(response["result"])
+        calendar["date"] = pd.to_datetime(calendar["date"]).dt.date
+        # select columns to keep
+        calendar = calendar[
+            [
+                "date",
+                "title",
+                "indicator",
+                "source",
+                "period",
+                "actual",
+                "previous",
+                "forecast",
+                "comment",
+                "importance",
+                "country",
+            ]
+        ]
 
         return calendar
 
