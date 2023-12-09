@@ -145,12 +145,6 @@ def scrape_html(url, **kwargs):
     scrape_text : str
         the html of the website
     """
-    # check if url is valid
-    response = requests.get(url)
-    response_success = 200
-    if response.status_code != response_success:
-        return f"Error: {response.status_code} - {response.reason} for url {url}"
-
     # use the driver to get the valid html
     logger.info("initializing the driver")
     driver = get_driver(**kwargs)
