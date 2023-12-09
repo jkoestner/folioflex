@@ -19,6 +19,15 @@ jobs:
           pip install --upgrade pip
           pip install .
           pip install .[dev]
+          pip install .[web]
+          pip install .[worker]
+      - name: test imports
+        run: |
+          python -c "
+          from folioflex.chatbot import providers, scraper
+          from folioflex.portfolio import broker, heatmap, helper, portfolio, wrappers
+          from folioflex.utils import cli, config_helper, cq, mailer
+          "
       - name: Run tests with pytest and upload coverage
         run: pytest --cov=folioflex --cov-report=xml
       - name: Upload coverage reports to Codecov
