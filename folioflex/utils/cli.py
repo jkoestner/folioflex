@@ -68,7 +68,10 @@ def _create_argparser():
         "--date",
         type=str,
         default=None,
-        help="The date to use for performance calculations (YYYY-MM-DD). None is the max date",
+        help=(
+            "The date to use for performance calculations (YYYY-MM-DD). "
+            "None is the max date"
+        ),
     )
 
     _portfolio_parser.add_argument(
@@ -76,7 +79,10 @@ def _create_argparser():
         "--lookback",
         type=int,
         default=None,
-        help="The number of days to look back for portfolio performance calculations. None is all dates",
+        help=(
+            "The number of days to look back for portfolio performance calculations. "
+            "None is all dates"
+        ),
     )
 
     # subparser: manager
@@ -94,7 +100,10 @@ def _create_argparser():
         "--portfolios",
         type=ast.literal_eval,
         default=[None],
-        help="The portfolios to use for manager summary calculations. None is all portfolios",
+        help=(
+            "The portfolios to use for manager summary calculations. "
+            "None is all portfolios"
+        ),
     )
 
     _manager_parser.add_argument(
@@ -102,7 +111,10 @@ def _create_argparser():
         "--date",
         type=str,
         default=None,  # None is the max date
-        help="The date to use for performance calculations (YYYY-MM-DD). None is the max date",
+        help=(
+            "The date to use for performance calculations (YYYY-MM-DD). "
+            "None is the max date"
+        ),
     )
 
     _manager_parser.add_argument(
@@ -110,7 +122,10 @@ def _create_argparser():
         "--lookback",
         type=ast.literal_eval,
         default=[None],
-        help="The number of days to look back for manager summary calculations. None is all dates",
+        help=(
+            "The number of days to look back for manager summary "
+            "calculations. None is all dates"
+        ),
     )
 
     # subparser: email
