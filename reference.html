@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API References &mdash; folioflex 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=e031e9a9"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Development" href="development.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            folioflex
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development.html">Development</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#portfolio">Portfolio</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-folioflex.portfolio.portfolio">Portfolio Module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#folioflex.portfolio.portfolio.Manager"><code class="docutils literal notranslate"><span class="pre">Manager</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#folioflex.portfolio.portfolio.Portfolio"><code class="docutils literal notranslate"><span class="pre">Portfolio</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-folioflex.portfolio.heatmap">Heatmap Module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#folioflex.portfolio.heatmap.get_heatmap"><code class="docutils literal notranslate"><span class="pre">get_heatmap()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-folioflex.portfolio.wrappers">Wrappers Module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#folioflex.portfolio.wrappers.BLS"><code class="docutils literal notranslate"><span class="pre">BLS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#folioflex.portfolio.wrappers.Finviz"><code class="docutils literal notranslate"><span class="pre">Finviz</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#folioflex.portfolio.wrappers.Fred"><code class="docutils literal notranslate"><span class="pre">Fred</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#folioflex.portfolio.wrappers.TradingView"><code class="docutils literal notranslate"><span class="pre">TradingView</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#folioflex.portfolio.wrappers.Web"><code class="docutils literal notranslate"><span class="pre">Web</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#folioflex.portfolio.wrappers.Yahoo"><code class="docutils literal notranslate"><span class="pre">Yahoo</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#market">Market</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-folioflex.market.screener">Market Module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#utils">Utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-folioflex.utils.config_helper">Config Helper Module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#folioflex.utils.config_helper.get_config"><code class="docutils literal notranslate"><span class="pre">get_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#folioflex.utils.config_helper.get_config_options"><code class="docutils literal notranslate"><span class="pre">get_config_options()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#folioflex.utils.config_helper.is_complex_structure"><code class="docutils literal notranslate"><span class="pre">is_complex_structure()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#folioflex.utils.config_helper.set_log_level"><code class="docutils literal notranslate"><span class="pre">set_log_level()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#celery-module">Celery Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mailer-module">Mailer Module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">folioflex</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">API References</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/reference.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="api-references">
+<h1>API References<a class="headerlink" href="#api-references" title="Permalink to this heading"></a></h1>
+<section id="portfolio">
+<h2>Portfolio<a class="headerlink" href="#portfolio" title="Permalink to this heading"></a></h2>
+<section id="module-folioflex.portfolio.portfolio">
+<span id="portfolio-module"></span><h3>Portfolio Module<a class="headerlink" href="#module-folioflex.portfolio.portfolio" title="Permalink to this heading"></a></h3>
+<p>Creates classes and functions to analyze a portfolio of stocks.</p>
+<dl>
+<dt>The Portfolio class has a number of objects, such as:</dt><dd><ul class="simple">
+<li><p>file : the transaction file locations</p></li>
+<li><p>funds : symbols that are considered funds</p></li>
+<li><p>transactions : the transactions the occured</p></li>
+<li><p>transaction_history : provides the symbol price history</p></li>
+<li><p>return_view : provides the return view of the portfolio</p></li>
+</ul>
+<p>There are function in class as well:
+- perfomance : this function will provide the performance of portfolio</p>
+</dd>
+<dt>The Manager class has a number of objects, such as:</dt><dd><ul class="simple">
+<li><p>portfolios : the portfolios that are managed</p></li>
+</ul>
+<p>There are functions in class as well:
+- get_summary : this function will provide the summary of all portfolios</p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="folioflex.portfolio.portfolio.Manager">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">folioflex.portfolio.portfolio.</span></span><span class="sig-name descname"><span class="pre">Manager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">portfolios</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.portfolio.Manager" title="Permalink to this definition"></a></dt>
+<dd><p>Manager is a class that analyzes multiple portfolios.</p>
+<section id="parameters">
+<h4>Parameters<a class="headerlink" href="#parameters" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>config_path<span class="classifier">str</span></dt><dd><p>path to the portfolio file</p>
+</dd>
+<dt>portfolios<span class="classifier">list (default is None)</span></dt><dd><p>list of portfolios in the Portfolio class to analyze.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.portfolio.Manager.get_return_chart">
+<span class="sig-name descname"><span class="pre">get_return_chart</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lookback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">benchmarks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.portfolio.Manager.get_return_chart" title="Permalink to this definition"></a></dt>
+<dd><p>Get the return chart of manager portfolios.</p>
+<p>Useful for plotting returns visually.</p>
+<section id="id1">
+<h5>Parameters<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h5>
+<dl class="simple">
+<dt>lookback<span class="classifier">date (optional)</span></dt><dd><p>the date the chart should lookback to.
+If none we use the min date.</p>
+</dd>
+<dt>benchmarks<span class="classifier">list (optional)</span></dt><dd><p>list of tickers to add as benchmarks</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h5>Returns<a class="headerlink" href="#returns" title="Permalink to this heading"></a></h5>
+<p>return_chart : plotly chart</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.portfolio.Manager.get_summary">
+<span class="sig-name descname"><span class="pre">get_summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lookbacks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.portfolio.Manager.get_summary" title="Permalink to this definition"></a></dt>
+<dd><p>Get summary of portfolios.</p>
+<section id="id2">
+<h5>Parameters<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h5>
+<dl class="simple">
+<dt>date<span class="classifier">date</span></dt><dd><p>the date the asset summary should be as of.
+If none we use the max date.</p>
+</dd>
+<dt>lookbacks<span class="classifier">list (default is None)</span></dt><dd><p>the number of days to look back</p>
+</dd>
+</dl>
+</section>
+<section id="id3">
+<h5>Returns<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h5>
+<dl class="simple">
+<dt>summary<span class="classifier">DataFrame</span></dt><dd><dl class="simple">
+<dt>the summary of portfolios</dt><dd><ul class="simple">
+<li><p>cash</p></li>
+<li><p>equity</p></li>
+<li><p>market value</p></li>
+<li><p>return</p></li>
+<li><p>benchmark return</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.portfolio.Manager.get_view">
+<span class="sig-name descname"><span class="pre">get_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'market_value'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.portfolio.Manager.get_view" title="Permalink to this definition"></a></dt>
+<dd><p>Get the view of portfolios.</p>
+<p>Useful for plotting returns visually.</p>
+<section id="id4">
+<h5>Parameters<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h5>
+<dl class="simple">
+<dt>view<span class="classifier">str</span></dt><dd><dl class="simple">
+<dt>column to sum over on the portfolio dataframe</dt><dd><ul class="simple">
+<li><p>e.g. “market_value”, “return”, “cumulative_cost”, “realized”</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+<section id="id5">
+<h5>Returns<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h5>
+<p>view_df : DataFrame</p>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="folioflex.portfolio.portfolio.Portfolio">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">folioflex.portfolio.portfolio.</span></span><span class="sig-name descname"><span class="pre">Portfolio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">portfolio</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.portfolio.Portfolio" title="Permalink to this definition"></a></dt>
+<dd><p>A Portfolio class used to provide analysis of a portfolio.</p>
+<p>The class requires a transaction file to be provided. The transaction file
+will have sales and buys to then develop a return of the portfolio as well
+as a return of the different assets that were purchased.</p>
+<p>There are a number of options that the user can provide to filter the analysis
+to a particular subset of transactions or brokers. There are also options to
+provide a list of funds or delisted stocks so that when the ticker price history
+is downloaded from yahoo finance, the price history is not downloaded and instead
+use the price of the transactions.</p>
+<section id="id6">
+<h4>Parameters<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>config_path<span class="classifier">str</span></dt><dd><p>the location of the config file</p>
+</dd>
+<dt>portfolio<span class="classifier">str</span></dt><dd><p>the name of the portfolio to analyze</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.portfolio.Portfolio.check_tx">
+<span class="sig-name descname"><span class="pre">check_tx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tx_df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.portfolio.Portfolio.check_tx" title="Permalink to this definition"></a></dt>
+<dd><p>Check that transactions have correct data.</p>
+<section id="id7">
+<h5>Parameters<a class="headerlink" href="#id7" title="Permalink to this heading"></a></h5>
+<dl class="simple">
+<dt>tx_df<span class="classifier">DataFrame</span></dt><dd><p>dataframe to performe checks on</p>
+</dd>
+</dl>
+</section>
+<section id="id8">
+<h5>Returns<a class="headerlink" href="#id8" title="Permalink to this heading"></a></h5>
+<p>portfolio_checks_failed : int</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.portfolio.Portfolio.get_performance">
+<span class="sig-name descname"><span class="pre">get_performance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tx_hist_df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lookback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prettify</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.portfolio.Portfolio.get_performance" title="Permalink to this definition"></a></dt>
+<dd><p>Get performance of portfolio and stocks traded at certain point of time.</p>
+<section id="id9">
+<h5>Parameters<a class="headerlink" href="#id9" title="Permalink to this heading"></a></h5>
+<dl class="simple">
+<dt>date<span class="classifier">date (default is max date)</span></dt><dd><p>the date the portfolio performance should be as of.
+If none we use the max date.</p>
+</dd>
+<dt>tx_hist_df<span class="classifier">DataFrame (default is all transactions)</span></dt><dd><p>dataframe to get return percent from</p>
+</dd>
+<dt>lookback<span class="classifier">int (default is None)</span></dt><dd><p>the number of days to look back (uses a calendar day and not stock)</p>
+</dd>
+<dt>prettify<span class="classifier">bool (default is True)</span></dt><dd><p>whether to prettify the output</p>
+</dd>
+</dl>
+</section>
+<section id="id10">
+<h5>Returns<a class="headerlink" href="#id10" title="Permalink to this heading"></a></h5>
+<dl class="simple">
+<dt>performance<span class="classifier">DataFrame</span></dt><dd><dl class="simple">
+<dt>the performance of individual assets as well as portfolio</dt><dd><ul class="simple">
+<li><p>date</p></li>
+<li><p>average price</p></li>
+<li><p>last price</p></li>
+<li><p>cumulative units</p></li>
+<li><p>cumulative cost</p></li>
+<li><p>market value</p></li>
+<li><p>return</p></li>
+<li><p>dwrr return percentage</p></li>
+<li><p>annualized dwrr return percentage</p></li>
+<li><p>realized</p></li>
+<li><p>unrealized</p></li>
+<li><p>cumulative_dividend</p></li>
+<li><p>cash</p></li>
+<li><p>equity</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.portfolio.Portfolio.get_transactions">
+<span class="sig-name descname"><span class="pre">get_transactions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filter_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_broker</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other_fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.portfolio.Portfolio.get_transactions" title="Permalink to this definition"></a></dt>
+<dd><p>Get the transactions made.</p>
+<section id="id11">
+<h5>Parameters<a class="headerlink" href="#id11" title="Permalink to this heading"></a></h5>
+<dl class="simple">
+<dt>filter_type<span class="classifier">list (optional)</span></dt><dd><p>list of strings to exclude out of <cite>type</cite> field.
+e.g. a dividend type may not want to be included in total</p>
+</dd>
+<dt>filter_broker<span class="classifier">list (optional)</span></dt><dd><p>list of strings to include out of <cite>broker</cite> field.</p>
+</dd>
+<dt>other_fields<span class="classifier">list (optional)</span></dt><dd><p>additional fields to include</p>
+</dd>
+</dl>
+</section>
+<section id="id12">
+<h5>Returns<a class="headerlink" href="#id12" title="Permalink to this heading"></a></h5>
+<dl class="simple">
+<dt>transactions<span class="classifier">DataFrame</span></dt><dd><p>the transactions made on portfolio</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.portfolio.Portfolio.get_transactions_history">
+<span class="sig-name descname"><span class="pre">get_transactions_history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tx_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">price_history</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other_fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">benchmarks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.portfolio.Portfolio.get_transactions_history" title="Permalink to this definition"></a></dt>
+<dd><p>Get the history of stock transcations by merging transaction and price history.</p>
+<section id="id13">
+<h5>Parameters<a class="headerlink" href="#id13" title="Permalink to this heading"></a></h5>
+<dl class="simple">
+<dt>tx_df<span class="classifier">DataFrame</span></dt><dd><p>Transactions to calculate metrics on</p>
+</dd>
+<dt>price_history<span class="classifier">DataFrame</span></dt><dd><p>Price history DataFrame</p>
+</dd>
+<dt>other_fields<span class="classifier">list (optional)</span></dt><dd><p>additional fields to include</p>
+</dd>
+<dt>benchmarks<span class="classifier">list (optional)</span></dt><dd><p>list of tickers to add as benchmarks</p>
+</dd>
+</dl>
+</section>
+<section id="id14">
+<h5>Returns<a class="headerlink" href="#id14" title="Permalink to this heading"></a></h5>
+<dl class="simple">
+<dt>transactions_history<span class="classifier">DataFrame</span></dt><dd><p>the price history of stock transactions</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.portfolio.Portfolio.get_view">
+<span class="sig-name descname"><span class="pre">get_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">view</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'market_value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tx_hist_df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.portfolio.Portfolio.get_view" title="Permalink to this definition"></a></dt>
+<dd><p>Get the a specific view of the portfolio.</p>
+<p>Useful for plotting returns visually.</p>
+<section id="id15">
+<h5>Parameters<a class="headerlink" href="#id15" title="Permalink to this heading"></a></h5>
+<dl class="simple">
+<dt>view<span class="classifier">str</span></dt><dd><dl class="simple">
+<dt>column to sum over on the portfolio dataframe</dt><dd><ul class="simple">
+<li><p>e.g. “market_value”, “return”, “cumulative_cost”, “realized”</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+<dt>tx_hist_df<span class="classifier">DataFrame</span></dt><dd><p>dataframe to get return percent from</p>
+</dd>
+</dl>
+</section>
+<section id="id16">
+<h5>Returns<a class="headerlink" href="#id16" title="Permalink to this heading"></a></h5>
+<p>view_df : DataFrame</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.portfolio.Portfolio.load_filename">
+<span class="sig-name descname"><span class="pre">load_filename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tx_file</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.portfolio.Portfolio.load_filename" title="Permalink to this definition"></a></dt>
+<dd><p>Load transaction file.</p>
+<section id="id17">
+<h5>Parameters<a class="headerlink" href="#id17" title="Permalink to this heading"></a></h5>
+<dl class="simple">
+<dt>tx_file<span class="classifier">str</span></dt><dd><p>the value to the transactions file</p>
+</dd>
+</dl>
+</section>
+<section id="id18">
+<h5>Returns<a class="headerlink" href="#id18" title="Permalink to this heading"></a></h5>
+<dl class="simple">
+<dt>file_path<span class="classifier">str</span></dt><dd><p>the path to the transactions file</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+<section id="module-folioflex.portfolio.heatmap">
+<span id="heatmap-module"></span><h3>Heatmap Module<a class="headerlink" href="#module-folioflex.portfolio.heatmap" title="Permalink to this heading"></a></h3>
+<p>Heatmap for app.</p>
+<p>Provides the heatmap</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="folioflex.portfolio.heatmap.get_heatmap">
+<span class="sig-prename descclassname"><span class="pre">folioflex.portfolio.heatmap.</span></span><span class="sig-name descname"><span class="pre">get_heatmap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">portfolio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lookback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.heatmap.get_heatmap" title="Permalink to this definition"></a></dt>
+<dd><p>Provide figure for heatmap.</p>
+<section id="id19">
+<h4>Parameters<a class="headerlink" href="#id19" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>config_path<span class="classifier">str (optional)</span></dt><dd><p>path to config file</p>
+</dd>
+<dt>portfolio<span class="classifier">str (optional)</span></dt><dd><p>portfolio to get heatmap for, if None use sp500</p>
+</dd>
+<dt>lookback<span class="classifier">int (optional)</span></dt><dd><p>number of days to lookback</p>
+</dd>
+</dl>
+</section>
+<section id="id20">
+<h4>Returns<a class="headerlink" href="#id20" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>fig<span class="classifier">Figure</span></dt><dd><p>heatmap figure</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+<section id="module-folioflex.portfolio.wrappers">
+<span id="wrappers-module"></span><h3>Wrappers Module<a class="headerlink" href="#module-folioflex.portfolio.wrappers" title="Permalink to this heading"></a></h3>
+<p>Creates wrappers for different data sources.</p>
+<p>The data sources or api may change or become obsolete. This wrapper abstracts the data
+from the larger portfolio project, and allows easier integration.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.BLS">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">folioflex.portfolio.wrappers.</span></span><span class="sig-name descname"><span class="pre">BLS</span></span><a class="headerlink" href="#folioflex.portfolio.wrappers.BLS" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper for bureau of labor statistics.</p>
+<p>Class that provides functions that use data from bureau of labor statistics.
+<a class="reference external" href="https://www.bls.gov/cpi/">https://www.bls.gov/cpi/</a></p>
+<p>The api documentation can be found here and using v1 so don’t need an api key:
+<a class="reference external" href="https://www.bls.gov/developers/api_signature.htm">https://www.bls.gov/developers/api_signature.htm</a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.BLS.get_cpi">
+<span class="sig-name descname"><span class="pre">get_cpi</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.wrappers.BLS.get_cpi" title="Permalink to this definition"></a></dt>
+<dd><p>Get the latest CPI information.</p>
+<section id="id21">
+<h4>Returns<a class="headerlink" href="#id21" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>cpi<span class="classifier">dict</span></dt><dd><p>dictionary of CPI information</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Finviz">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">folioflex.portfolio.wrappers.</span></span><span class="sig-name descname"><span class="pre">Finviz</span></span><a class="headerlink" href="#folioflex.portfolio.wrappers.Finviz" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper for FinViz data.</p>
+<p>Class that provides functions that use data from FinViz data.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Finviz.get_heatmap_data">
+<span class="sig-name descname"><span class="pre">get_heatmap_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeframe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'day'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.wrappers.Finviz.get_heatmap_data" title="Permalink to this definition"></a></dt>
+<dd><p>Get heatmap data from finviz.</p>
+<p>[Source: FinViz]
+[Snippet Source: OpenBB - function <cite>get_heatmap_data</cite>]</p>
+<section id="id22">
+<h4>Parameters<a class="headerlink" href="#id22" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>timeframe: str</dt><dd><p>Timeframe to get performance for</p>
+</dd>
+</dl>
+</section>
+<section id="id23">
+<h4>Returns<a class="headerlink" href="#id23" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>pd.DataFrame</dt><dd><p>Dataframe of tickers, changes and sectors</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Fred">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">folioflex.portfolio.wrappers.</span></span><span class="sig-name descname"><span class="pre">Fred</span></span><a class="headerlink" href="#folioflex.portfolio.wrappers.Fred" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper for federal reserve data.</p>
+<p>Class that provides functions that use data from federal reserve.</p>
+<p>The api documentation can be found here:
+<a class="reference external" href="https://fred.stlouisfed.org/docs/api/fred/">https://fred.stlouisfed.org/docs/api/fred/</a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Fred.get_summary">
+<span class="sig-name descname"><span class="pre">get_summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.wrappers.Fred.get_summary" title="Permalink to this definition"></a></dt>
+<dd><p>Get a summary of FRED data.</p>
+<section id="id24">
+<h4>Returns<a class="headerlink" href="#id24" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>fred_summary<span class="classifier">dict</span></dt><dd><p>provides dictionary of FRED data</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.TradingView">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">folioflex.portfolio.wrappers.</span></span><span class="sig-name descname"><span class="pre">TradingView</span></span><a class="headerlink" href="#folioflex.portfolio.wrappers.TradingView" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper for Trading View api.</p>
+<p>Class that provides functions that use data from TradingView.
+<a class="reference external" href="https://www.tradingview.com">https://www.tradingview.com</a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.TradingView.get_economic_calendar">
+<span class="sig-name descname"><span class="pre">get_economic_calendar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minImportance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.wrappers.TradingView.get_economic_calendar" title="Permalink to this definition"></a></dt>
+<dd><p>Get the latest economic calendar.</p>
+<p>This is sourced from the following site:
+<a class="reference external" href="https://www.tradingview.com/economic-calendar/">https://www.tradingview.com/economic-calendar/</a></p>
+<section id="id25">
+<h4>Parameters<a class="headerlink" href="#id25" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>to_date<span class="classifier">str (optional)</span></dt><dd><p>the end date of the calendar - format YYYY-MM-DD
+default is today</p>
+</dd>
+<dt>from_date<span class="classifier">str (optional)</span></dt><dd><p>the start date of the calendar - format YYYY-MM-DD
+default is 7 days ago</p>
+</dd>
+<dt>minImportance<span class="classifier">int (optional)</span></dt><dd><p>the minimum importance of the event
+default is 1</p>
+</dd>
+</dl>
+</section>
+<section id="id26">
+<h4>Returns<a class="headerlink" href="#id26" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>calendar<span class="classifier">DataFrame</span></dt><dd><p>DataFrame of economic calendar</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Web">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">folioflex.portfolio.wrappers.</span></span><span class="sig-name descname"><span class="pre">Web</span></span><a class="headerlink" href="#folioflex.portfolio.wrappers.Web" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper for web data.</p>
+<p>Class that provides functions that use data from web data.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Web.get_sp500_tickers">
+<span class="sig-name descname"><span class="pre">get_sp500_tickers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.wrappers.Web.get_sp500_tickers" title="Permalink to this definition"></a></dt>
+<dd><p>Provide sp500 tickers with sectors.</p>
+<section id="id27">
+<h4>Returns<a class="headerlink" href="#id27" title="Permalink to this heading"></a></h4>
+<p>sp500_tickers : DataFrame
+sp500 tickers and sectors</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Web.insider_activity">
+<span class="sig-name descname"><span class="pre">insider_activity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.wrappers.Web.insider_activity" title="Permalink to this definition"></a></dt>
+<dd><p>Get insider activity.</p>
+<p>[Source: Business Insider]
+[Snippet Source: OpenBB - function <cite>get_insider_activity</cite>]</p>
+<section id="id28">
+<h4>Parameters<a class="headerlink" href="#id28" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>ticker<span class="classifier">str</span></dt><dd><p>The ticker to get insider activity for</p>
+</dd>
+</dl>
+</section>
+<section id="id29">
+<h4>Returns<a class="headerlink" href="#id29" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>df_insider<span class="classifier">DataFrame</span></dt><dd><p>Insider activity data</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Yahoo">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">folioflex.portfolio.wrappers.</span></span><span class="sig-name descname"><span class="pre">Yahoo</span></span><a class="headerlink" href="#folioflex.portfolio.wrappers.Yahoo" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper for yahoo finance data.</p>
+<p>Class that provides functions that use data from yahoo finance.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Yahoo.fast_info">
+<span class="sig-name descname"><span class="pre">fast_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.wrappers.Yahoo.fast_info" title="Permalink to this definition"></a></dt>
+<dd><p>Get the info for ticker.</p>
+<section id="id30">
+<h4>Parameters<a class="headerlink" href="#id30" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>ticker<span class="classifier">str</span></dt><dd><p>symbol to get data for</p>
+</dd>
+</dl>
+</section>
+<section id="id31">
+<h4>Returns<a class="headerlink" href="#id31" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>fast_info<span class="classifier">dict</span></dt><dd><p>provides dictionary of info on ticker</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Yahoo.get_change_percent">
+<span class="sig-name descname"><span class="pre">get_change_percent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">365</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.wrappers.Yahoo.get_change_percent" title="Permalink to this definition"></a></dt>
+<dd><p>Get the percentage change of a stock over a given number of days.</p>
+<section id="id32">
+<h4>Parameters<a class="headerlink" href="#id32" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>ticker<span class="classifier">str</span></dt><dd><p>the ticker symbol of the stock</p>
+</dd>
+<dt>days<span class="classifier">int (default=365)</span></dt><dd><p>the number of days to go back in time</p>
+</dd>
+</dl>
+</section>
+<section id="id33">
+<h4>Returns<a class="headerlink" href="#id33" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>change_percent<span class="classifier">float</span></dt><dd><p>the percentage change of the stock over the given number of days</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Yahoo.get_sma">
+<span class="sig-name descname"><span class="pre">get_sma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">days</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">365</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.wrappers.Yahoo.get_sma" title="Permalink to this definition"></a></dt>
+<dd><p>Get the percentage change of a stock over a given number of days.</p>
+<section id="id34">
+<h4>Parameters<a class="headerlink" href="#id34" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>ticker<span class="classifier">str</span></dt><dd><p>the ticker symbol of the stock</p>
+</dd>
+<dt>days<span class="classifier">int (default=365)</span></dt><dd><p>the number of days to go back in time</p>
+</dd>
+</dl>
+</section>
+<section id="id35">
+<h4>Returns<a class="headerlink" href="#id35" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>sma<span class="classifier">float</span></dt><dd><p>the simple moving average</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Yahoo.info">
+<span class="sig-name descname"><span class="pre">info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.wrappers.Yahoo.info" title="Permalink to this definition"></a></dt>
+<dd><p>Get the info for ticker.</p>
+<section id="id36">
+<h4>Parameters<a class="headerlink" href="#id36" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>ticker<span class="classifier">str</span></dt><dd><p>symbol to get data for</p>
+</dd>
+</dl>
+</section>
+<section id="id37">
+<h4>Returns<a class="headerlink" href="#id37" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>info<span class="classifier">DataFrame</span></dt><dd><p>provides info on ticker</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Yahoo.most_active">
+<span class="sig-name descname"><span class="pre">most_active</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.wrappers.Yahoo.most_active" title="Permalink to this definition"></a></dt>
+<dd><p>Provide a dataframe of the most active stocks for the most recent trading day.</p>
+<section id="id38">
+<h4>Parameters<a class="headerlink" href="#id38" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>count<span class="classifier">int (default=25)</span></dt><dd><p>number of most active stocks to return</p>
+</dd>
+</dl>
+</section>
+<section id="id39">
+<h4>Returns<a class="headerlink" href="#id39" title="Permalink to this heading"></a></h4>
+<p>most_active : DataFrame
+DataFrame of most active stocks</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Yahoo.news">
+<span class="sig-name descname"><span class="pre">news</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.wrappers.Yahoo.news" title="Permalink to this definition"></a></dt>
+<dd><p>Get the news for ticker.</p>
+<section id="id40">
+<h4>Parameters<a class="headerlink" href="#id40" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>ticker<span class="classifier">str</span></dt><dd><p>symbol to get data for</p>
+</dd>
+</dl>
+</section>
+<section id="id41">
+<h4>Returns<a class="headerlink" href="#id41" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>news<span class="classifier">DataFrame</span></dt><dd><p>provides news articles on ticker</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Yahoo.quote">
+<span class="sig-name descname"><span class="pre">quote</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ticker</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.wrappers.Yahoo.quote" title="Permalink to this definition"></a></dt>
+<dd><p>Get the quote for ticker.</p>
+<section id="id42">
+<h4>Parameters<a class="headerlink" href="#id42" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>ticker<span class="classifier">str</span></dt><dd><p>symbol to get data for</p>
+</dd>
+</dl>
+</section>
+<section id="id43">
+<h4>Returns<a class="headerlink" href="#id43" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>quote<span class="classifier">DataFrame</span></dt><dd><p>provides quote on ticker</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="folioflex.portfolio.wrappers.Yahoo.stock_history">
+<span class="sig-name descname"><span class="pre">stock_history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tickers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_year</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.portfolio.wrappers.Yahoo.stock_history" title="Permalink to this definition"></a></dt>
+<dd><p>Get stock history data for a set of tickers.</p>
+<section id="id44">
+<h4>Parameters<a class="headerlink" href="#id44" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>tickers<span class="classifier">list</span></dt><dd><p>symbols to get data for</p>
+</dd>
+<dt>min_year<span class="classifier">int</span></dt><dd><p>the minimum year to get data for</p>
+</dd>
+</dl>
+</section>
+<section id="id45">
+<h4>Returns<a class="headerlink" href="#id45" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>stock_data<span class="classifier">DataFrame</span></dt><dd><dl class="simple">
+<dt>the stock history</dt><dd><ul class="simple">
+<li><p>ticker</p></li>
+<li><p>date</p></li>
+<li><p>last price</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+<section id="market">
+<h2>Market<a class="headerlink" href="#market" title="Permalink to this heading"></a></h2>
+<section id="module-folioflex.market.screener">
+<span id="market-module"></span><h3>Market Module<a class="headerlink" href="#module-folioflex.market.screener" title="Permalink to this heading"></a></h3>
+<p>Market Screeners.</p>
+<p>Provides market screeners</p>
+</section>
+</section>
+<section id="utils">
+<h2>Utils<a class="headerlink" href="#utils" title="Permalink to this heading"></a></h2>
+<section id="module-folioflex.utils.config_helper">
+<span id="config-helper-module"></span><h3>Config Helper Module<a class="headerlink" href="#module-folioflex.utils.config_helper" title="Permalink to this heading"></a></h3>
+<p>Load config.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="folioflex.utils.config_helper.get_config">
+<span class="sig-prename descclassname"><span class="pre">folioflex.utils.config_helper.</span></span><span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.utils.config_helper.get_config" title="Permalink to this definition"></a></dt>
+<dd><p>Get the config path.</p>
+<section id="id46">
+<h4>Parameters<a class="headerlink" href="#id46" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>path<span class="classifier">str</span></dt><dd><p>path to the config file</p>
+</dd>
+</dl>
+</section>
+<section id="id47">
+<h4>Returns<a class="headerlink" href="#id47" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>config<span class="classifier">configparser.ConfigParser</span></dt><dd><p>the config parser</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="folioflex.utils.config_helper.get_config_options">
+<span class="sig-prename descclassname"><span class="pre">folioflex.utils.config_helper.</span></span><span class="sig-name descname"><span class="pre">get_config_options</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">section</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.utils.config_helper.get_config_options" title="Permalink to this definition"></a></dt>
+<dd><p>Load the configuration options.</p>
+<section id="id48">
+<h4>Parameters<a class="headerlink" href="#id48" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>path<span class="classifier">str</span></dt><dd><p>path to the config file</p>
+</dd>
+<dt>section<span class="classifier">str</span></dt><dd><p>the section of the config file to load</p>
+</dd>
+</dl>
+</section>
+<section id="id49">
+<h4>Returns<a class="headerlink" href="#id49" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>options<span class="classifier">dict</span></dt><dd><p>dictionary of options</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="folioflex.utils.config_helper.is_complex_structure">
+<span class="sig-prename descclassname"><span class="pre">folioflex.utils.config_helper.</span></span><span class="sig-name descname"><span class="pre">is_complex_structure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.utils.config_helper.is_complex_structure" title="Permalink to this definition"></a></dt>
+<dd><p>Check if string is a complex structure, such as a list, tuple, or dict.</p>
+<section id="id50">
+<h4>Parameters<a class="headerlink" href="#id50" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>s<span class="classifier">str</span></dt><dd><p>the string to check</p>
+</dd>
+</dl>
+</section>
+<section id="id51">
+<h4>Returns<a class="headerlink" href="#id51" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>bool</dt><dd><p>whether the string is a complex structure</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="folioflex.utils.config_helper.set_log_level">
+<span class="sig-prename descclassname"><span class="pre">folioflex.utils.config_helper.</span></span><span class="sig-name descname"><span class="pre">set_log_level</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_level</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#folioflex.utils.config_helper.set_log_level" title="Permalink to this definition"></a></dt>
+<dd><p>Set the log level.</p>
+<section id="id52">
+<h4>Parameters<a class="headerlink" href="#id52" title="Permalink to this heading"></a></h4>
+<dl class="simple">
+<dt>new_level<span class="classifier">int</span></dt><dd><p>the new log level</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+<section id="celery-module">
+<h3>Celery Module<a class="headerlink" href="#celery-module" title="Permalink to this heading"></a></h3>
+</section>
+<section id="mailer-module">
+<h3>Mailer Module<a class="headerlink" href="#mailer-module" title="Permalink to this heading"></a></h3>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="development.html" class="btn btn-neutral float-left" title="Development" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, John Koestner.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
