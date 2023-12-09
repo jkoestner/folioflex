@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "folioflex"
 description = "A collection of portfolio tracking capabilities"
-version = "0.1.2"
+dynamic = ["version"]
 authors = [{ name = "John Koestner", email = "johnkoestner@outlook.com" }]
 readme = 'README.md'
 license = { file = 'LICENSE.md' }
@@ -76,6 +76,9 @@ include-package-data = true # include files from MANIFEST.in
 
 [tool.setuptools.packages.find]
 exclude = ["tests*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "folioflex.version.version"}
 
 # coverage config file for pytest-cov coming from
 # https://pytest-cov.readthedocs.io/en/latest/

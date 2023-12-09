@@ -24,7 +24,7 @@ logging.config.fileConfig(
 logger = logging.getLogger(__name__)
 
 
-def check_stock_dates(tx_df, fix=False, timezone="US/Eastern"):
+def check_stock_dates(tx_df, fix=False, timezone="US/Eastern", warning=True):
     """
     Check that the transaction dates are valid.
 
@@ -44,6 +44,8 @@ def check_stock_dates(tx_df, fix=False, timezone="US/Eastern"):
         if True then the dates will be fixed to previous valid date
     timezone : str (optional)
         timezone to use for checking dates
+    warning : bool (optional)
+        if True then a warning will be logged if dates are fixed
 
     Returns
     -------
@@ -97,10 +99,12 @@ def check_stock_dates(tx_df, fix=False, timezone="US/Eastern"):
             fix_dt = stock_dates[stock_dates < i].iloc[-1]
             fix_dt_unique.append(fix_dt)
             fix_tx_df.loc[fix_tx_df["date"] == i, "date"] = fix_dt
-        logger.warning(
-            f"{len(invalid_dt)} transaction(s) dates were fixed to previous valid date"
-            f" such as {invalid_dt_unique[0]} updated to {fix_dt_unique[0]} \n"
-        )
+        if warning:
+            logger.warning(
+                f"{len(invalid_dt)} transaction(s) dates were fixed to previous "
+                f"valid date such as {invalid_dt_unique[0]} updated "
+                f"to {fix_dt_unique[0]} \n"
+            )
 
     # Checking that dates were fixed
     invalid_dt = fix_tx_df["date"][~fix_tx_df["date"].isin(stock_dates)].to_list()

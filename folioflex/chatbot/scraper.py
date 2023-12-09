@@ -12,7 +12,6 @@ import os
 import re
 import time
 
-import requests
 import undetected_chromedriver as uc
 from bs4 import BeautifulSoup
 from selenium import webdriver
