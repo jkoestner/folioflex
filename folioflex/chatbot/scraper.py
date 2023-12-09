@@ -12,6 +12,7 @@ import os
 import re
 import time
 
+import requests
 import undetected_chromedriver as uc
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -144,6 +145,13 @@ def scrape_html(url, **kwargs):
     scrape_text : str
         the html of the website
     """
+    # check if url is valid
+    response = requests.get(url)
+    response_success = 200
+    if response.status_code != response_success:
+        return f"Error: {response.status_code} - {response.reason} for url {url}"
+
+    # use the driver to get the valid html
     logger.info("initializing the driver")
     driver = get_driver(**kwargs)
     driver.get(url)
@@ -159,7 +167,11 @@ def scrape_html(url, **kwargs):
         # Use regex to find everything between "LIVE UPDATES" and "What to Read Next"
         pattern = r"LIVE UPDATES(.*?)What to Read Next"
         match = re.search(pattern, scrape_text, re.DOTALL)
-        result = match.group(1)
+        try:
+            result = match.group(1)
+        except AttributeError:
+            logger.info("no match found")
+            result = scrape_text
 
         # convert string to soup object, to be able to parse
         soup = BeautifulSoup(result, "html.parser")

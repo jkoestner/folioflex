@@ -319,7 +319,7 @@ def generate_report(
             today = datetime.date.today() - datetime.timedelta(days=1)
         else:
             today = datetime.date.today()
-        helper.check_stock_dates(today, fix=True)["fix_tx_df"]["date"][0]
+        today = helper.check_stock_dates(today, fix=True)["fix_tx_df"]["date"][0]
         formatted_today = today.strftime("%m-%d-%Y")
 
         # get the url to scrape

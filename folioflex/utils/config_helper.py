@@ -134,7 +134,7 @@ def _config_reference(config, section, option, **kwargs):
     raw_value = config.get(section, option, **kwargs)
     # removing comments
     raw_value = raw_value.split("# ", 1)[0].strip()
-    # handling complex structures such as lists and dicts
+    # handling complex structures such as lists, tuples, and dicts
     value = (
         ast.literal_eval(raw_value) if is_complex_structure(raw_value) else raw_value
     )
@@ -152,13 +152,15 @@ def _config_reference(config, section, option, **kwargs):
             )
     elif raw_value.startswith("$"):  # If value is an environment variable
         return os.getenv(value[1:])
+    elif raw_value in ["", "None", "none", "null", "Null", "NULL"]:  # If value is None
+        return None
     else:
         return value
 
 
 def is_complex_structure(s):
     """
-    Check if string is a complex structure.
+    Check if string is a complex structure, such as a list, tuple, or dict.
 
     Parameters
     ----------
