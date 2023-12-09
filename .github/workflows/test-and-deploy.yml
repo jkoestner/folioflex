@@ -19,6 +19,7 @@ jobs:
           pip install --upgrade pip
           pip install .
           pip install .[dev]
+          pip install .[gpt]
           pip install .[web]
           pip install .[worker]
       - name: test imports
