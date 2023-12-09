@@ -180,6 +180,14 @@ def _create_argparser():
         ),
     )
 
+    _email_parser.add_argument(
+        "-c",
+        "--chatbot",
+        type=ast.literal_eval,
+        default=False,
+        help=("Whether to use the chatbot to get the query"),
+    )
+
     return _parser
 
 
@@ -212,6 +220,7 @@ def cli():
             heatmap_portfolio=args.heatmap_portfolio,
             manager_performance=args.manager_performance,
             portfolio_performance=args.portfolio_performance,
+            chatbot=args.chatbot,
         )
         print(f"status sent: {email_status}")
 
