@@ -18,9 +18,9 @@ COPY . .
 
 # Install requirements
 RUN pip install .
+RUN pip install .[gpt]
 RUN pip install .[web]
 RUN pip install .[worker]
-RUN pip install .[redis]
 
 # Create new user
 RUN adduser --disabled-password --gecos '' ffx
