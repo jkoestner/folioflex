@@ -17,6 +17,9 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
 from folioflex.utils import config_helper
@@ -64,7 +67,7 @@ def uc_create_options(location=None, extension=None):
     return options
 
 
-def create_driver(options, version=None):
+def create_driver(options, version=None, headless=True):
     """
     Create the scraping driver for undetected_chromedriver (uc).
 
@@ -76,6 +79,8 @@ def create_driver(options, version=None):
         options for the uc driver
     version : int (optional)
         version of the ChromeDriver to use
+    headless : bool (optional)
+        whether to run the driver in headless mode, default is True
 
     Returns
     -------
@@ -84,7 +89,7 @@ def create_driver(options, version=None):
     """
     try:
         # try to create a driver with the latest ChromeDriver version
-        return uc.Chrome(options=options, version_main=version, headless=True)
+        return uc.Chrome(options=options, version_main=version, headless=headless)
     except WebDriverException as e:
         if "This version of ChromeDriver only supports Chrome version" in e.msg:
             try:
@@ -101,7 +106,7 @@ def create_driver(options, version=None):
             raise e from None
 
 
-def get_driver(driver="uc", **kwargs):
+def get_driver(driver="uc", headless=True, **kwargs):
     """
     Get the scraping driver.
 
@@ -111,6 +116,8 @@ def get_driver(driver="uc", **kwargs):
         driver to use, default is "uc"
         - uc: undetected_chromedriver
         - selenium: selenium webdriver
+    headless : bool (optional)
+        whether to run the driver in headless mode, default is True
     **kwargs : dict (optional)
         keyword arguments for the options of the driver
 
@@ -121,14 +128,14 @@ def get_driver(driver="uc", **kwargs):
     """
     if driver == "uc":
         options = uc_create_options(**kwargs)
-        return create_driver(options)
+        return create_driver(options, headless=headless)
     elif driver == "selenium":
         return webdriver.Chrome(service=Service(ChromeDriverManager().install()))
     else:
         raise ValueError(f"option {driver} not supported")
 
 
-def scrape_html(url, **kwargs):
+def scrape_html(url, headless=True, **kwargs):
     """
     Scrape the html of a website.
 
@@ -136,6 +143,8 @@ def scrape_html(url, **kwargs):
     ----------
     url : str
         url of the website to scrape
+    headless : bool (optional)
+        whether to run the driver in headless mode, default is True
     **kwargs : dict (optional)
         keyword arguments for the options of the driver
 
@@ -146,32 +155,47 @@ def scrape_html(url, **kwargs):
     """
     # use the driver to get the valid html
     logger.info("initializing the driver")
-    driver = get_driver(**kwargs)
+    driver = get_driver(headless=headless, **kwargs)
     driver.get(url)
-    time.sleep(3)  # wait for page to load
+    time.sleep(2)  # wait for page to load
 
-    logger.info(f"scraping {url}")
-    html = driver.page_source
-    soup = BeautifulSoup(html, "html.parser")
-    scrape_text = str(soup)
+    if url.startswith("https://www.wsj.com/livecoverage/"):
+        logger.info("wsj has specific landing page")
+        url = "https://www.wsj.com/livecoverage/stock-market-today-dow-jones-12-11-2023"
+        driver.get(url)
 
-    if url.startswith("https://www.wsj.com/livecoverage/stock-market-today-dow-jones"):
-        logger.info("cleaning the text")
-        # Use regex to find everything between "LIVE UPDATES" and "What to Read Next"
-        pattern = r"LIVE UPDATES(.*?)What to Read Next"
-        match = re.search(pattern, scrape_text, re.DOTALL)
-        try:
-            result = match.group(1)
-        except AttributeError:
-            logger.info("no match found")
-            result = scrape_text
+        logger.info("capturing xpath and navigating to current page")
+        xpath = "//a[span[text()=concat('Today', \"'s Action\")]]"
+        element = WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located((By.XPATH, xpath))
+        )
+        url_current = element.get_attribute("href")
+        driver.get(url_current)
 
-        # convert string to soup object, to be able to parse
-        soup = BeautifulSoup(result, "html.parser")
+        logger.info(f"scraping {url_current}")
+        html = driver.page_source
+        soup = BeautifulSoup(html, "html.parser")
+
+        # removing the html tags
         scrape_text = soup.get_text(separator=" ", strip=True)
         scrape_text = scrape_text.replace("\xa0", " ").replace("\\", "")
 
-    # think about adding in https://www.bloomberg.com/ here
+        logger.info("cleaning the text")
+        # Use regex to find everything between "LIVE UPDATES" and "What to Read Next"
+        pattern = r"LIVE UPDATES(.*?)— By"
+        match = re.search(pattern, scrape_text, re.DOTALL)
+        try:
+            scrape_text = match.group(1)
+        except AttributeError:
+            logger.info("no match found")
+
+    # TODO: think about adding in https://www.bloomberg.com/ here
+
+    else:
+        logger.info(f"scraping {url}")
+        html = driver.page_source
+        soup = BeautifulSoup(html, "html.parser")
+        scrape_text = str(soup)
 
     logger.info("closing the driver")
     # close all tabs
