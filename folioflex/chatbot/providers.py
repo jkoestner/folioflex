@@ -167,6 +167,8 @@ class G4FProvider(ChatBotProvider):
             raise ValueError("Please initialize the chatbot first.")
         if scrape_url:
             scrape_text = scraper.scrape_html(scrape_url, **kwargs)
+            if scrape_text is None:
+                return f"Did not find any text to scrape at {scrape_url}."
 
         logger.info(f"querying the chatbot - G4F with {self.chatbot['provider']}")
         response = g4f.ChatCompletion.create(
@@ -255,6 +257,8 @@ class HugChatProvider(ChatBotProvider):
             raise ValueError("Please initialize the chatbot first.")
         if scrape_url:
             scrape_text = scraper.scrape_html(scrape_url, **kwargs)
+            if scrape_text is None:
+                return f"Did not find any text to scrape at {scrape_url}."
 
         logger.info("querying the chatbot - HugChat")
         response = self.chatbot.query(
@@ -329,6 +333,8 @@ class OpenaiProvider(ChatBotProvider):
             raise ValueError("Please initialize the chatbot first.")
         if scrape_url:
             scrape_text = scraper.scrape_html(scrape_url, **kwargs)
+            if scrape_text is None:
+                return f"Did not find any text to scrape at {scrape_url}."
 
         logger.info("querying the chatbot - OpenAI")
         response = self.chatbot.chat.completions.create(

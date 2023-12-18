@@ -67,7 +67,7 @@ def uc_create_options(location=None, extension=None):
     return options
 
 
-def create_driver(options, version=None, headless=True):
+def create_driver(options, version=None, headless=False):
     """
     Create the scraping driver for undetected_chromedriver (uc).
 
@@ -80,7 +80,13 @@ def create_driver(options, version=None, headless=True):
     version : int (optional)
         version of the ChromeDriver to use
     headless : bool (optional)
-        whether to run the driver in headless mode, default is True
+        whether to run the driver in headless mode, default is False
+
+        note
+        ----
+        headless is nice however it can cause issues with some websites
+        as noted here
+        https://github.com/ultrafunkamsterdam/undetected-chromedriver/issues/589
 
     Returns
     -------
@@ -165,14 +171,20 @@ def scrape_html(url, headless=True, **kwargs):
         driver.get(url)
 
         logger.info("capturing xpath and navigating to current page")
-        xpath = "//a[span[text()=concat('Today', \"'s Action\")]]"
-        element = WebDriverWait(driver, 5).until(
-            EC.visibility_of_element_located((By.XPATH, xpath))
-        )
-        url_current = element.get_attribute("href")
-        driver.get(url_current)
+        try:
+            xpath = "//a[span[text()=concat('Today', \"'s Action\")]]"
+            element = WebDriverWait(driver, 10).until(
+                EC.visibility_of_element_located((By.XPATH, xpath))
+            )
+            url_current = element.get_attribute("href")
+            driver.get(url_current)
+        except Exception:
+            logger.warning(f"could not find xpath, using {url}")
+            scrape_text = None
+            return scrape_text
 
         logger.info(f"scraping {url_current}")
+        time.sleep(3)  # wait for page to load
         html = driver.page_source
         soup = BeautifulSoup(html, "html.parser")
 
@@ -182,7 +194,7 @@ def scrape_html(url, headless=True, **kwargs):
 
         logger.info("cleaning the text")
         # Use regex to find everything between "LIVE UPDATES" and "What to Read Next"
-        pattern = r"LIVE UPDATES(.*?)— By"
+        pattern = r"LIVE(.*?)— By"
         match = re.search(pattern, scrape_text, re.DOTALL)
         try:
             scrape_text = match.group(1)
