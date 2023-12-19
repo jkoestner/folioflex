@@ -112,7 +112,7 @@ def create_driver(options, version=None, headless=False):
             raise e from None
 
 
-def get_driver(driver="uc", headless=True, **kwargs):
+def get_driver(driver="uc", **kwargs):
     """
     Get the scraping driver.
 
@@ -122,8 +122,6 @@ def get_driver(driver="uc", headless=True, **kwargs):
         driver to use, default is "uc"
         - uc: undetected_chromedriver
         - selenium: selenium webdriver
-    headless : bool (optional)
-        whether to run the driver in headless mode, default is True
     **kwargs : dict (optional)
         keyword arguments for the options of the driver
 
@@ -134,14 +132,14 @@ def get_driver(driver="uc", headless=True, **kwargs):
     """
     if driver == "uc":
         options = uc_create_options(**kwargs)
-        return create_driver(options, headless=headless)
+        return create_driver(options, **kwargs)
     elif driver == "selenium":
         return webdriver.Chrome(service=Service(ChromeDriverManager().install()))
     else:
         raise ValueError(f"option {driver} not supported")
 
 
-def scrape_html(url, headless=True, **kwargs):
+def scrape_html(url, **kwargs):
     """
     Scrape the html of a website.
 
@@ -149,8 +147,6 @@ def scrape_html(url, headless=True, **kwargs):
     ----------
     url : str
         url of the website to scrape
-    headless : bool (optional)
-        whether to run the driver in headless mode, default is True
     **kwargs : dict (optional)
         keyword arguments for the options of the driver
 
@@ -161,7 +157,7 @@ def scrape_html(url, headless=True, **kwargs):
     """
     # use the driver to get the valid html
     logger.info("initializing the driver")
-    driver = get_driver(headless=headless, **kwargs)
+    driver = get_driver(**kwargs)
     driver.get(url)
     time.sleep(2)  # wait for page to load
 
