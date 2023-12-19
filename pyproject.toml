@@ -37,7 +37,7 @@ dev = [
 
 gpt = [
     "beautifulsoup4>=4.12.2",
-    "g4f>=0.1.9.2",
+    "g4f==0.1.9.3", # this package has loose testing support
     "hugchat>=0.3.8",
     "openai>=1.3.7",
     "selenium>4.15.2", 
