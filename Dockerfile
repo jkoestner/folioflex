@@ -30,6 +30,7 @@ RUN pip install . .[gpt] .[web] .[worker]
 # Create new user
 RUN adduser --disabled-password --gecos '' ffx
 RUN chown -R ffx:ffx /code
+RUN chown -R ffx:ffx /usr/local/lib/python3.8/site-packages/seleniumbase/drivers
 USER ffx
 
 # Using port 8001 for web
