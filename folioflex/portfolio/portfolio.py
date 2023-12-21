@@ -404,7 +404,7 @@ class Portfolio:
 
         return transactions_history
 
-    def get_view(self, view="market_value", tx_hist_df=None):
+    def get_view(self, view="market_value", tx_hist_df=None, lookback=None):
         """
         Get the a specific view of the portfolio.
 
@@ -417,6 +417,8 @@ class Portfolio:
                - e.g. "market_value", "return", "cumulative_cost", "realized"
         tx_hist_df : DataFrame
             dataframe to get return percent from
+        lookback : int (default is None)
+            the number of days to look back (uses a calendar day and not stock)
 
         Returns
         -------
@@ -424,6 +426,11 @@ class Portfolio:
         """
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
+        if lookback is not None:
+            lookback = convert_lookback(lookback)
+            tx_hist_df = self._filter_lookback(
+                lookback=lookback, adjust_vars=True, tx_hist_df=tx_hist_df
+            )
         cols = ["ticker", "date", view]
         view_df = tx_hist_df[cols]
         view_df = view_df.pivot_table(

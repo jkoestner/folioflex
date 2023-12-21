@@ -92,15 +92,20 @@ def portfolio_query(config_file, broker="all", lookback=None):
     cq_portfolio_dict["performance"] = (
         personal_portfolio.get_performance(lookback=lookback).reset_index().to_json()
     )
-    cq_portfolio_dict["view_return"] = personal_portfolio.get_view(
-        view="return"
-    ).to_json()
-    cq_portfolio_dict["view_cost"] = personal_portfolio.get_view(
-        view="cumulative_cost"
-    ).to_json()
-    cq_portfolio_dict["view_market_value"] = personal_portfolio.get_view(
-        view="market_value"
-    ).to_json()
+    view_return = personal_portfolio.get_view(view="return", lookback=lookback)
+    filtered_columns = [
+        col for col in view_return.columns if "benchmark" in col or col == "portfolio"
+    ]
+    view_return = view_return[filtered_columns]
+    cq_portfolio_dict["view_return"] = view_return.to_json()
+
+    view_cost = personal_portfolio.get_view(view="cumulative_cost", lookback=lookback)
+    view_cost = view_cost[filtered_columns]
+    cq_portfolio_dict["view_cost"] = view_cost.to_json()
+
+    view_market = personal_portfolio.get_view(view="market_value", lookback=lookback)
+    view_market = view_market[filtered_columns]
+    cq_portfolio_dict["view_market_value"] = view_market.to_json()
 
     return cq_portfolio_dict
 
