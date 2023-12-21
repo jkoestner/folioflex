@@ -48,8 +48,8 @@ const createOrUpdateTransactions = async transactions => {
               unofficial_currency_code,
               date,
               pending,
-			  primary,
-			  detailed,
+			  primary_category,
+			  detailed_category,
 			  confidence_level,
               account_owner
             )
@@ -67,8 +67,8 @@ const createOrUpdateTransactions = async transactions => {
               unofficial_currency_code = EXCLUDED.unofficial_currency_code,
               date = EXCLUDED.date,
               pending = EXCLUDED.pending,
-			  primary = EXCLUDED.primary,
-			  detailed = EXCLUDED.detailed,
+			  primary_category = EXCLUDED.primary_category,
+			  detailed_category = EXCLUDED.detailed_category,
 			  confidence_level = EXCLUDED.confidence_level,
               account_owner = EXCLUDED.account_owner;
         `,
