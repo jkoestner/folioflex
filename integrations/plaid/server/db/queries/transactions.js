@@ -25,6 +25,7 @@ const createOrUpdateTransactions = async transactions => {
       date: transactionDate,
       pending,
       account_owner: accountOwner,
+	  personal_finance_category: { primary: primaryCategory, detailed: detailedCategory, confidence_level: confidenceLevel },
     } = transaction;
     const { id: accountId } = await retrieveAccountByPlaidAccountId(
       plaidAccountId
@@ -47,10 +48,13 @@ const createOrUpdateTransactions = async transactions => {
               unofficial_currency_code,
               date,
               pending,
+			  primary,
+			  detailed,
+			  confidence_level,
               account_owner
             )
           VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
           ON CONFLICT (plaid_transaction_id) DO UPDATE 
             SET 
               plaid_category_id = EXCLUDED.plaid_category_id,
@@ -63,6 +67,9 @@ const createOrUpdateTransactions = async transactions => {
               unofficial_currency_code = EXCLUDED.unofficial_currency_code,
               date = EXCLUDED.date,
               pending = EXCLUDED.pending,
+			  primary = EXCLUDED.primary,
+			  detailed = EXCLUDED.detailed,
+			  confidence_level = EXCLUDED.confidence_level,
               account_owner = EXCLUDED.account_owner;
         `,
         values: [
@@ -78,6 +85,9 @@ const createOrUpdateTransactions = async transactions => {
           unofficialCurrencyCode,
           transactionDate,
           pending,
+          primaryCategory,
+          detailedCategory,
+		  confidenceLevel,
           accountOwner,
         ],
       };

@@ -183,6 +183,9 @@ CREATE TABLE transactions_table
   unofficial_currency_code text,
   date date NOT NULL,
   pending boolean NOT NULL,
+  primary text,
+  detailed text,
+  confidence_level text,
   account_owner text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -212,6 +215,9 @@ AS
     t.unofficial_currency_code,
     t.date,
     t.pending,
+	t.primary,
+	t.detailed,
+	t.confidence_level,
     t.account_owner,
     t.created_at,
     t.updated_at
