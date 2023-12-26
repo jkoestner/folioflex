@@ -39,6 +39,7 @@ class GPTchat:
         ----------
         provider : ChatBotProvider
             the name of the provider
+            - (g4f, hugchat, openai)
         kwargs : dict
             keyword arguments to pass to the get_chatbot method
         """
@@ -163,6 +164,7 @@ class G4FProvider(ChatBotProvider):
         formatted_response : str
             the response from the chatbot
         """
+        scrape_text = None
         if not self.chatbot:
             raise ValueError("Please initialize the chatbot first.")
         if scrape_url:
@@ -253,6 +255,7 @@ class HugChatProvider(ChatBotProvider):
         formatted_response : str
             the response from the chatbot
         """
+        scrape_text = None
         if not self.chatbot:
             raise ValueError("Please initialize the chatbot first.")
         if scrape_url:
@@ -329,6 +332,7 @@ class OpenaiProvider(ChatBotProvider):
         formatted_response : str
             the response from the chatbot
         """
+        scrape_text = None
         if not self.chatbot:
             raise ValueError("Please initialize the chatbot first.")
         if scrape_url:

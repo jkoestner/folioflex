@@ -211,7 +211,7 @@ active_fmt = [
         "id": "%_change",
         "name": "%_change",
         "type": "numeric",
-        "format": Format(precision=0, scheme=Scheme.percentage),
+        "format": Format(precision=2, scheme=Scheme.percentage),
     },
     {
         "id": "volume",
@@ -294,6 +294,12 @@ performance_fmt = [
     {
         "id": "dwrr_ann_pct",
         "name": "dwrr_ann_pct",
+        "type": "numeric",
+        "format": Format(precision=2, scheme=Scheme.percentage),
+    },
+    {
+        "id": "div_dwrr_pct",
+        "name": "div_dwrr_pct",
         "type": "numeric",
         "format": Format(precision=2, scheme=Scheme.percentage),
     },
