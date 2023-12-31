@@ -24,8 +24,9 @@ const createOrUpdateTransactions = async transactions => {
       unofficial_currency_code: unofficialCurrencyCode,
       date: transactionDate,
       pending,
+      label,
+	    personal_finance_category: { primary: primaryCategory, detailed: detailedCategory, confidence_level: confidenceLevel },
       account_owner: accountOwner,
-	  personal_finance_category: { primary: primaryCategory, detailed: detailedCategory, confidence_level: confidenceLevel },
     } = transaction;
     const { id: accountId } = await retrieveAccountByPlaidAccountId(
       plaidAccountId
@@ -48,13 +49,14 @@ const createOrUpdateTransactions = async transactions => {
               unofficial_currency_code,
               date,
               pending,
-			  primary_category,
-			  detailed_category,
-			  confidence_level,
+              label,
+			        primary_category,
+			        detailed_category,
+			        confidence_level,
               account_owner
             )
           VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
           ON CONFLICT (plaid_transaction_id) DO UPDATE 
             SET 
               plaid_category_id = EXCLUDED.plaid_category_id,
@@ -67,9 +69,10 @@ const createOrUpdateTransactions = async transactions => {
               unofficial_currency_code = EXCLUDED.unofficial_currency_code,
               date = EXCLUDED.date,
               pending = EXCLUDED.pending,
-			  primary_category = EXCLUDED.primary_category,
-			  detailed_category = EXCLUDED.detailed_category,
-			  confidence_level = EXCLUDED.confidence_level,
+              label = EXCLUDED.label,
+			        primary_category = EXCLUDED.primary_category,
+			        detailed_category = EXCLUDED.detailed_category,
+			        confidence_level = EXCLUDED.confidence_level,
               account_owner = EXCLUDED.account_owner;
         `,
         values: [
@@ -85,9 +88,10 @@ const createOrUpdateTransactions = async transactions => {
           unofficialCurrencyCode,
           transactionDate,
           pending,
+          label,
           primaryCategory,
           detailedCategory,
-		  confidenceLevel,
+		      confidenceLevel,
           accountOwner,
         ],
       };
