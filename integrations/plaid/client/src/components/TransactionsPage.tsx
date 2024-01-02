@@ -99,7 +99,7 @@ const TransactionsPage = ({
                   <td>{transaction.name}</td>
                   <td>{transaction.account_id}</td>
                   <td>{transaction.amount}</td>
-                  <td>{transaction.category}</td>
+                  <td>{transaction.label}</td>
                 </tr>
               ))}
             </tbody>
