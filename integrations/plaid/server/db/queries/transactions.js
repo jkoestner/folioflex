@@ -108,7 +108,7 @@ const createOrUpdateTransactions = async transactions => {
  */
 const retrieveTransactionsByAccountId = async accountId => {
   const query = {
-    text: 'SELECT * FROM transactions WHERE account_id = $1 ORDER BY date DESC',
+    text: 'SELECT * FROM transactions WHERE account_id = $1 and pending = False ORDER BY date DESC',
     values: [accountId],
   };
   const { rows: transactions } = await db.query(query);
@@ -124,7 +124,7 @@ const retrieveTransactionsByAccountId = async accountId => {
  */
 const retrieveTransactionsByItemId = async itemId => {
   const query = {
-    text: 'SELECT * FROM transactions WHERE item_id = $1 ORDER BY date DESC',
+    text: 'SELECT * FROM transactions WHERE item_id = $1 and pending = False ORDER BY date DESC',
     values: [itemId],
   };
   const { rows: transactions } = await db.query(query);
@@ -140,7 +140,7 @@ const retrieveTransactionsByItemId = async itemId => {
  */
 const retrieveTransactionsByUserId = async userId => {
   const query = {
-    text: 'SELECT * FROM transactions WHERE user_id = $1 ORDER BY date DESC',
+    text: 'SELECT * FROM transactions WHERE user_id = $1 and pending = False ORDER BY date DESC',
     values: [userId],
   };
   const { rows: transactions } = await db.query(query);
