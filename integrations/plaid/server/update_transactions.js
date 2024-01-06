@@ -9,6 +9,7 @@ const {
   createOrUpdateTransactions,
   deleteTransactions,
   updateItemTransactionsCursor,
+  retrieveItemsByUser,
 } = require('./db/queries');
 
 /**
@@ -99,4 +100,19 @@ const updateTransactions = async (plaidItemId) => {
   };
 };
 
-module.exports = updateTransactions;
+const queryAllItems = async (userID) => {
+    try {
+        const items = await retrieveItemsByUser(userID);
+        for (const item of items) {
+            await updateTransactions(item.plaidItemId);
+            // Log or handle additional logic as needed
+        }
+    } catch (error) {
+        console.error('Failed to query all items:', error);
+    }
+}
+
+module.exports = {
+  updateTransactions, 
+  queryAllItems,
+};
