@@ -105,11 +105,10 @@ const queryAllItems = async (userID) => {
         const items = await retrieveItemsByUser(userID);
         console.log('items:', items); 
         for (const item of items) {
-            console.log('Current item:', item); 
-            await updateTransactions(item);
+            console.log('Current item:', item.plaid_item_id); 
+            await updateTransactions(item.plaid_item_id);
         }
     } catch (error) {
-        console.log('items:', items); 
         console.error('Failed to query all items:', error);
     }
 }
