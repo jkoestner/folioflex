@@ -73,7 +73,7 @@ app.use('*', unhandledRouter);
 app.use(errorHandler);
 
 // Schedule a task to run at a specified time
-cron.schedule('*/5 * * * *', async () => {
+cron.schedule('0 2 * * *', async () => {
     console.log('Running a task to query all items');
     await queryAllItems(1);
 });
