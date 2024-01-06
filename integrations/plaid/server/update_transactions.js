@@ -103,7 +103,9 @@ const updateTransactions = async (plaidItemId) => {
 const queryAllItems = async (userID) => {
     try {
         const items = await retrieveItemsByUser(userID);
+        console.log('items:', items); 
         for (const item of items) {
+            console.log('Current item:', item); 
             await updateTransactions(item);
         }
     } catch (error) {
