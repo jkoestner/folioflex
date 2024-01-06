@@ -104,7 +104,7 @@ const queryAllItems = async (userID) => {
     try {
         const items = await retrieveItemsByUser(userID);
         for (const item of items) {
-            await updateTransactions(item.plaidItemId);
+            await updateTransactions(item.id);
             // Log or handle additional logic as needed
         }
     } catch (error) {
