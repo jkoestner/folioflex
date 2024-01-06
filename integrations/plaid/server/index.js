@@ -72,11 +72,6 @@ app.use('*', unhandledRouter);
 // https://github.com/expressjs/express/issues/2718
 app.use(errorHandler);
 
-// Query all items
-async function queryAllItems() {
-  // Logic to query all items
-}
-
 // Schedule a task to run at a specified time
 cron.schedule('*/5 * * * *', async () => {
     console.log('Running a task to query all items');
