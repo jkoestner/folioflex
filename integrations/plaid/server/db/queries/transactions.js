@@ -24,6 +24,7 @@ const createOrUpdateTransactions = async transactions => {
       unofficial_currency_code: unofficialCurrencyCode,
       date: transactionDate,
       pending,
+      label,
 	    personal_finance_category: { primary: primaryCategory, detailed: detailedCategory, confidence_level: confidenceLevel },
       account_owner: accountOwner,
     } = transaction;
@@ -85,7 +86,6 @@ const createOrUpdateTransactions = async transactions => {
           unofficialCurrencyCode,
           transactionDate,
           pending,
-          label,
           primaryCategory,
           detailedCategory,
 		      confidenceLevel,
