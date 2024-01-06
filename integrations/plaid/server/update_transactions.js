@@ -109,7 +109,7 @@ const queryAllItems = async (userID) => {
             await updateTransactions(item);
         }
     } catch (error) {
-
+        console.log('items:', items); 
         console.error('Failed to query all items:', error);
     }
 }
