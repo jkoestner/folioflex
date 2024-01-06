@@ -105,7 +105,7 @@ const queryAllItems = async (userID) => {
         const items = await retrieveItemsByUser(userID);
         for (const item of items) {
             await updateTransactions(item.id);
-            // Log or handle additional logic as needed
+            console.error('item id: ', item);
         }
     } catch (error) {
         console.error('Failed to query all items:', error);
