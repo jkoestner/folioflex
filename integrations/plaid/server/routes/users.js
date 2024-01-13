@@ -161,9 +161,6 @@ router.put(
     const { id } = req.params;
     const { newLabel } = req.body;
 
-    const msg = `Transaction label for ID ${id} being updated to '${newLabel}'`;
-    console.log(msg);
-
     await updateLabel(id, newLabel);
 
     res.json({ message: 'Transaction label updated successfully' });
