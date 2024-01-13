@@ -3,8 +3,8 @@ import { Link, RouteComponentProps } from 'react-router-dom';
 import NavigationLink from 'plaid-threads/NavigationLink';
 import LoadingSpinner from 'plaid-threads/LoadingSpinner';
 
-import { TransactionType } from './types'; // Define this according to your transaction structure
-import { useTransactions } from '../services'; // Assuming useTransactions is a hook you've defined
+import { TransactionType } from './types';
+import { useTransactions } from '../services';
 
 import { LoadingCallout, ErrorMessage } from '.';
 

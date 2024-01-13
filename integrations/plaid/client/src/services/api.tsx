@@ -89,13 +89,17 @@ export const exchangeToken = async (
     });
     return data;
   } catch (err) {
-    const { response } = err;
-    if (response && response.status === 409) {
-      toast.error(
-        <DuplicateItemToastMessage institutionName={institution.name} />
-      );
+    if (err && typeof err === 'object' && 'response' in err) {
+      const response = (err as any).response;
+      if (response && response.status === 409) {
+        toast.error(
+          <DuplicateItemToastMessage institutionName={institution.name} />
+        );
+      } else {
+        toast.error(`Error linking ${institution.name}`);
+      }
     } else {
-      toast.error(`Error linking ${institution.name}`);
+      toast.error('An unknown error occurred');
     }
   }
 };

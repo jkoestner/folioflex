@@ -7,7 +7,7 @@
     "@types/react-dom": "^17.0.7",
     "axios": "^0.21.4",
     "date-fns": "^1.30.1",
-    "plaid": "^9.3.0",
+    "plaid": "^18.2.0",
     "plaid-threads": "^11.4.3",
     "prop-types": "^15.7.2",
     "react": "^16.14.0",
@@ -15,7 +15,7 @@
     "react-plaid-link": "^3.2.1",
     "react-router-dom": "^5.1.2",
     "react-router-hash-link": "^2.4.3",
-    "react-scripts": "4.0.1",
+    "react-scripts": "^5.0.1",
     "react-toastify": "^5.1.0",
     "recharts": "^2.0.9",
     "sass": "^1.42.1",
@@ -23,7 +23,7 @@
     "typescript": "^4.3.2"
   },
   "scripts": {
-    "start": "PORT=3001 react-scripts start",
+    "start": "set PORT=3001 && react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
@@ -59,5 +59,5 @@
     "immer": "9.0.6",
     "glob-parent": "5.1.2"
   },
-  "proxy": "http://server:5001"
+  "proxy": "http://192.168.4.68:5001"
 }
