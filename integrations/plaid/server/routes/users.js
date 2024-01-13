@@ -167,6 +167,8 @@ router.put(
       });
     }
 
+    res.json({ message: `Transaction label for ID ${id} updated successfully to '${newLabel}'` });
+
     await updateLabel(id, newLabel);
 
     res.json({ message: 'Transaction label updated successfully' });
