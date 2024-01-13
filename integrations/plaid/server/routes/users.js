@@ -161,13 +161,13 @@ router.put(
     const { id } = req.params;
     const { newLabel } = req.body;
 
-    console.log(`updating id ${id} with label ${newLabel}`);
-
     if (newLabel === '') {
       newLabel = null;
     } else if (typeof newLabel !== 'string') {
       throw new Boom('Invalid new label.', { statusCode: 400 });
     }
+
+    console.log(`updating id ${id} with label '${newLabel}'`);
 
     await updateLabel(id, newLabel);
 
