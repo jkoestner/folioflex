@@ -27,6 +27,7 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({ match }) => {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [inputValues, setInputValues] = useState<{ [key: number]: string }>({});
   const transactionsPerPage = 50;
 
