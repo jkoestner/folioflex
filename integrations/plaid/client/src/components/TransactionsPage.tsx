@@ -64,16 +64,11 @@ const TransactionsPage = ({
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   // Create label handler
-  const handleLabelChange = async (
-    plaidTransactionId: string,
-    newLabel: any
-  ) => {
+  const handleLabelChange = async (id: number, newLabel: any) => {
     try {
-      await setLabel(plaidTransactionId, newLabel);
+      await setLabel(id, newLabel);
       const updatedTransactions = userTransactions.map(t =>
-        t.plaid_transaction_id === plaidTransactionId
-          ? { ...t, label: newLabel }
-          : t
+        t.id === id ? { ...t, label: newLabel } : t
       );
       setUserTransactions(updatedTransactions);
     } catch (error) {
@@ -126,10 +121,7 @@ const TransactionsPage = ({
                       type="text"
                       value={transaction.label}
                       onBlur={e =>
-                        handleLabelChange(
-                          transaction.plaid_transaction_id,
-                          e.target.value
-                        )
+                        handleLabelChange(transaction.id, e.target.value)
                       }
                     />
                   </td>
