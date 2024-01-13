@@ -66,7 +66,7 @@ const TransactionsPage = ({
   // Label Change Handler
   const handleInputChange = (id: number, value: string) => {
     setInputValues(prev => ({ ...prev, [id]: value }));
-    debouncedLabelUpdate(id, value === '' ? null : value);
+    debouncedLabelUpdate(id, value);
   };
 
   const handleLabelChange = async (id: number, newLabel: string | null) => {

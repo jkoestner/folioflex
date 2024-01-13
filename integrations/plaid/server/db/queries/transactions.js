@@ -167,7 +167,7 @@ const deleteTransactions = async plaidTransactionIds => {
  * Update label of a single transaction.
  *
  * @param {number} id - The ID of the transaction.
- * @param {string} newLabel - The new label for the transaction.
+ * @param {string | null} newLabel - The new label for the transaction.
  */
 const updateLabel = async (id, newLabel) => {
   const query = {
