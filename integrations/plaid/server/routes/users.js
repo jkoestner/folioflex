@@ -159,17 +159,17 @@ router.put(
   '/:id/label',
   asyncWrapper(async (req, res) => {
     const { id } = req.params;
-    const { newLabel } = req.body;
+    let newLabel = req.body.newLabel;
 
-    console.log(`updating id ${id} with label '${newLabel}'`);
+    console.log(`Received request to update id ${id} with label '${newLabel}'`);
 
-    if (newLabel === '') {
-      newLabel = null;
-    } else if (typeof newLabel !== 'string') {
+    newLabel = newLabel === '' ? null : newLabel;
+
+    if (newLabel !== null && typeof newLabel !== 'string') {
       throw new Boom('Invalid new label.', { statusCode: 400 });
     }
 
-    console.log(`updating id ${id} with label '${newLabel}'`);
+    console.log(`Updating id ${id} with label '${newLabel}'`);
 
     await updateLabel(id, newLabel);
 
