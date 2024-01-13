@@ -161,13 +161,8 @@ router.put(
     const { id } = req.params;
     const { newLabel } = req.body;
 
-    if (typeof newLabel !== 'string' || newLabel.trim() === '') {
-      throw new Boom('Invalid or missing new label.', {
-        statusCode: 400,
-      });
-    }
-
-    res.json({ message: `Transaction label for ID ${id} updated successfully to '${newLabel}'` });
+    const msg = `Transaction label for ID ${id} being updated to '${newLabel}'`;
+    console.log(msg);
 
     await updateLabel(id, newLabel);
 
