@@ -21,6 +21,7 @@ const TransactionsPage = ({
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const transactionsPerPage = 50;
+  const [inputValues, setInputValues] = useState<{ [key: number]: string }>({});
 
   const { getTransactionsByUser, transactionsByUser } = useTransactions();
   const userId = Number(match.params.userId);
@@ -63,7 +64,12 @@ const TransactionsPage = ({
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   // Label Change Handler
-  const handleLabelChange = async (id: number, newLabel: string) => {
+  const handleInputChange = (id: number, value: string) => {
+    setInputValues(prev => ({ ...prev, [id]: value }));
+    debouncedLabelUpdate(id, value === '' ? null : value);
+  };
+
+  const handleLabelChange = async (id: number, newLabel: string | null) => {
     try {
       await setLabel(id, newLabel); // Assuming this is your API call
       setUserTransactions(prevTransactions =>
@@ -77,6 +83,7 @@ const TransactionsPage = ({
       console.error('Error updating label:', error);
     }
   };
+
   const debounce = <T extends any[]>(
     func: (...args: T) => void,
     delay: number
@@ -90,6 +97,7 @@ const TransactionsPage = ({
       inDebounce = setTimeout(() => func(...args), delay);
     };
   };
+
   const debouncedLabelUpdate = debounce(handleLabelChange, 500); // 500 ms delay
 
   return (
@@ -135,9 +143,11 @@ const TransactionsPage = ({
                   <td>
                     <input
                       type="text"
-                      value={transaction.label}
+                      value={
+                        inputValues[transaction.id] || transaction.label || ''
+                      }
                       onChange={e =>
-                        debouncedLabelUpdate(transaction.id, e.target.value)
+                        handleInputChange(transaction.id, e.target.value)
                       }
                     />
                   </td>
