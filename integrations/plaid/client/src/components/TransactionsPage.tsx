@@ -57,24 +57,40 @@ const TransactionsPage = ({
     indexOfLastTransaction
   );
 
-  // Change page handler
+  // Pagination
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-  // Calculate total pages
   const totalPages = Math.ceil(userTransactions.length / transactionsPerPage);
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
-  // Create label handler
-  const handleLabelChange = async (id: number, newLabel: any) => {
+  // Label Change Handler
+  const handleLabelChange = async (id: number, newLabel: string) => {
     try {
-      await setLabel(id, newLabel);
-      const updatedTransactions = userTransactions.map(t =>
-        t.id === id ? { ...t, label: newLabel } : t
+      await setLabel(id, newLabel); // Assuming this is your API call
+      setUserTransactions(prevTransactions =>
+        prevTransactions.map(transaction =>
+          transaction.id === id
+            ? { ...transaction, label: newLabel }
+            : transaction
+        )
       );
-      setUserTransactions(updatedTransactions);
     } catch (error) {
       console.error('Error updating label:', error);
     }
   };
+  const debounce = <T extends any[]>(
+    func: (...args: T) => void,
+    delay: number
+  ) => {
+    let inDebounce: NodeJS.Timeout | undefined;
+
+    return (...args: T) => {
+      if (inDebounce) {
+        clearTimeout(inDebounce);
+      }
+      inDebounce = setTimeout(() => func(...args), delay);
+    };
+  };
+  const debouncedLabelUpdate = debounce(handleLabelChange, 500); // 500 ms delay
 
   return (
     <div>
@@ -120,8 +136,8 @@ const TransactionsPage = ({
                     <input
                       type="text"
                       value={transaction.label}
-                      onBlur={e =>
-                        handleLabelChange(transaction.id, e.target.value)
+                      onChange={e =>
+                        debouncedLabelUpdate(transaction.id, e.target.value)
                       }
                     />
                   </td>
