@@ -5,6 +5,7 @@ import LoadingSpinner from 'plaid-threads/LoadingSpinner';
 
 import { TransactionType } from './types';
 import { useTransactions } from '../services';
+import { setLabel } from '../services/api';
 
 import { LoadingCallout, ErrorMessage } from '.';
 
@@ -59,6 +60,20 @@ const TransactionsPage = ({
   // Change page handler
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
+  // Create label handler
+  const handleLabelChange = async (transactionId: number, newLabel: any) => {
+    try {
+      await setLabel(transactionId, newLabel);
+      const updatedTransactions = userTransactions.map(t =>
+        t.id === transactionId ? { ...t, label: newLabel } : t
+      );
+      setUserTransactions(updatedTransactions);
+    } catch (error) {
+      // Handle error (e.g., show a notification or set an error state)
+      console.error('Error updating label:', error);
+    }
+  };
+
   return (
     <div>
       <NavigationLink component={Link} to="/">
@@ -99,7 +114,15 @@ const TransactionsPage = ({
                   <td>{transaction.name}</td>
                   <td>{transaction.account_id}</td>
                   <td>{transaction.amount}</td>
-                  <td>{transaction.label}</td>
+                  <td>
+                    <input
+                      type="text"
+                      value={transaction.label}
+                      onChange={e =>
+                        handleLabelChange(transaction.id, e.target.value)
+                      }
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

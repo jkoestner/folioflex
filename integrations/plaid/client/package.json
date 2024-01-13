@@ -20,10 +20,10 @@
     "recharts": "^2.0.9",
     "sass": "^1.42.1",
     "socket.io-client": "^2.2.0",
-    "typescript": "^4.3.2"
+    "typescript": "^5.3.3"
   },
   "scripts": {
-    "start": "set PORT=3001 && react-scripts start",
+    "start": "PORT=3001 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
@@ -53,11 +53,11 @@
     "@types/react-router-hash-link": "^2.4.0",
     "@types/socket.io-client": "^3.0.0",
     "eslint-plugin-prettier": "^3.0.1",
-    "prettier": "^1.16.4"
+    "prettier": "^3.2.1"
   },
   "resolutions": {
     "immer": "9.0.6",
     "glob-parent": "5.1.2"
   },
-  "proxy": "http://192.168.4.68:5001"
+  "proxy": "http://server:5001"
 }

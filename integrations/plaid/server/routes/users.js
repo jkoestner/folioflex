@@ -13,6 +13,7 @@ const {
   retrieveItemsByUser,
   retrieveTransactionsByUserId,
   retrieveUserById,
+  updateLabel,
 } = require('../db/queries');
 const { asyncWrapper } = require('../middleware');
 const {
@@ -145,6 +146,30 @@ router.delete(
     // delete from the db
     await deleteUsers(userId);
     res.sendStatus(204);
+  })
+);
+
+/**
+ * Updates the label of a single transaction.
+ *
+ * @param {string} transactionId - The ID of the transaction to update.
+ * @param {string} newLabel - The new label for the transaction.
+ */
+router.put(
+  '/:transactionId/label',
+  asyncWrapper(async (req, res) => {
+    const { transactionId } = req.params;
+    const { newLabel } = req.body;
+
+    if (typeof newLabel !== 'string' || newLabel.trim() === '') {
+      throw new Boom('Invalid or missing new label.', {
+        statusCode: 400,
+      });
+    }
+
+    await updateLabel([{ id: transactionId, newLabel }]);
+
+    res.json({ message: 'Transaction label updated successfully' });
   })
 );
 

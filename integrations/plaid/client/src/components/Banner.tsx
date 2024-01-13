@@ -1,5 +1,4 @@
 import React from 'react';
-import Button from 'plaid-threads/Button';
 
 const PLAID_ENV = process.env.REACT_APP_PLAID_ENV;
 
