@@ -166,13 +166,13 @@ const deleteTransactions = async plaidTransactionIds => {
 /**
  * Update label of a single transaction.
  *
- * @param {string} id - The ID of the transaction.
+ * @param {string} plaidTransactionId - The ID of the transaction.
  * @param {string} newLabel - The new label for the transaction.
  */
-const updateLabel = async (id, newLabel) => {
+const updateLabel = async (plaidTransactionId, newLabel) => {
   const query = {
     text: 'UPDATE transactions_table SET label = $1 WHERE plaid_transaction_id = $2',
-    values: [newLabel, id],
+    values: [newLabel, plaidTransactionId],
   };
   await db.query(query);
 };

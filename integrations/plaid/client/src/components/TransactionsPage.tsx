@@ -59,17 +59,24 @@ const TransactionsPage = ({
 
   // Change page handler
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+  // Calculate total pages
+  const totalPages = Math.ceil(userTransactions.length / transactionsPerPage);
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   // Create label handler
-  const handleLabelChange = async (transactionId: number, newLabel: any) => {
+  const handleLabelChange = async (
+    plaidTransactionId: string,
+    newLabel: any
+  ) => {
     try {
-      await setLabel(transactionId, newLabel);
+      await setLabel(plaidTransactionId, newLabel);
       const updatedTransactions = userTransactions.map(t =>
-        t.id === transactionId ? { ...t, label: newLabel } : t
+        t.plaid_transaction_id === plaidTransactionId
+          ? { ...t, label: newLabel }
+          : t
       );
       setUserTransactions(updatedTransactions);
     } catch (error) {
-      // Handle error (e.g., show a notification or set an error state)
       console.error('Error updating label:', error);
     }
   };
@@ -118,8 +125,11 @@ const TransactionsPage = ({
                     <input
                       type="text"
                       value={transaction.label}
-                      onChange={e =>
-                        handleLabelChange(transaction.id, e.target.value)
+                      onBlur={e =>
+                        handleLabelChange(
+                          transaction.plaid_transaction_id,
+                          e.target.value
+                        )
                       }
                     />
                   </td>
@@ -128,18 +138,15 @@ const TransactionsPage = ({
             </tbody>
           </table>
           <div className="pagination">
-            <button
-              onClick={() => paginate(currentPage - 1)}
-              disabled={currentPage === 0}
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => paginate(currentPage + 1)}
-              disabled={indexOfLastTransaction >= userTransactions.length}
-            >
-              Next
-            </button>
+            {pageNumbers.map(number => (
+              <button
+                key={number}
+                onClick={() => paginate(number - 1)}
+                disabled={currentPage === number - 1}
+              >
+                {number}
+              </button>
+            ))}
           </div>
         </>
       )}

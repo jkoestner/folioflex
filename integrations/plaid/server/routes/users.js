@@ -152,13 +152,13 @@ router.delete(
 /**
  * Updates the label of a single transaction.
  *
- * @param {string} transactionId - The ID of the transaction to update.
+ * @param {string} plaidTransactionId - The ID of the transaction to update.
  * @param {string} newLabel - The new label for the transaction.
  */
 router.put(
   '/:transactionId/label',
   asyncWrapper(async (req, res) => {
-    const { transactionId } = req.params;
+    const { plaidTransactionId } = req.params;
     const { newLabel } = req.body;
 
     if (typeof newLabel !== 'string' || newLabel.trim() === '') {
@@ -167,7 +167,7 @@ router.put(
       });
     }
 
-    await updateLabel([{ id: transactionId, newLabel }]);
+    await updateLabel([{ plaidTransactionId, newLabel }]);
 
     res.json({ message: 'Transaction label updated successfully' });
   })

@@ -66,8 +66,8 @@ export const getTransactionsByItem = (itemId: number) =>
   api.get(`/items/${itemId}/transactions`);
 export const getTransactionsByUser = (userId: number) =>
   api.get(`/users/${userId}/transactions`);
-export const setLabel = (transactionId: number, newLabel: any) =>
-  api.put(`/users/${transactionId}/label`, { newLabel });
+export const setLabel = (plaidTransactionId: string, newLabel: any) =>
+  api.put(`/users/${plaidTransactionId}/label`, { newLabel });
 
 // institutions
 export const getInstitutionById = (instId: string) =>
