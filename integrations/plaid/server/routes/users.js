@@ -153,13 +153,15 @@ router.delete(
  * Updates the label of a single transaction.
  *
  * @param {number} id - The ID of the transaction to update.
- * @param {string} newLabel - The new label for the transaction.
+ * @param {string | null} newLabel - The new label for the transaction.
  */
 router.put(
   '/:id/label',
   asyncWrapper(async (req, res) => {
     const { id } = req.params;
     const { newLabel } = req.body;
+
+    console.log(`updating id ${id} with label '${newLabel}'`);
 
     if (newLabel === '') {
       newLabel = null;
