@@ -170,11 +170,16 @@ const deleteTransactions = async plaidTransactionIds => {
  * @param {string} newLabel - The new label for the transaction.
  */
 const updateLabel = async (id, newLabel) => {
-  const query = {
-    text: 'UPDATE transactions_table SET label = $1 WHERE id = $2',
-    values: [newLabel, id],
-  };
-  await db.query(query);
+  try {
+    const query = {
+      text: 'UPDATE transactions_table SET label = $1 WHERE id = $2',
+      values: [newLabel, id],
+    };
+    await db.query(query);
+  } catch (error) {
+    console.error('Error updating label:', error.stack);
+    throw error; // Re-throw the error to be handled by the route handler
+  }
 };
 
 module.exports = {
