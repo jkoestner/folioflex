@@ -7,7 +7,6 @@ Some modules that are included are:
     - display_income_view: Displays a view of income and expenses in plotly.
 """
 
-from audioop import avg
 import logging
 import logging.config
 import os
