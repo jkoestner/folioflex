@@ -155,6 +155,8 @@ ignore = [
     # these are conflicting errors
     "D203",
     "D212",
+    # ignore == False vs is False due to pandas series
+    "E712",
     "ISC001",
 ]
 
