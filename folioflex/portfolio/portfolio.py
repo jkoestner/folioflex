@@ -1462,8 +1462,9 @@ class Portfolio:
             days = (end_date - start_date).days
 
             # the annual percentage can be high when the days are low
-            # e.g. 2% return in 1 day is greater than 1000% annualized
-            max_percentage = 1000
+            # e.g. 2% return in 1 day is greater than 1000 annualized
+            # e.g. 10% return in 1 day is greater than 1e15 annualized
+            max_percentage = 1e20
 
             # calculating the dwrr return
             # ---------------------------
@@ -1472,8 +1473,20 @@ class Portfolio:
             )
             # where dwrr can't be calculated
             if dwrr_ann_return_pct is None:
+                logger.warning(
+                    f"DWRR return for {ticker} is None likely due to percentage "
+                    f"too high (or low) fall back with simple return"
+                )
+                dwrr_return_pct = (
+                    -return_transactions["return_txs"].iloc[0]
+                    - return_transactions["return_txs"].iloc[-1]
+                ) / return_transactions["return_txs"].iloc[-1]
+                dwrr_ann_return_pct = np.NaN
                 pass
             elif dwrr_ann_return_pct > max_percentage:
+                logger.warning(
+                    f"DWRR return for {ticker} is greater than {max_percentage}%"
+                )
                 dwrr_return_pct = (1 + dwrr_ann_return_pct) ** (days / 365) - 1
                 dwrr_ann_return_pct = np.NaN
             else:
@@ -1488,6 +1501,9 @@ class Portfolio:
             if dwrr_div_ann_return_pct is None:
                 pass
             elif dwrr_div_ann_return_pct > max_percentage:
+                logger.warning(
+                    f"DWRR div return for {ticker} is greater than {max_percentage}%"
+                )
                 dwrr_div_return_pct = (1 + dwrr_div_ann_return_pct) ** (days / 365) - 1
                 dwrr_div_ann_return_pct = np.NaN
             else:
