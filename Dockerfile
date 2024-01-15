@@ -25,7 +25,7 @@ WORKDIR /code
 COPY . .
 
 # Install requirements
-RUN pip install . .[gpt] .[web] .[worker]
+RUN pip install . .[budget] .[dev] .[gpt] .[web] .[worker]
 
 # Create new user
 RUN adduser --disabled-password --gecos '' ffx
