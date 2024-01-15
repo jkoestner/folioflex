@@ -5,13 +5,13 @@
 # from where the dockerfile is located.
 FROM python:3.8-slim
 
-# Install git
+# Install git and libpq-dev, build-essential (needed for psycopg2)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git && \
+    apt-get install -y --no-install-recommends git libpq-dev build-essential && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install chromium (lighter version of Chrome)
+# Install chromium (lighter version of Chrome for seleniumbase)
 RUN apt-get update && \
     apt-get install -y chromium && \
     ln -s /usr/bin/chromium /usr/bin/google-chrome && \
