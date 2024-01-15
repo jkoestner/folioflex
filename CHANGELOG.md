@@ -1,5 +1,18 @@
 # Changelog
 
+## [v0.1.4](https://github.com/jkoestner/folioflex/tree/v0.1.4)
+
+[Full Changelog](https://github.com/jkoestner/folioflex/compare/v0.1.3...v0.1.4)
+
+**Enhancements**
+- add in budget module
+- add in [plaid](https://plaid.com/) integration
+- add in label classification
+- convert browser automation to use [seleniumbase](https://github.com/seleniumbase/SeleniumBase)
+
+**Documentation**
+- update README
+
 ## [v0.1.3](https://github.com/jkoestner/folioflex/tree/v0.1.3)
 
 [Full Changelog](https://github.com/jkoestner/folioflex/compare/v0.1.2...v0.1.3)

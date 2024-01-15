@@ -36,7 +36,7 @@ def ally(broker_file, output_file=None, broker="ally"):
 
     Instructions for downloading transactions:
     ------------------------------------------
-    - go to www.ally.com
+    - go to invest.ally.com
     - go to Holdings & Activity
     - go to Activity
     - Copy data to .csv (UTF-8)
@@ -124,7 +124,11 @@ def fidelity(broker_file, output_file=None, broker="fidelity"):
     - go to www.fidelity.com/
     - go to Activity & Orders
     - download data to .csv
-    - copy to new .csv and save (UTF-8)
+
+    Notes
+    -----
+    - The headers have started on line 6, if this changes need to update
+    - the date has had a space at beggining of string, so need to strip
 
     Parameters
     ----------
@@ -152,15 +156,22 @@ def fidelity(broker_file, output_file=None, broker="fidelity"):
 
     # read in the transactions file
     try:
-        df = pd.read_csv(broker_file)
+        df = pd.read_csv(broker_file, skiprows=5)
     except FileNotFoundError:
         logger.error("Transactions file not found")
         return
-    start_df_len = len(df)
 
-    # cleaning dataframe by formatting columns and removing whitespace
+    # cleaning dataframe by formatting columns and removing whitespace from strings
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
-    df = df.apply(lambda x: x.strip() if isinstance(x, str) else x)
+    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+
+    # remove footer of dataframe
+    df_end = df[df["action"].isna()].index.min()
+    if pd.notna(df_end):
+        df = df.loc[: df_end - 1]
+    else:
+        pass
+    start_df_len = len(df)
 
     # update date column type
     df["date"] = pd.to_datetime(df["run_date"], format="%m/%d/%Y").dt.date
@@ -230,11 +241,11 @@ def ib(broker_file, output_file=None, broker="ib", funds=None, delisted=None):
     - Cash Transactions: Dividends, Deposits/Withdrawals, Broker Interest Paid
       Broker Interest Received, Detail
       - Type, Asset Class, Symbol, Date/Time, Amount, Description
-    - Transfers
+    - Transfers: Transfer
       - Type, Asset Class, Symbol, Date/Time, Position Amount, Description, Quantity,
         Cash Transfer, Direction
-    - Company Actions
-      - Type, Asset Class, Symbol, Date/Time, Position Amount, Description, Quantity
+    - Corporate Actions: Detail
+      - Type, Asset Class, Symbol, Date/Time, Amount, Description, Quantity
 
     Parameters
     ----------
@@ -290,7 +301,7 @@ def ib(broker_file, output_file=None, broker="ib", funds=None, delisted=None):
     df["tradeprice"] = df["tradeprice"].astype(float)
 
     # update date column type
-    df["date"] = pd.to_datetime(df["datetime"], format="mixed").dt.date
+    df["date"] = pd.to_datetime(df["datetime"]).dt.date
 
     # Loop through each type_lkup and update type
     for string, tag in type_lkup.items():
@@ -318,7 +329,7 @@ def ib(broker_file, output_file=None, broker="ib", funds=None, delisted=None):
         df.loc[df["assetclass"] == "CASH", "symbol"] = "Cash"
         df.loc[df["assetclass"] == "CASH", "type"] = "Cash"
 
-    # Company Actions
+    # Corporate Actions
     # acquisition transactions need to be adjusted
     # the data from IB is not rich so there is regex to extract the old and new symbols
     # and then the proceeds and tradeprice are updated from historical price data
@@ -345,7 +356,6 @@ def ib(broker_file, output_file=None, broker="ib", funds=None, delisted=None):
         acquisitions.set_index("orig_symbol", inplace=True)
         acquisitions.update(acquisition_symbol_lkup.set_index("orig_symbol"))
         acquisitions = acquisitions.reset_index()
-        acquisitions["date"] = pd.to_datetime(acquisitions["date"], format="mixed")
 
         # update acquisition tickers transaction prices
         acquisition_symbol_lkup = acquisitions.reset_index()[
@@ -371,9 +381,6 @@ def ib(broker_file, output_file=None, broker="ib", funds=None, delisted=None):
 
         # add in the stock price at transition
         acquisition_price_history.rename(columns={"ticker": "new_symbol"}, inplace=True)
-        acquisition_price_history["date"] = pd.to_datetime(
-            acquisition_price_history["date"], format="mixed"
-        )
         acquisition_price_history = acquisition_price_history.sort_values(by="date")
         acquisitions = pd.merge_asof(
             acquisitions,
@@ -397,7 +404,6 @@ def ib(broker_file, output_file=None, broker="ib", funds=None, delisted=None):
 
         # append df with acquisitions
         df = pd.concat([df, acquisitions]).reset_index()
-        df["date"] = pd.to_datetime(df["datetime"], format="mixed").dt.date
 
     # drop rows that do not have a type
     df = df.dropna(subset=["type"])
@@ -476,6 +482,7 @@ def ybr(broker_file, output_file=None, broker="ybr", reinvest=True):
                 "Fund Reallocation",
                 "Fund Transfers",
                 "Revenue Sharing",
+                "Genworth Fund Liquidation 1",
             ],
             "type": [
                 "BUY",
@@ -486,6 +493,7 @@ def ybr(broker_file, output_file=None, broker="ybr", reinvest=True):
                 "SELL",
                 "BUY",
                 "DIVIDEND",
+                "SELL",
             ],
         }
     )
@@ -504,6 +512,7 @@ def ybr(broker_file, output_file=None, broker="ybr", reinvest=True):
                 "BlackRock LifePath Index 2050 RAF",
                 "BlackRock Russell 2000 Growth Index Fund",
                 "Harding Loevner International Equity",
+                "SSGA Russell Small/Mid Cap Index",
             ],
             "symbol": [
                 "DODIX",
@@ -516,6 +525,7 @@ def ybr(broker_file, output_file=None, broker="ybr", reinvest=True):
                 "LIPIX",
                 "BLKRGIX",
                 "HLIEIX",
+                "SSRMIX",
             ],
             "relative": [
                 "",
@@ -528,6 +538,7 @@ def ybr(broker_file, output_file=None, broker="ybr", reinvest=True):
                 "",
                 "WBRRFX/P11950",
                 "HLMIX/P11210",
+                "",
             ],
         }
     )
@@ -555,7 +566,21 @@ def ybr(broker_file, output_file=None, broker="ybr", reinvest=True):
     # update date column type
     df["date"] = pd.to_datetime(df["valuation_date"], format="%m-%d-%Y").dt.date
 
-    # add in symbol and type
+    # add in symbol and type if checks pass
+    missing_funds = df[~df["fund"].isin(symbol_lkup["fund"])]["fund"].unique()
+    if missing_funds:
+        raise ValueError(
+            f"Not all funds are in the symbol lookup table for instance {missing_funds}"
+        )
+    missing_activity = df[~df["activity_type"].isin(type_lkup["activity_type"])][
+        "activity_type"
+    ].unique()
+    if missing_activity:
+        raise ValueError(
+            f"Not all activity are in the activity lookup table "
+            f"for instance {missing_activity}"
+        )
+
     df = df.merge(symbol_lkup, on="fund", how="left")
     df = df.merge(type_lkup, on="activity_type", how="left")
 

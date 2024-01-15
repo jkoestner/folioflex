@@ -404,7 +404,7 @@ class Portfolio:
 
         return transactions_history
 
-    def get_view(self, view="market_value", tx_hist_df=None):
+    def get_view(self, view="market_value", tx_hist_df=None, lookback=None):
         """
         Get the a specific view of the portfolio.
 
@@ -417,6 +417,8 @@ class Portfolio:
                - e.g. "market_value", "return", "cumulative_cost", "realized"
         tx_hist_df : DataFrame
             dataframe to get return percent from
+        lookback : int (default is None)
+            the number of days to look back (uses a calendar day and not stock)
 
         Returns
         -------
@@ -424,6 +426,11 @@ class Portfolio:
         """
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
+        if lookback is not None:
+            lookback = convert_lookback(lookback)
+            tx_hist_df = self._filter_lookback(
+                lookback=lookback, adjust_vars=True, tx_hist_df=tx_hist_df
+            )
         cols = ["ticker", "date", view]
         view_df = tx_hist_df[cols]
         view_df = view_df.pivot_table(
@@ -453,6 +460,12 @@ class Portfolio:
 
         portfolio_checks_failed = 0
 
+        #   _______  __
+        #  |_   _\ \/ /
+        #    | |  \  /
+        #    | |  /  \
+        #    |_| /_/\_\
+        #
         # Helper function to check conditions and log warnings
         def check_condition(condition, message_template, filtered_df=None):
             nonlocal portfolio_checks_failed
@@ -554,7 +567,23 @@ class Portfolio:
             filtered_df,
         )
 
-        # type checks
+        # broker check
+        brokers_allowed = 2  # there can be 2 brokers, nan and the filtered broker
+        check_condition(
+            (
+                "broker" in tx_df.columns
+                and len(tx_df["broker"].unique()) > brokers_allowed
+            ),
+            "If using broker column the broker should be unique or else the "
+            "the grouping of transactions will be incorrect. ",
+        )
+
+        #   _______   ______  _____
+        #  |_   _\ \ / /  _ \| ____|
+        #    | |  \ V /| |_) |  _|
+        #    | |   | | |  __/| |___
+        #    |_|   |_| |_|   |_____|
+        #
         tx_allowed_types = [
             "BOOK",
             "BUY",
@@ -570,7 +599,12 @@ class Portfolio:
                 logger.warning(f"This type '{tx_type}' is not in {tx_allowed_types}")
                 portfolio_checks_failed = portfolio_checks_failed + 1
 
-        # column checks
+        #    ____ ___  _    _   _ __  __ _   _
+        #   / ___/ _ \| |  | | | |  \/  | \ | |
+        #  | |  | | | | |  | | | | |\/| |  \| |
+        #  | |__| |_| | |__| |_| | |  | | |\  |
+        #   \____\___/|_____\___/|_|  |_|_| \_|
+        #
         tx_needed_columns = ["ticker", "date", "type", "units", "cost"]
         tx_columns = list(tx_df.columns)
         for tx_needed_column in tx_needed_columns:
@@ -579,7 +613,12 @@ class Portfolio:
                 f"This column '{tx_needed_column}' is needed, and not in {tx_columns}",
             )
 
-        # date checks
+        #   ____    _  _____ _____
+        #  |  _ \  / \|_   _| ____|
+        #  | | | |/ _ \ | | |  _|
+        #  | |_| / ___ \| | | |___
+        #  |____/_/   \_\_| |_____|
+        #
         invalid_dt = check_stock_dates(tx_df, fix=False)["invalid_dt"]
         check_condition(len(invalid_dt) > 0, "Invalid dates found in transactions")
 
@@ -1294,6 +1333,8 @@ class Portfolio:
         """
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
+
+        tx_hist_df = tx_hist_df[tx_hist_df["date"] <= date]
 
         # if lookback provided then filter history to only include that period
         if lookback is not None:

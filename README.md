@@ -71,6 +71,15 @@ the environment of choice.
 pip install folioflex
 ```
 
+Other options can be installed if using more functionality
+
+```
+pip install folioflex[dev]
+pip install folioflex[gpt]
+pip install folioflex[web]
+pip install folioflex[worker]
+``````
+
 Or could be done using GitHub.
 
 ```
@@ -83,6 +92,7 @@ If wanting to do more and develop on the code, the following command can be run 
 pip install -e .
 pip install -e .[dev]
 ```
+
 ### Docker Install
 The package can also be run in docker which provides a containerized environment, and can host the web dashboard.
 
@@ -156,7 +166,7 @@ pf = Portfolio(
 pf.get_performance()
 ```
 
-### Web Dashboard
+### Web Dashboard - Invest
 
 A demo of the app can be seen at https://invest.koestner.fun/.
 
@@ -166,6 +176,72 @@ There are a number of environment variables listed in constants to be able to ru
 
 ```python
 python app.py
+```
+
+### Plaid Dashboard
+
+A separate dashboard can be run for transaction aggregation. This is a work in progress and 
+will be updated as more functionality is added.
+
+The transactions are sourced from [Plaid](https://plaid.com/). To be able to use the dashboard
+there needs to be three services run:
+- **plaid client**: this is the frontend
+- **plaid server**: this is the backend which will query the api as well as interact with the database
+- **plaid db**: this is holding the data
+
+The [Plaid Pattern](https://github.com/plaid/pattern) repository was used as a reference
+for the docker-compose setup.
+
+```bash
+  plaid-db:
+    container_name: plaid-db
+    image: postgres:latest
+    restart: unless-stopped
+    volumes:
+      - $DOCKERDIR/plaid/database/init:/docker-entrypoint-initdb.d
+      - $DOCKERDIR/plaid/data:/var/lib/postgresql/data
+    ports:
+      - $PLAID_DB_PORT:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: $PLAID_POSTGRES
+
+  plaid-server:
+    hostname: server
+    container_name: plaid-server
+    image: docker-plaid-server:latest
+    restart: unless-stopped
+    # build: $DOCKERDIR/plaid/server
+    ports:
+      - $PLAID_SERVER_PORT:5001
+    environment:
+      PLAID_CLIENT_ID: $PLAID_CLIENT_ID
+      PLAID_DEVELOPMENT_REDIRECT_URI: $PLAID_DEVELOPMENT_REDIRECT_URI
+      PLAID_ENV: $PLAID_ENV
+      PLAID_SECRET_DEVELOPMENT: $PLAID_DEV_SECRET
+      PLAID_SECRET_SANDBOX: $PLAID_SAND_SECRET
+      PLAID_WEBHOOK_URL: $PLAID_WEBHOOK_URL
+      PORT: $PLAID_SERVER_PORT
+      DB_PORT: $PLAID_DB_PORT
+      DB_HOST_NAME: plaid-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: $PLAID_POSTGRES
+    depends_on:
+      - plaid-db
+      
+  plaid-client:
+    container_name: plaid-client
+    image: docker-plaid-client:latest
+    restart: unless-stopped
+    # build: $DOCKERDIR/plaid/client
+    ports:
+      - $PLAID_PORT:3001
+    environment:
+      REACT_APP_PLAID_ENV: $PLAID_ENV
+      REACT_APP_SERVER: $PLAID_SERVER
+      DANGEROUSLY_DISABLE_HOST_CHECK: true
+    depends_on:
+      - plaid-server
 ```
 
 ## Other Tools

@@ -4,12 +4,14 @@
 .DS_Store
 .env
 portfolio.ipynb
+nlp_explore.ipynb
 
 # folders
 .pytest_cache/
 .vscode/
 _build/
 _pycache_/
+folioflex/configs/models/*
 build/
 docs/coverage/
 folioflex.egg-info/

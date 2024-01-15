@@ -63,7 +63,7 @@ def check_stock_dates(tx_df, fix=False, timezone="US/Eastern", warning=True):
         )
 
     if isinstance(tx_df, (str, date)):
-        logger.info("Checking a single string or date")
+        logger.debug("Checking a single string or date")
         tx_df = pd.DataFrame({"date": [pd.to_datetime(tx_df)]})
 
     # Check if dates are valid

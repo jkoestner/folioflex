@@ -3,6 +3,12 @@
 from dash import dash_table, dcc, html
 
 from folioflex.dashboard import dashboard_helper
+from folioflex.utils import config_helper
+
+portfolio_list = config_helper.get_config("budget_personal.ini").sections()
+value = "static"
+if value in portfolio_list:
+    portfolio_list.remove(value)
 
 
 def layout(login_status, login_alert):
@@ -17,14 +23,27 @@ def layout(login_status, login_alert):
             html.Div(
                 [
                     dashboard_helper.get_menu(),
-                    # initializing the manager and using lookback
-                    html.Button(
-                        "Portfolio Manager", id="manager-initialize", n_clicks=0
-                    ),
+                ],
+                className="row",
+            ),
+            html.Div(
+                [
+                    html.Label("Lookback", style={"paddingRight": "10px"}),
                     dcc.Input(
                         id="lookback-input",
                         placeholder="Enter Lookback...",
                         type="number",
+                        style={"marginRight": "10px"},
+                    ),
+                ],
+                style={"display": "flex", "alignItems": "center"},
+                className="row",
+            ),
+            html.Div(
+                [
+                    html.P(),
+                    html.Button(
+                        "Portfolio Manager", id="manager-initialize", n_clicks=0
                     ),
                     html.Div(id="manager_refresh_text", children=""),
                     # creating table for portfolio manager
@@ -34,20 +53,16 @@ def layout(login_status, login_alert):
                         sort_action="native",
                         page_action="native",
                     ),
+                    html.P(),
+                ],
+                className="row",
+            ),
+            html.Div(
+                [
                     # initializing the portfolio
                     html.Button("Portfolio", id="personal-initialize", n_clicks=0),
-                    # dropdown
                     dcc.Dropdown(
-                        [
-                            "all",
-                            "ally",
-                            "company",
-                            "fidelity",
-                            "ib",
-                            "eiten",
-                            "roth",
-                        ],
-                        "all",
+                        portfolio_list,
                         id="personal-dropdown",
                     ),
                     html.Div(id="personal_refresh_text", children=""),

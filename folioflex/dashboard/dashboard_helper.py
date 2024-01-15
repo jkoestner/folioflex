@@ -36,13 +36,13 @@ def get_menu():
                 style={"padding": 10},
             ),
             dcc.Link(
-                "Tracker   ",
-                href="/tracker",
+                "Personal   ",
+                href="/personal",
                 style={"padding": 10},
             ),
             dcc.Link(
-                "Personal   ",
-                href="/personal",
+                "Budget   ",
+                href="/budget",
                 style={"padding": 10},
             ),
         ]
@@ -61,10 +61,6 @@ def get_defaults():
         html.Div(id="task-id", children="none", style={"display": "none"}),
         html.Div(id="sector-status", children="none", style={"display": "none"}),
         html.Div(id="yf-data", children="none", style={"display": "none"}),
-        html.Div(id="tracker-task-status", children="none", style={"display": "none"}),
-        html.Div(id="tracker-task-id", children="none", style={"display": "none"}),
-        html.Div(id="tracker-status", children="none", style={"display": "none"}),
-        dcc.Store(id="tracker-portfolio-tx"),
         html.Div(id="personal-task-status", children="none", style={"display": "none"}),
         html.Div(id="personal-task-id", children="none", style={"display": "none"}),
         html.Div(id="personal-status", children="none", style={"display": "none"}),
