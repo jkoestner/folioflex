@@ -1,7 +1,12 @@
 """
-Reviews budget calculations and dashboard for transactions.
+Create a budget class that will provide methods to analyze a budget.
 
-Some modules that are included are:
+The initialization will take in a config file that will provide the budget
+information.
+
+Some methods that are included are:
+    - get_transactions: Gets the transactions for the budget.
+    - modify_transactions: Modifies the transactions for the budget.
     - budget_view: Provides a view of categories and their budget status.
     - display_budget_view: Displays a view of budgets in plotly.
     - display_income_view: Displays a view of income and expenses in plotly.
@@ -159,10 +164,19 @@ class Budget:
         tx_df["name"] = tx_df["name"].apply(self.modify_preprocess_emoji)
         logger.info("Removing pending transactions.")
         tx_df = self.modify_remove_pending(tx_df)
-        logger.info(
-            f"Number of transactions without label assigned: "
-            f"{len(tx_df[tx_df['label'].isnull()])}"
-        )
+
+        # if labels are not assigned create warning
+        unassigned_labels = tx_df[tx_df["label"].isnull()]
+        if len(unassigned_labels) > 0:
+            logger.warning(
+                f"Number of transactions without label assigned: "
+                f"{len(unassigned_labels)} out of {len(tx_df)}"
+            )
+        else:
+            logger.info(
+                f"Number of transactions without label assigned: "
+                f"{len(unassigned_labels)} out of {len(tx_df)}"
+            )
 
         return tx_df
 
@@ -270,7 +284,7 @@ class Budget:
             return "Incoming Transfer"
         return "OTHER"
 
-    def budget_view(self, tx_df, target_date):
+    def budget_view(self, tx_df, target_date, exclude_labels=None):
         """
         Provide a view of categories and their budget status.
 
@@ -280,12 +294,18 @@ class Budget:
             The transactions to view budget status for.
         target_date : str
             The date to view budget status for. Format: YYYY-MM.
+        exclude_labels : list
+            The labels to exclude from the budget view.
 
         Returns
         -------
         budget_df : DataFrame
             The budget status for each category.
         """
+        budgets = self.config_dict["budgets"]
+        if exclude_labels is not None:
+            tx_df = tx_df[~tx_df["label"].isin(exclude_labels)]
+            budgets = {k: v for k, v in budgets.items() if k not in exclude_labels}
         # grouping transactions
         grouped_transactions = (
             tx_df[tx_df["date"].dt.to_period("M") == target_date]
@@ -295,17 +315,13 @@ class Budget:
             .sort_values("amount", ascending=True)
         )
         # adding in the budget
-        unused_keys = set(self.config_dict["budgets"].keys()) - set(
-            grouped_transactions["label"]
-        )
+        unused_keys = set(budgets.keys()) - set(grouped_transactions["label"])
         unused_keys_df = pd.DataFrame({"label": list(unused_keys)})
         grouped_transactions = pd.concat(
             [grouped_transactions, unused_keys_df], ignore_index=True
         )
         grouped_transactions.fillna(0, inplace=True)
-        grouped_transactions["budget"] = grouped_transactions["label"].map(
-            self.config_dict["budgets"]
-        )
+        grouped_transactions["budget"] = grouped_transactions["label"].map(budgets)
         grouped_transactions["budget"].fillna(
             float(self.config_dict["default"]), inplace=True
         )
@@ -375,7 +391,7 @@ class Budget:
         )
 
         fig.update_layout(height=600)
-        return fig.show()
+        return fig
 
     def display_income_view(self, tx_df):
         """
@@ -400,7 +416,7 @@ class Budget:
             labels={"month": "Month", "amount": "Amount"},
         )
 
-        return fig.show()
+        return fig
 
     def display_compare_expenses_view(self, tx_df, target_date=None, avg_months=12):
         """
@@ -494,7 +510,7 @@ class Budget:
             line={"color": "gray"},
         )
 
-        return fig.show()
+        return fig
 
     def category_tx_view(self, tx_df, target_date, category):
         """

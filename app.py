@@ -17,23 +17,14 @@ from io import StringIO
 
 import dash
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objs as go
 from celery.result import AsyncResult
 from dash import dcc, html
 from dash.dash_table.Format import Format, Scheme
 from dash.dependencies import Input, Output, State
 
-from folioflex.dashboard import dashboard_helper, layouts
-from folioflex.dashboard.pages import (
-    ideas,
-    login,
-    macro,
-    personal,
-    sectors,
-    stocks,
-    tracker,
-)
+from folioflex.budget import budget
+from folioflex.dashboard import dashboard_helper, layouts, pages
 from folioflex.portfolio import heatmap, wrappers
 from folioflex.utils import config_helper, cq
 
@@ -75,22 +66,33 @@ app.layout = html.Div(
 def display_page(pathname, login_alert, login_status):
     """Create navigation for app."""
     if pathname == "/":
-        return stocks.layout(login_status=login_status, login_alert=login_alert)
+        return pages.stocks.layout(login_status=login_status, login_alert=login_alert)
     elif pathname == "/stocks":
-        return stocks.layout(login_status=login_status, login_alert=login_alert)
+        return pages.stocks.layout(login_status=login_status, login_alert=login_alert)
     elif pathname == "/sectors":
-        return sectors.layout(login_status=login_status, login_alert=login_alert)
+        return pages.sectors.layout(login_status=login_status, login_alert=login_alert)
     elif pathname == "/ideas":
-        return ideas.layout(login_status=login_status, login_alert=login_alert)
+        return pages.ideas.layout(login_status=login_status, login_alert=login_alert)
     elif pathname == "/macro":
-        return macro.layout(login_status=login_status, login_alert=login_alert)
-    elif pathname == "/tracker":
-        return tracker.layout(login_status=login_status, login_alert=login_alert)
+        return pages.macro.layout(login_status=login_status, login_alert=login_alert)
     elif pathname == "/personal":
         if not login_status or not login_status.get("logged_in"):
-            return login.layout(login_status=login_status, login_alert=login_alert)
+            return pages.login.layout(
+                login_status=login_status, login_alert=login_alert
+            )
         else:
-            return personal.layout(login_status=login_status, login_alert=login_alert)
+            return pages.personal.layout(
+                login_status=login_status, login_alert=login_alert
+            )
+    elif pathname == "/budget":
+        if not login_status or not login_status.get("logged_in"):
+            return pages.login.layout(
+                login_status=login_status, login_alert=login_alert
+            )
+        else:
+            return pages.budget.layout(
+                login_status=login_status, login_alert=login_alert
+            )
     else:
         return "404"
 
@@ -399,186 +401,6 @@ def sma_value(n_clicks, input_value):
 #  |_|  |_/_/   \_\____|_| \_\\___/
 
 
-#   _____ ____      _    ____ _  _______ ____
-#  |_   _|  _ \    / \  / ___| |/ / ____|  _ \
-#    | | | |_) |  / _ \| |   | ' /|  _| | |_) |
-#    | | |  _ <  / ___ \ |___| . \| |___|  _ <
-#    |_| |_| \_\/_/   \_\____|_|\_\_____|_| \_\
-
-
-# initializing tracker
-@app.callback(
-    Output("tracker-task-id", "children"),
-    Input("tracker-initialize", "n_clicks"),
-)
-def initialize_trackerGraph(n_clicks):
-    """Provide tracker graph."""
-    if n_clicks == 0:
-        tracker_task_id = "none"
-    else:
-        config_file = "portfolio_dash.ini"
-        broker = "tracker"
-        tracker_task = cq.portfolio_query.delay(config_file=config_file, broker=broker)
-        tracker_task_id = tracker_task.id
-
-    return tracker_task_id
-
-
-# text
-@app.callback(
-    Output("tracker_refresh_text", "children"),
-    Input("tracker-task-status", "children"),
-)
-def tracker_refresh_text(tracker_task_status):
-    """Provide text for tracker graph."""
-    return tracker_task_status
-
-
-@app.callback(
-    Output("tracker-task-status", "children"),
-    [
-        Input("interval-component", "n_intervals"),
-        Input("tracker-task-id", "children"),
-    ],
-    [
-        State("tracker-task-status", "children"),
-    ],
-)
-def tracker_status_check(n_intervals, tracker_task_id, tracker_task_status):
-    """Provide status check."""
-    if tracker_task_id != "none":
-        tracker_task = AsyncResult(tracker_task_id, app=cq.celery_app)
-        tracker_task_status = tracker_task.status
-
-    else:
-        tracker_task_status = "waiting"
-    return tracker_task_status
-
-
-@app.callback(
-    [
-        Output("tracker-portfolio-tx", "data"),
-        Output("tracker-status", "children"),
-    ],
-    Input("tracker-task-status", "children"),
-    State("tracker-task-id", "children"),
-)
-def tracker_get_results(tracker_task_status, tracker_task_id):
-    """Provide status results."""
-    if tracker_task_status == "SUCCESS":
-        tracker_task = AsyncResult(tracker_task_id, app=cq.celery_app)
-        tracker_portfolio_tx = tracker_task.result
-        tracker_status = "ready"
-    else:
-        tracker_status = "none"
-        tracker_portfolio_tx = None
-
-    return tracker_portfolio_tx, tracker_status
-
-
-@app.callback(
-    Output("tracker-graph", "figure"),
-    [
-        Input("tracker-dropdown", "value"),
-        Input("tracker-status", "children"),
-    ],
-    State("tracker-portfolio-tx", "data"),
-)
-def update_TrackerGraph(dropdown, tracker_status, cq_portfolio_dict):
-    """Provide tracker graph."""
-    if tracker_status == "ready":
-        px_df = pd.read_json(cq_portfolio_dict[dropdown])
-        px_line = px.line(px_df, title="tracker")
-        px_line.update_xaxes(
-            title_text="Date",
-            rangeslider_visible=True,
-            rangeselector={
-                "buttons": [
-                    {"count": 5, "label": "5D", "step": "day", "stepmode": "backward"},
-                    {
-                        "count": 1,
-                        "label": "1M",
-                        "step": "month",
-                        "stepmode": "backward",
-                    },
-                    {
-                        "count": 6,
-                        "label": "6M",
-                        "step": "month",
-                        "stepmode": "backward",
-                    },
-                    {"count": 1, "label": "YTD", "step": "year", "stepmode": "todate"},
-                    {"count": 1, "label": "1Y", "step": "year", "stepmode": "backward"},
-                    {"step": "all"},
-                ]
-            },
-        )
-
-        px_line.update_yaxes(title_text=dropdown, autorange=True, fixedrange=False)
-        px_line.update_traces(
-            visible="legendonly", selector=lambda t: t.name not in ["portfolio"]
-        )
-    else:
-        px_line = px.line(title="tracker")
-
-    return px_line
-
-
-# performance table
-@app.callback(
-    [
-        Output("tracker_perfomance_table", "columns"),
-        Output("tracker_perfomance_table", "data"),
-    ],
-    [
-        Input("tracker-status", "children"),
-    ],
-    [
-        State("tracker-portfolio-tx", "data"),
-    ],
-)
-def update_trackerPerformance(tracker_status, cq_portfolio_dict):
-    """Provide tracker performance table."""
-    if tracker_status == "ready":
-        performance = pd.read_json(cq_portfolio_dict["performance"])
-        performance["lookback_date"] = pd.to_datetime(
-            performance["lookback_date"], unit="ms"
-        )
-        performance = performance[performance["market_value"] != 0].sort_values(
-            "return", ascending=False
-        )
-
-        performance_table = layouts.performance_fmt, performance.to_dict("records")
-    else:
-        performance_table = (None, None)
-
-    return performance_table
-
-
-# transactions table
-@app.callback(
-    [
-        Output("tracker_transaction_table", "columns"),
-        Output("tracker_transaction_table", "data"),
-    ],
-    [
-        Input("tracker-status", "children"),
-    ],
-    [
-        State("tracker-portfolio-tx", "data"),
-    ],
-)
-def update_trackerTransaction(tracker_status, cq_portfolio_dict):
-    """Provide tracker transaction table."""
-    if tracker_status == "ready":
-        transactions = pd.read_json(cq_portfolio_dict["transactions"])
-        transaction_table = layouts.transactions_fmt, transactions.to_dict("records")
-    else:
-        transaction_table = (None, None)
-
-    return transaction_table
-
-
 #   ____  _____ ____  ____   ___  _   _    _    _
 #  |  _ \| ____|  _ \/ ___| / _ \| \ | |  / \  | |
 #  | |_) |  _| | |_) \___ \| | | |  \| | / _ \ | |
@@ -882,6 +704,95 @@ def update_ManagerTable(manager_status, cq_pm):
     return manager_table
 
 
+#   ____  _   _ ____   ____ _____ _____
+#  | __ )| | | |  _ \ / ___| ____|_   _|
+#  |  _ \| | | | | | | |  _|  _|   | |
+#  | |_) | |_| | |_| | |_| | |___  | |
+#  |____/ \___/|____/ \____|_____| |_|
+#
+
+
+# budget expense chart
+@app.callback(
+    [
+        Output("budget-chart", "figure"),
+        Output("budget-chart-labels", "children"),
+    ],
+    [Input("budget-chart-button", "n_clicks")],
+    [State("budget-chart-input", "value")],
+)
+def update_budgetchart(n_clicks, input_value):
+    """Provide budget info chart."""
+    if n_clicks == 0:
+        budget_chart = go.Figure()
+        budget_chart.add_annotation(
+            text="No data available", x=0.5, y=0.5, showarrow=False, font_size=20
+        )
+        budget_chart.update_layout(xaxis={"visible": False}, yaxis={"visible": False})
+        len_label = 0
+        len_unlabel = 0
+    else:
+        bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+        budget_df = bdgt.get_transactions()
+        budget_df = bdgt.modify_transactions(budget_df)
+        budget_view = bdgt.budget_view(
+            budget_df, target_date=input_value, exclude_labels=["income"]
+        )
+        budget_chart = bdgt.display_budget_view(budget_view)
+        len_label = len(budget_df[~budget_df["label"].isnull()])
+        len_unlabel = len(budget_df[budget_df["label"].isnull()])
+
+    return budget_chart, f"Labeled: {len_label} | Unlabeled: {len_unlabel}"
+
+
+# income chart
+@app.callback(
+    Output("income-chart", "figure"),
+    [Input("income-chart-button", "n_clicks")],
+    [State("budget-chart-input", "value")],
+)
+def update_incomeview(n_clicks, input_value):
+    """Provide income info chart."""
+    if n_clicks == 0:
+        income_chart = go.Figure()
+        income_chart.add_annotation(
+            text="No data available", x=0.5, y=0.5, showarrow=False, font_size=20
+        )
+        income_chart.update_layout(xaxis={"visible": False}, yaxis={"visible": False})
+    else:
+        bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+        budget_df = bdgt.get_transactions()
+        budget_df = bdgt.modify_transactions(budget_df)
+        income_chart = bdgt.display_income_view(budget_df)
+
+    return income_chart
+
+
+# budget compare chart
+@app.callback(
+    Output("compare-chart", "figure"),
+    [Input("budget-compare-button", "n_clicks")],
+    [State("budget-chart-input", "value")],
+)
+def update_comparechart(n_clicks, input_value):
+    """Provide budget compare info chart."""
+    if n_clicks == 0:
+        compare_chart = go.Figure()
+        compare_chart.add_annotation(
+            text="No data available", x=0.5, y=0.5, showarrow=False, font_size=20
+        )
+        compare_chart.update_layout(xaxis={"visible": False}, yaxis={"visible": False})
+    else:
+        bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+        budget_df = bdgt.get_transactions()
+        budget_df = bdgt.modify_transactions(budget_df)
+        compare_chart = bdgt.display_compare_expenses_view(
+            budget_df, target_date=input_value, avg_months=3
+        )
+
+    return compare_chart
+
+
 #   _                 _
 #  | |               (_)
 #  | |     ___   __ _ _ _ __
@@ -947,8 +858,6 @@ def validate_login(n_clicks, username, password):
         Input("personal-task-id", "children"),
         Input("manager-task-status", "children"),
         Input("manager-task-id", "children"),
-        Input("tracker-task-status", "children"),
-        Input("tracker-task-id", "children"),
     ],
 )
 def toggle_interval_speed(
@@ -958,8 +867,6 @@ def toggle_interval_speed(
     personal_task_id,
     manager_task_status,
     manager_task_id,
-    tracker_task_status,
-    tracker_task_id,
 ):
     """
     Triggered by changes in task-id and task-status divs.
@@ -974,7 +881,6 @@ def toggle_interval_speed(
             and personal_task_status in ["waiting", "PENDING"]
         )
         or (manager_task_id != "none" and manager_task_status in ["waiting", "PENDING"])
-        or (tracker_task_id != "none" and tracker_task_status in ["waiting", "PENDING"])
     ):
         return 1000
     else:

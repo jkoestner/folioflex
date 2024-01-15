@@ -31,6 +31,27 @@ Market Module
 .. automodule:: folioflex.market.screener
    :members:
 
+Budget
+------
+
+Budget Module
+~~~~~~~~~~~~~
+
+.. automodule:: folioflex.budget.budget
+   :members:
+
+.. automodule:: folioflex.budget.models
+   :members:
+
+Chatbot
+-------
+
+Providers Module
+~~~~~~~~~~~~~~~~
+
+.. automodule:: folioflex.chatbot.providers
+   :members:
+
 Utils
 -----
 

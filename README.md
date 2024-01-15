@@ -178,9 +178,9 @@ There are a number of environment variables listed in constants to be able to ru
 python app.py
 ```
 
-### Budget Dashboard
+### Plaid Dashboard
 
-A separate dashboard can be run for budgeting. This is a work in progress and 
+A separate dashboard can be run for transaction aggregation. This is a work in progress and 
 will be updated as more functionality is added.
 
 The transactions are sourced from [Plaid](https://plaid.com/). To be able to use the dashboard
