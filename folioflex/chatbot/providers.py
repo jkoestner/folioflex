@@ -168,9 +168,11 @@ class G4FProvider(ChatBotProvider):
         if not self.chatbot:
             raise ValueError("Please initialize the chatbot first.")
         if scrape_url:
-            scrape_text = scraper.scrape_html(scrape_url, **kwargs)
+            scrape_results = scraper.scrape_html(scrape_url, **kwargs)
+            scrape_text = scrape_results["text"]
+            url = scrape_results["url"]
             if scrape_text is None:
-                return f"Did not find any text to scrape at {scrape_url}."
+                return f"Did not find any text to scrape at {url}."
 
         logger.info(f"querying the chatbot - G4F with {self.chatbot['provider']}")
         response = g4f.ChatCompletion.create(
@@ -259,9 +261,11 @@ class HugChatProvider(ChatBotProvider):
         if not self.chatbot:
             raise ValueError("Please initialize the chatbot first.")
         if scrape_url:
-            scrape_text = scraper.scrape_html(scrape_url, **kwargs)
+            scrape_results = scraper.scrape_html(scrape_url, **kwargs)
+            scrape_text = scrape_results["text"]
+            url = scrape_results["url"]
             if scrape_text is None:
-                return f"Did not find any text to scrape at {scrape_url}."
+                return f"Did not find any text to scrape at {url}."
 
         logger.info("querying the chatbot - HugChat")
         response = self.chatbot.query(
@@ -336,9 +340,11 @@ class OpenaiProvider(ChatBotProvider):
         if not self.chatbot:
             raise ValueError("Please initialize the chatbot first.")
         if scrape_url:
-            scrape_text = scraper.scrape_html(scrape_url, **kwargs)
+            scrape_results = scraper.scrape_html(scrape_url, **kwargs)
+            scrape_text = scrape_results["text"]
+            url = scrape_results["url"]
             if scrape_text is None:
-                return f"Did not find any text to scrape at {scrape_url}."
+                return f"Did not find any text to scrape at {url}."
 
         logger.info("querying the chatbot - OpenAI")
         response = self.chatbot.chat.completions.create(

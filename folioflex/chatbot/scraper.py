@@ -42,8 +42,8 @@ def scrape_html(url, binary_location=None, extension_dir=None, headless=True, **
 
     Returns
     -------
-    scrape_text : str
-        the html of the website
+    scrape_results : dict
+        dictionary with the url and the text of the website
     """
     if binary_location or config_helper.BROWSER_LOCATION:
         logger.info("using binary location for browser")
@@ -56,6 +56,7 @@ def scrape_html(url, binary_location=None, extension_dir=None, headless=True, **
         headless=headless,
         binary_location=binary_location,
         extension_dir=extension_dir,
+        **kwargs,
     ) as sb:
         logger.info("initializing the driver")
         sb.sleep(2)
@@ -69,10 +70,15 @@ def scrape_html(url, binary_location=None, extension_dir=None, headless=True, **
 
         if url.startswith("https://www.wsj.com/livecoverage/"):
             logger.info("wsj has specific landing page")
-            url = "https://www.wsj.com/livecoverage/stock-market-today-dow-jones-12-11-2023"
-            sb.driver.uc_open_with_tab(url)
+            url = "https://www.wsj.com/livecoverage/stock-market-today-dow-jones-bank-earnings-01-16-2024"
+            sb.driver.uc_open_with_reconnect(url, reconnect_time=10)
             sb.sleep(2)
-            sb.driver.uc_click('span:contains("Today\'s Action")')
+            try:
+                sb.driver.uc_click('span:contains("Today\'s Action")')
+            except Exception:
+                logger.error("no Today's Action button returning None")
+                scrape_text = None
+                return scrape_text
 
             logger.info(f"scraping {sb.get_current_url()}")
             sb.sleep(2)  # wait for page to load
@@ -83,7 +89,8 @@ def scrape_html(url, binary_location=None, extension_dir=None, headless=True, **
             scrape_text = scrape_text.replace("\xa0", " ").replace("\\", "")
 
             logger.info("cleaning the text")
-            # Use regex to find everything between "LIVE UPDATES" and "What to Read Next"
+            # Use regex to find everything between "LIVE UPDATES"
+            # and "What to Read Next"
             pattern = r"LIVE(.*?)— By"
             match = re.search(pattern, scrape_text, re.DOTALL)
             try:
@@ -94,11 +101,14 @@ def scrape_html(url, binary_location=None, extension_dir=None, headless=True, **
         # TODO: think about adding in https://www.bloomberg.com/ here
 
         else:
-            sb.driver.uc_open_with_tab(url)
+            sb.driver.uc_open_with_reconnect(url, reconnect_time=10)
             sb.sleep(2)  # wait for page to load
 
             logger.info(f"scraping {url}")
             soup = sb.get_beautiful_soup()
             scrape_text = str(soup)
 
-    return scrape_text
+        url = sb.get_current_url()
+        scrape_results = {"url": url, "text": scrape_text}
+
+    return scrape_results

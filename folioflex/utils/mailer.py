@@ -92,6 +92,7 @@ def generate_report(
     manager_performance=None,
     portfolio_performance=None,
     chatbot=False,
+    proxy=None,
 ):
     """
     Generate report of portfolio performance and send to email.
@@ -136,6 +137,8 @@ def generate_report(
             - lookback (optional)
     chatbot : bool
         Whether to use the chatbot to get the query
+    proxy : str (optional)
+        Proxy to use for the chatbot
 
     Returns
     -------
@@ -331,6 +334,7 @@ def generate_report(
         response = chatbot.chat(
             query="could you summarize this ",
             scrape_url=scrape_url,
+            proxy=proxy,
         )
         response = response.replace("\n", "<br>")
 
