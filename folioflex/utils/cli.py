@@ -206,9 +206,9 @@ def _create_argparser():
     _email_parser.add_argument(
         "-p",
         "--proxy",
-        type=ast.literal_eval,
+        type=str,
         default=None,
-        help=("The proxy to use for the chatbot"),
+        help=("The proxy to use for the chatbot - user:password@ip:port"),
     )
 
     return _parser
