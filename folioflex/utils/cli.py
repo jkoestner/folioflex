@@ -203,6 +203,14 @@ def _create_argparser():
         help=("Whether to use the chatbot to get the query"),
     )
 
+    _email_parser.add_argument(
+        "-p",
+        "--proxy",
+        type=ast.literal_eval,
+        default=None,
+        help=("The proxy to use for the chatbot"),
+    )
+
     return _parser
 
 
