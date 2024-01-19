@@ -157,7 +157,7 @@ class G4FProvider(ChatBotProvider):
         scrape_url : str
             the url to scrape
         kwargs : dict
-            keyword arguments for the options of the driver
+            keyword arguments for the options of the chromedriver
 
         Returns
         -------
@@ -250,7 +250,7 @@ class HugChatProvider(ChatBotProvider):
         scrape_url : str
             the url to scrape
         kwargs : dict
-            keyword arguments for the options of the driver
+            keyword arguments for the options of the chromedriver
 
         Returns
         -------
@@ -329,7 +329,7 @@ class OpenaiProvider(ChatBotProvider):
         model : str
             the model to use
         kwargs : dict
-            keyword arguments for the options of the driver
+            keyword arguments for the options of the chromedriver
 
         Returns
         -------

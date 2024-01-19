@@ -328,11 +328,11 @@ def generate_report(
         formatted_today = today.strftime("%m-%d-%Y")
 
         # get the url to scrape
-        scrape_url = f"https://www.wsj.com/livecoverage/stock-market-today-dow-jones-{formatted_today}"
+        scrape_url = "https://www.wsj.com/finance"
 
         # get the query
         response = chatbot.chat(
-            query="could you summarize this ",
+            query=f"could you summarize this for me? {formatted_today}",
             scrape_url=scrape_url,
             proxy=proxy,
         )
