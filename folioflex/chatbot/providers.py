@@ -187,7 +187,8 @@ class G4FProvider(ChatBotProvider):
             auth=self.chatbot["auth"],
             access_token=self.chatbot["access_token"],
         )
-        formatted_response = response
+        formatted_response = f"{url}\n\n"
+        formatted_response += response
 
         return formatted_response
 
@@ -279,7 +280,8 @@ class HugChatProvider(ChatBotProvider):
             formatted_response.append(source.hostname)
 
         # join as new lines
-        formatted_response = "\n".join(formatted_response)
+        formatted_response = f"{url}\n\n"
+        formatted_response += "\n".join(formatted_response)
 
         return formatted_response
 
@@ -357,6 +359,7 @@ class OpenaiProvider(ChatBotProvider):
             ],
         )
 
-        formatted_response = response.choices[0].message.content
+        formatted_response = f"{url}\n\n"
+        formatted_response += response.choices[0].message.content
 
         return formatted_response
