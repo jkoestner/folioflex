@@ -35,6 +35,13 @@ npm install [package]@latest
 ## CLIENT
 If running on windows the `package.json` needs to be update to be compatiable with windows.
 
+from:
+```json
+"start": "PORT=3001 react-scripts start",
+"proxy": "http://server:5001"
+```
+
+to:
 ```json
 "start": "set PORT=3001 && react-scripts start",
 "proxy": "http://<ip server>:5001"
