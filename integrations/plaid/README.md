@@ -2,11 +2,13 @@ Plaid was set up from the pattern guide shown below.
 
 https://github.com/plaid/pattern
 
-There are 3 docker files in the folder that are used
+There are 2 docker files in the folder that are used
 
 - client
 - server
-- database
+
+To run dockerfile and create own image `docker build --no-cache -t docker-plaid-client:latest .` 
+To run dockerfile and create own image `docker build --no-cache -t docker-plaid-server:latest .` 
 
 # RUN LOCALLY
 
@@ -38,6 +40,14 @@ If running on windows the `package.json` needs to be update to be compatiable wi
 "proxy": "http://<ip server>:5001"
 ```
 
+packages that can't be updated without a rewrite
+- date-fns: function distanceInWords  doesn't exist
+- react-router-dom: needs to be rewritten
+- react-toastify: needs to be rewritten
+- plaid: the formats are not lining up
+- plaid-threads: the formats are not lining up
+
+
 ## SERVER
 If running on window the `index.js` should be updated to run locally
 
@@ -50,3 +60,7 @@ to
 ```
 const { PORT } = 5001;
 ```
+
+packages that can't be updated without a rewrite
+- plaid
+- node-fetch: there needs to be a change to import
