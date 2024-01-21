@@ -130,6 +130,7 @@ const updateItemStatus = async (itemId, status) => {
     values: [status, itemId],
   };
   await db.query(query);
+};
 
 /**
  * Updates the transaction cursor for a single item.

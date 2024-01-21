@@ -1,6 +1,6 @@
 Plaid was set up from the pattern guide shown below.
 
-https://github.com/plaid/pattern
+https://github.com/plaid/pattern (last aligned 1/21/2024)
 
 There are 2 docker files in the folder that are used
 
