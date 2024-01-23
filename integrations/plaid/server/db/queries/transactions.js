@@ -153,7 +153,8 @@ const retrieveTransactionsByUserId = async userId => {
  * @param {string[]} plaidTransactionIds the Plaid IDs of the transactions.
  */
 const deleteTransactions = async plaidTransactionIds => {
-  const pendingQueries = plaidTransactionIds.map(async transactionId => {
+  const pendingQueries = plaidTransactionIds.map(async item  => {
+    const transactionId = item.transaction_id;
     const query = {
       text: 'DELETE FROM transactions_table WHERE plaid_transaction_id = $1',
       values: [transactionId],
