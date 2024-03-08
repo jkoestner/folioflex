@@ -46,7 +46,7 @@ def scrape_html(
         whether to run the browser in headless mode
         True by default
     wait_time : int
-        time to wait for page load
+        time in seconds to wait for page load
     proxy : str (optional)
         proxy to use for the browser
     **kwargs : dict (optional)
@@ -75,20 +75,14 @@ def scrape_html(
         **kwargs,
     ) as sb:
         logger.info("initializing the driver")
-        # sb needs only one tab
-        open_windows = sb.driver.window_handles
-        multi_window = 2
-        if len(open_windows) >= multi_window:
-            sb.driver.switch_to.window(open_windows[1])
-            sb.driver.close()
-            sb.driver.switch_to.window(open_windows[0])
-        logger.info(f"loading {url}")
 
+        # wsj
         if url.startswith("https://www.wsj.com/finance"):
-            logger.info("wsj has specific landing page")
             url = "https://www.wsj.com/finance"
             sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
+            focus_window(sb, url)
             try:
+                logger.info("wsj has specific landing page")
                 sb.driver.uc_click("(//p[contains(text(), 'View All')])[1]")
             except Exception:
                 logger.error("WSJ probably flagged bot: returning None")
@@ -114,9 +108,10 @@ def scrape_html(
 
         # TODO: think about adding in https://www.bloomberg.com/ here
 
+        # all other websites
         else:
             sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
-            sb.sleep(wait_time)  # wait for page to load
+            focus_window(sb, url)
 
             logger.info(f"scraping {url}")
             soup = sb.get_beautiful_soup()
@@ -126,3 +121,23 @@ def scrape_html(
         scrape_results = {"url": url, "text": scrape_text}
 
     return scrape_results
+
+
+def focus_window(sb, url):
+    """
+    Focus window to url.
+
+    Parameters
+    ----------
+    sb : seleniumbase.SB
+        seleniumbase instance
+    url : str
+        url of the website to scrape
+
+    """
+    open_windows = sb.driver.window_handles
+    logger.info(f"focus to url out of {open_windows} open windows")
+    for window in open_windows:
+        sb.driver.switch_to.window(window)
+        if url in sb.get_current_url():
+            break

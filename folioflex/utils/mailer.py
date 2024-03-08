@@ -72,9 +72,9 @@ def send_email(message, subject, email_list, image_list=None):
             )
             email.attach(email_image)
 
-    # Send the email
+    # Send the email (using SSL for security)
     try:
-        with smtplib.SMTP(config_helper.SMTP_SERVER, config_helper.SMTP_PORT) as smtp:
+        with smtplib.SMTP_SSL(config_helper.SMTP_SERVER, 465) as smtp:
             smtp.starttls()
             smtp.login(config_helper.SMTP_USERNAME, config_helper.SMTP_PASSWORD)
             smtp.send_message(email)
