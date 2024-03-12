@@ -16,11 +16,10 @@ RUN apt-get update && \
 WORKDIR /code
 
 # Copy the current directory contents into the container
-COPY pyproject.toml README.md LICENSE.md ./
+COPY pyproject.toml README.md LICENSE.md setup.py ./
 
 # Install requirements
-RUN pip install --no-cache-dir . .[budget] .[gpt] .[web] .[worker] && \
-    pip install --no-cache-dir git+https://github.com/jkoestner/folioflex.git@dev
+RUN pip install --no-cache-dir "git+https://github.com/jkoestner/folioflex.git@dev#egg=folioflex[budget,gpt,web,worker]"
 
 # Create new user
 RUN adduser --disabled-password --gecos '' ffx && \
