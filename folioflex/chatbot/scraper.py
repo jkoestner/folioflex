@@ -20,7 +20,7 @@ def scrape_html(
     binary_location=None,
     extension_dir=None,
     headless2=True,
-    wait_time=3,
+    wait_time=10,
     proxy=None,
     **kwargs,
 ):
@@ -51,8 +51,6 @@ def scrape_html(
         dictionary with the url and the text of the website
     """
     scrape_results = {"url": url, "text": None}
-    if proxy:
-        wait_time = wait_time * 3
     if binary_location or config_helper.BROWSER_LOCATION:
         logger.info("using binary location for browser")
         binary_location = binary_location or config_helper.BROWSER_LOCATION
@@ -129,7 +127,7 @@ def focus_window(sb, url):
 
     """
     open_windows = sb.driver.window_handles
-    logger.info(f"focus to url out of {open_windows} open windows")
+    logger.info(f"focus to url out of {len(open_windows)} open windows")
     for window in open_windows:
         sb.driver.switch_to.window(window)
         if url in sb.get_current_url():

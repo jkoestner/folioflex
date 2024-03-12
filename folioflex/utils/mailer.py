@@ -67,14 +67,13 @@ def send_email(message, subject, email_list, image_list=None):
 
     # Send the email
     smtp_port = config_helper.SMTP_PORT
-    legacy_ssl_port = 465
-    if smtp_port == legacy_ssl_port:
-        smtp_class = smtplib.SMTP_SSL
-    else:
-        smtp_class = smtplib.SMTP
+    smtp_ssl = "465"
+    smtp_class = smtplib.SMTP_SSL if smtp_port == smtp_ssl else smtplib.SMTP
+
     try:
+        logger.debug(f"Connecting to {config_helper.SMTP_SERVER}:{smtp_port}")
         with smtp_class(config_helper.SMTP_SERVER, config_helper.SMTP_PORT) as smtp:
-            if smtp_port != legacy_ssl_port:
+            if smtp_port != smtp_ssl:
                 smtp.starttls()  # Upgrade to secure connection if not using SMTP_SSL
             smtp.login(config_helper.SMTP_USERNAME, config_helper.SMTP_PASSWORD)
             smtp.send_message(email)

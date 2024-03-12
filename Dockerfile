@@ -15,9 +15,6 @@ RUN apt-get update && \
 # Set work directory
 WORKDIR /code
 
-# Copy the current directory contents into the container
-COPY pyproject.toml README.md LICENSE.md setup.py ./
-
 # Install requirements
 RUN pip install --no-cache-dir "git+https://github.com/jkoestner/folioflex.git@dev#egg=folioflex[budget,gpt,web,worker]"
 
