@@ -71,7 +71,7 @@ def scrape_html(
         if url.startswith("https://www.wsj.com/finance"):
             url = "https://www.wsj.com/finance"
             sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
-            focus_window(sb, url)
+            close_windows(sb, url)
             try:
                 logger.info("wsj has specific landing page")
                 sb.driver.uc_click("(//p[contains(text(), 'View All')])[1]")
@@ -102,7 +102,7 @@ def scrape_html(
         # all other websites
         else:
             sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
-            focus_window(sb, url)
+            close_windows(sb, url)
 
             logger.info(f"scraping {url}")
             soup = sb.get_beautiful_soup()
@@ -114,9 +114,9 @@ def scrape_html(
     return scrape_results
 
 
-def focus_window(sb, url):
+def close_windows(sb, url):
     """
-    Focus window to url.
+    Close windows except url.
 
     Parameters
     ----------
@@ -127,8 +127,10 @@ def focus_window(sb, url):
 
     """
     open_windows = sb.driver.window_handles
-    logger.info(f"focus to url out of {len(open_windows)} open windows")
+    logger.info(f"close {len(open_windows)} open windows")
     for window in open_windows:
         sb.driver.switch_to.window(window)
-        if url in sb.get_current_url():
-            break
+        if url not in sb.get_current_url():
+            sb.driver.close()
+    open_windows = sb.driver.window_handles
+    sb.driver.switch_to.window(open_windows[0])
