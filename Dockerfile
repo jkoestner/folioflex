@@ -5,15 +5,9 @@
 # from where the dockerfile is located.
 FROM python:3.9-slim
 
-# Install git
+# Install git and chromium (lighter version of Chrome for seleniumbase)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install chromium (lighter version of Chrome for seleniumbase)
-RUN apt-get update && \
-    apt-get install -y chromium && \
+    apt-get install -y --no-install-recommends git chromium && \
     ln -s /usr/bin/chromium /usr/bin/google-chrome && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -22,16 +16,16 @@ RUN apt-get update && \
 WORKDIR /code
 
 # Copy the current directory contents into the container
-COPY pyproject.toml .
+COPY pyproject.toml README.md LICENSE.md ./
 
 # Install requirements
-RUN pip install . .[budget] .[dev] .[gpt] .[web] .[worker]
-RUN pip install git+https://github.com/jkoestner/folioflex.git
+RUN pip install --no-cache-dir . .[budget] .[gpt] .[web] .[worker] && \
+    pip install --no-cache-dir git+https://github.com/jkoestner/folioflex.git@dev
 
 # Create new user
-RUN adduser --disabled-password --gecos '' ffx
-RUN chown -R ffx:ffx /code
-RUN chown -R ffx:ffx /usr/local/lib/python*/site-packages/seleniumbase/drivers
+RUN adduser --disabled-password --gecos '' ffx && \
+    chown -R ffx:ffx /code && \
+    chown -R ffx:ffx /usr/local/lib/python*/site-packages/seleniumbase/drivers
 USER ffx
 
 # Using port 8001 for web
