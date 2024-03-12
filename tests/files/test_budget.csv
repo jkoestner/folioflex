@@ -1,0 +1,28 @@
+id,plaid_institution_id,date,name,amount,label
+1,ins_1,3/2/2024,pet,-13,pets
+2,ins_1,3/1/2024,tickets,-60,shopping
+3,ins_2,2/29/2024,tickets,120,shopping
+4,ins_3,2/28/2024,payroll,2000,income
+5,ins_2,2/27/2024,pizza,18,restaurants
+6,ins_2,2/26/2024,bagel,8,fast food
+7,ins_2,2/25/2024,coffee,5,fast food
+8,ins_2,2/24/2024,groceries,50,groceries
+9,ins_3,2/23/2024,mortgage,1000,mortgage
+10,ins_1,2/22/2024,pet,-13,pets
+11,ins_1,2/21/2024,tickets,-60,shopping
+12,ins_2,2/20/2024,tickets,120,shopping
+13,ins_3,2/19/2024,payroll,2000,income
+14,ins_2,2/18/2024,pizza,18,restaurants
+15,ins_2,2/17/2024,bagel,8,fast food
+16,ins_2,2/16/2024,coffee,5,fast food
+17,ins_2,2/15/2024,groceries,50,groceries
+18,ins_3,2/14/2024,mortgage,1000,mortgage
+19,ins_1,2/13/2024,pet,-13,pets
+20,ins_1,2/12/2024,tickets,-60,shopping
+21,ins_2,2/11/2024,tickets,120,shopping
+22,ins_3,2/10/2024,payroll,2000,income
+23,ins_2,2/9/2024,pizza,18,restaurants
+24,ins_2,2/8/2024,bagel,8,fast food
+25,ins_2,2/7/2024,coffee,5,fast food
+26,ins_2,2/6/2024,groceries,50,groceries
+27,ins_3,2/5/2024,mortgage,1000,mortgage

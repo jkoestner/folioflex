@@ -12,9 +12,6 @@ Some methods that are included are:
     - display_income_view: Displays a view of income and expenses in plotly.
 """
 
-import logging
-import logging.config
-import os
 import re
 
 import emoji
@@ -23,13 +20,9 @@ import pandas as pd
 import plotly.express as px
 import sqlalchemy as sa
 
-from folioflex.utils import config_helper
+from folioflex.utils import config_helper, custom_logger
 
-# create logger
-logging.config.fileConfig(
-    os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
-)
-logger = logging.getLogger(__name__)
+logger = custom_logger.setup_logging(__name__)
 
 
 class Budget:

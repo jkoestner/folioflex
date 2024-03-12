@@ -2,9 +2,10 @@
 
 import ast
 import configparser
-import logging
 import os
 from pathlib import Path
+
+from folioflex.utils import custom_logger
 
 ROOT_PATH = Path(__file__).resolve().parent.parent.parent
 CONFIG_PATH = (
@@ -15,25 +16,7 @@ CONFIG_PATH = (
 TESTS_PATH = ROOT_PATH / "tests" / "files"
 
 
-def set_log_level(new_level):
-    """
-    Set the log level.
-
-    Parameters
-    ----------
-    new_level : int
-        the new log level
-
-    """
-    options = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-    if new_level not in options:
-        raise ValueError(f"Log level must be one of {options}")
-    # update the log level for all folioflex loggers
-    for logger_name, logger in logging.Logger.manager.loggerDict.items():
-        # Check if the logger's name starts with the specified prefix
-        if logger_name.startswith("folioflex"):
-            if isinstance(logger, logging.Logger):
-                logger.setLevel(new_level)
+logger = custom_logger.setup_logging(__name__)
 
 
 def get_config(path):

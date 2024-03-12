@@ -19,8 +19,6 @@ The Manager class has a number of objects, such as:
 
 """
 
-import logging
-import logging.config
 import os
 from datetime import timedelta
 
@@ -32,15 +30,11 @@ from pyxirr import xirr
 
 from folioflex.portfolio.helper import check_stock_dates, convert_lookback
 from folioflex.portfolio.wrappers import Yahoo
-from folioflex.utils import config_helper
+from folioflex.utils import config_helper, custom_logger
 
 pd.options.display.float_format = "{:,.2f}".format
 
-# create logger
-logging.config.fileConfig(
-    os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
-)
-logger = logging.getLogger(__name__)
+logger = custom_logger.setup_logging(__name__)
 
 
 class Portfolio:
@@ -1482,7 +1476,6 @@ class Portfolio:
                     - return_transactions["return_txs"].iloc[-1]
                 ) / return_transactions["return_txs"].iloc[-1]
                 dwrr_ann_return_pct = np.NaN
-                pass
             elif dwrr_ann_return_pct > max_percentage:
                 logger.warning(
                     f"DWRR return for {ticker} is greater than {max_percentage}%"

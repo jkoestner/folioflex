@@ -7,9 +7,6 @@ to send in the emails.
 """
 
 import datetime
-import logging
-import logging.config
-import os
 import smtplib
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
@@ -18,13 +15,9 @@ from email.mime.text import MIMEText
 from folioflex.chatbot import providers
 from folioflex.portfolio import heatmap, helper, wrappers
 from folioflex.portfolio.portfolio import Manager, Portfolio
-from folioflex.utils import config_helper
+from folioflex.utils import config_helper, custom_logger
 
-# create logger
-logging.config.fileConfig(
-    os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
-)
-logger = logging.getLogger(__name__)
+logger = custom_logger.setup_logging(__name__)
 
 
 def send_email(message, subject, email_list, image_list=None):
@@ -72,10 +65,17 @@ def send_email(message, subject, email_list, image_list=None):
             )
             email.attach(email_image)
 
-    # Send the email (using SSL for security)
+    # Send the email
+    smtp_port = config_helper.SMTP_PORT
+    legacy_ssl_port = 465
+    if smtp_port == legacy_ssl_port:
+        smtp_class = smtplib.SMTP_SSL
+    else:
+        smtp_class = smtplib.SMTP
     try:
-        with smtplib.SMTP_SSL(config_helper.SMTP_SERVER, 465) as smtp:
-            smtp.starttls()
+        with smtp_class(config_helper.SMTP_SERVER, config_helper.SMTP_PORT) as smtp:
+            if smtp_port != legacy_ssl_port:
+                smtp.starttls()  # Upgrade to secure connection if not using SMTP_SSL
             smtp.login(config_helper.SMTP_USERNAME, config_helper.SMTP_PASSWORD)
             smtp.send_message(email)
         logger.info("Email sent successfully")

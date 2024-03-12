@@ -6,9 +6,6 @@ from the larger portfolio project, and allows easier integration.
 
 """
 
-import logging
-import logging.config
-import os
 import ssl
 from datetime import datetime, time, timedelta
 from io import StringIO
@@ -21,15 +18,11 @@ import yfinance as yf
 from bs4 import BeautifulSoup
 
 from folioflex.portfolio import helper
-from folioflex.utils import config_helper
+from folioflex.utils import config_helper, custom_logger
 
 pd.options.display.float_format = "{:,.2f}".format
 
-# create logger
-logging.config.fileConfig(
-    os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
-)
-logger = logging.getLogger(__name__)
+logger = custom_logger.setup_logging(__name__)
 
 
 class BLS:

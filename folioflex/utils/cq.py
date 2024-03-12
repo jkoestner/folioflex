@@ -4,9 +4,9 @@ Worker connections.
 note: there are two resources that are needed to use the worker processes.
 
 1. redis server - this is the message broker that is used to communicate between the
-   worker and the main process. The redis server is referenced using environment variables
-   `REDIS_URL` and `LOCAL_REDIS`.  The `REDIS_URL` is used when the application is
-   deployed on web and the `LOCAL_REDIS` is used when debugging locally.
+   worker and the main process. The redis server is referenced using environment
+   variables `REDIS_URL` and `LOCAL_REDIS`.  The `REDIS_URL` is used when the
+   application is deployed on web and the `LOCAL_REDIS` is used when debugging locally.
 
 2. worker - this is the process that will be used to execute the tasks.  The worker
    will be listening to the redis server for tasks to execute.
@@ -14,7 +14,8 @@ note: there are two resources that are needed to use the worker processes.
 To run the worker process locally from the root directory, use the following command:
    celery -A folioflex.utils.cq worker --pool=solo -l info
 
-If wanting to look at monitoring celery, use the following command which is available on localhost:5555:
+If wanting to look at monitoring celery, use the following command which is available
+on localhost:5555:
    celery -A folioflex.utils.cq flower
 """
 

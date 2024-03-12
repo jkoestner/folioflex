@@ -10,8 +10,6 @@ data from brokers as it is already connecting to the brokers automatically.
 """
 
 
-import logging
-import logging.config
 import os
 import re
 
@@ -21,13 +19,9 @@ import requests  # only yodlee
 
 from folioflex.portfolio.helper import check_stock_dates
 from folioflex.portfolio.wrappers import Yahoo
-from folioflex.utils import config_helper
+from folioflex.utils import config_helper, custom_logger
 
-# create logger
-logging.config.fileConfig(
-    os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
-)
-logger = logging.getLogger(__name__)
+logger = custom_logger.setup_logging(__name__)
 
 
 def ally(broker_file, output_file=None, broker="ally"):

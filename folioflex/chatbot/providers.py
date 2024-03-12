@@ -5,9 +5,6 @@ This section will be a work in progress as integrations will be refined
 over time depending on the openness and reliability of the data sources are.
 """
 
-import logging
-import logging.config
-import os
 
 import g4f
 from hugchat import hugchat
@@ -15,13 +12,9 @@ from hugchat.login import Login
 from openai import OpenAI
 
 from folioflex.chatbot import scraper
-from folioflex.utils import config_helper
+from folioflex.utils import config_helper, custom_logger
 
-# create logger
-logging.config.fileConfig(
-    os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
-)
-logger = logging.getLogger(__name__)
+logger = custom_logger.setup_logging(__name__)
 
 
 class GPTchat:

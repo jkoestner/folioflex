@@ -3,7 +3,7 @@
 # then pulled down into a web container.
 # To run dockerfile and create own image `docker build --no-cache -t folioflex .` 
 # from where the dockerfile is located.
-FROM python:3.8-slim
+FROM python:3.9-slim
 
 # Install git
 RUN apt-get update && \
@@ -22,10 +22,11 @@ RUN apt-get update && \
 WORKDIR /code
 
 # Copy the current directory contents into the container
-COPY . .
+COPY pyproject.toml .
 
 # Install requirements
 RUN pip install . .[budget] .[dev] .[gpt] .[web] .[worker]
+RUN pip install git+https://github.com/jkoestner/folioflex.git
 
 # Create new user
 RUN adduser --disabled-password --gecos '' ffx
