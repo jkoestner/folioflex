@@ -113,6 +113,7 @@ def _config_reference(config, section, option, **kwargs):
     There are certain special characters
     `static`: reference to static section
     `$`: reference to an environment variable
+
     """
     raw_value = config.get(section, option, **kwargs)
     # removing comments

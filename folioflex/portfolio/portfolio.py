@@ -57,6 +57,7 @@ class Portfolio:
         the location of the config file
     portfolio : str
         the name of the portfolio to analyze
+
     """
 
     def __init__(
@@ -358,6 +359,7 @@ class Portfolio:
         -------
         transactions_history : DataFrame
             the price history of stock transactions
+
         """
         if price_history is None:
             price_history = self.price_history
@@ -417,6 +419,7 @@ class Portfolio:
         Returns
         -------
         view_df : DataFrame
+
         """
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
@@ -448,6 +451,7 @@ class Portfolio:
         Returns
         -------
         portfolio_checks_failed : int
+
         """
         if tx_df is None:
             tx_df = self.transactions.copy()
@@ -638,6 +642,7 @@ class Portfolio:
                - ticker
                - date
                - last price
+
         """
         if history_offline:
             try:
@@ -722,7 +727,7 @@ class Portfolio:
         price_history = price_history.sort_values(["ticker", "date"], ascending=False)
 
         # add in stock splits
-        price_history["stock_splits"].replace(0, 1, inplace=True)
+        price_history["stock_splits"] = price_history["stock_splits"].replace(0, 1)
         price_history["cumulative_stock_splits"] = price_history.groupby("ticker")[
             "stock_splits"
         ].cumprod()
@@ -760,6 +765,7 @@ class Portfolio:
         -------
         tx_hist_df : DataFrame
             DataFrame that has transactions and price history
+
         """
         if other_fields is None:
             other_fields = []
@@ -824,6 +830,7 @@ class Portfolio:
         -------
         tx_df : DataFrame
             DataFrame that has cash included
+
         """
         if other_fields is None:
             other_fields = []
@@ -871,6 +878,7 @@ class Portfolio:
         -------
         tx_df : DataFrame
             DataFrame that has adjusted transactions for splits
+
         """
         if price_history is None:
             price_history = self.price_history
@@ -882,7 +890,7 @@ class Portfolio:
             on=["date", "ticker"],
             how="left",
         )
-        tx_df["cumulative_stock_splits"].fillna(1, inplace=True)
+        tx_df["cumulative_stock_splits"] = tx_df["cumulative_stock_splits"].fillna(1)
 
         # get the tickers that had adjustments
         adjusted_ticks = tx_df[tx_df["cumulative_stock_splits"] != 1]["ticker"].unique()
@@ -918,6 +926,7 @@ class Portfolio:
         -------
         tx_hist_df : DataFrame
             DataFrame that has dividend column included
+
         """
         if other_fields is None:
             other_fields = []
@@ -947,7 +956,7 @@ class Portfolio:
             on=["date", "ticker"],
             how="left",
         )
-        tx_hist_df["dividend"].fillna(0, inplace=True)
+        tx_hist_df["dividend"] = tx_hist_df["dividend"].fillna(0)
 
         return tx_hist_df
 
@@ -975,6 +984,7 @@ class Portfolio:
             - unrealized
             - realized
             - cumulative_dividend
+
         """
         # sort values ascending to calculate cumsum correctly
         tx_hist_df = tx_hist_df.sort_values(by=["ticker", "date"], ascending=True)
@@ -1071,6 +1081,7 @@ class Portfolio:
         -------
         benchmark_tx_hist : DataFrame
             DataFrame containing transaction history for dataframe
+
         """
         if other_fields is None:
             other_fields = []
@@ -1172,6 +1183,7 @@ class Portfolio:
         -------
         portfolio_tx_hist : DataFrame
             DataFrame containing portfolio transaction history
+
         """
         portfolio_tx_hist = pd.DataFrame()
         if tx_hist_df is None:
@@ -1216,6 +1228,7 @@ class Portfolio:
         -------
         df : DataFrame
             dataframe that includes the "average price"
+
         """
         df.loc[df.index[0], "average_price"] = df.loc[df.index[0], "price"]
         if len(df) != 1:
@@ -1247,6 +1260,7 @@ class Portfolio:
         -------
         df : DataFrame
             dataframe that includes the "average price"
+
         """
         df["average_price"] = np.nan
         tx = df[df["units"] != 0]
@@ -1324,6 +1338,7 @@ class Portfolio:
         -------
         return_dict : dict
             dictionary of returns
+
         """
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
@@ -1553,6 +1568,7 @@ class Portfolio:
         -------
         return_pcts : DataFrame
             returns of all transactions
+
         """
         if date is None:
             date = self._max_date
@@ -1605,6 +1621,7 @@ class Portfolio:
         -------
         lookback_df : DataFrame
             dataframe that includes the lookback period
+
         """
         if tx_hist_df is None:
             tx_hist_df = self.transactions_history
@@ -1653,6 +1670,7 @@ class Manager:
         path to the portfolio file
     portfolios : list (default is None)
         list of portfolios in the Portfolio class to analyze.
+
     """
 
     def __init__(
@@ -1729,9 +1747,9 @@ class Manager:
                     benchmark_dict["benchmark"] = benchmark.index.values[0].split("-")[
                         1
                     ]
-                    benchmark_dict[
-                        str(converted_lookback) + "_benchmark_dwrr_pct"
-                    ] = benchmark["dwrr_pct"].values[0]
+                    benchmark_dict[str(converted_lookback) + "_benchmark_dwrr_pct"] = (
+                        benchmark["dwrr_pct"].values[0]
+                    )
 
                 pf = pf.assign(**benchmark_dict)
                 pfs.append(pf)

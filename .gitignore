@@ -12,6 +12,7 @@ nlp_explore.ipynb
 _build/
 _pycache_/
 folioflex/configs/models/*
+archive/
 build/
 docs/coverage/
 folioflex.egg-info/

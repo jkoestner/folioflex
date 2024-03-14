@@ -35,6 +35,7 @@ class Classifier:
             - name: the description of the transactions
             - plaid_institution_id: the account associated with transaction
             - label: the category of the transactions
+
     """
 
     def __init__(
@@ -64,8 +65,9 @@ class Classifier:
               - output_transformer
               - clf
               - test_results
+
         """
-        train_df = self.train_df
+        train_df = self.train_df.copy()
         logger.info(f"creating a classifier model with {len(train_df)} rows")
 
         # cleaning up columns and reformatting
@@ -75,17 +77,7 @@ class Classifier:
         # augmenting columns that have little data by repeating them
         # format the target_variable (Y)
         logger.info("cleaning up data")
-        train_df["amount"] = self._clean_column(
-            train_df["amount"],
-            str_replace_comma=True,
-            as_type_float=True,
-        )
-        train_df["name"] = self._clean_column(
-            train_df["name"],
-            str_replace_special=True,
-            lower=True,
-            as_type_str=True,
-        )
+        train_df = self.preprocess_data(train_df)
         train_df = self._duplicate_sparse_data_rows(train_df, min_count=10)
 
         # x values
@@ -168,6 +160,7 @@ class Classifier:
         ----------
         model_name : str
            the name of the file to save the model to
+
         """
         if not self.components:
             logger.warning("no components to save")
@@ -184,6 +177,7 @@ class Classifier:
         ----------
         model_name : str
            the name of the file to load the model from
+
         """
         model_path = os.path.join(config_helper.CONFIG_PATH, "models", model_name)
         logger.info(f"loading model from {model_path}")
@@ -204,12 +198,14 @@ class Classifier:
         -------
         predicted_df : DataFrame
            the dataframe that contains the predicted labels
+
         """
         if unlabeled_df.empty:
             logger.warning("the dataframe is empty")
             return unlabeled_df
         predicted_df = unlabeled_df.copy()
         logger.info(f"predicting labels for {len(predicted_df)} rows")
+        predicted_df = self.preprocess_data(predicted_df)
 
         desription = predicted_df["name"]
         amount = predicted_df["amount"]
@@ -236,6 +232,36 @@ class Classifier:
 
         return predicted_df
 
+    def preprocess_data(self, df):
+        """
+        Preprocess the data for the model.
+
+        Parameters
+        ----------
+        df : DataFrame
+           the dataframe to preprocess
+
+        Returns
+        -------
+        df : DataFrame
+           the dataframe that has been preprocessed
+
+        """
+        logger.info("preprocessing data")
+        df = df.copy()
+        df["amount"] = self._clean_column(
+            df["amount"],
+            str_replace_comma=True,
+            as_type_float=True,
+        )
+        df["name"] = self._clean_column(
+            df["name"],
+            str_replace_special=True,
+            lower=True,
+            as_type_str=True,
+        )
+        return df
+
     def _document_to_avg_vector(self, text, model):
         """
         Provide a word embedding average for words.
@@ -251,6 +277,7 @@ class Classifier:
         -------
         null : array
            array of average word embeddings
+
         """
         words = text.split()
         word_embeddings = [model[word] for word in words if word in model]
@@ -288,6 +315,7 @@ class Classifier:
               - vec
               - scalar
               - le
+
         """
         # Use the components from the trained model to transform new data
         if components:
@@ -368,6 +396,7 @@ class Classifier:
         -------
         df_augmented : DataFrame
             The DataFrame with added transactions.
+
         """
         label_counts = df.groupby("label").size()
         labels_to_augment = label_counts[label_counts < min_count].index.tolist()

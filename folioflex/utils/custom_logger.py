@@ -4,6 +4,7 @@ Custom logger with color formatter.
 inspired by:
 https://gist.github.com/joshbode/58fac7ababc700f51e2a9ecdebe563ad
 """
+
 import logging
 import sys
 
@@ -23,7 +24,7 @@ class ColoredFormatter(logging.Formatter):
         """Format the specified record as text."""
         record.color = self.colors.get(record.levelname, "")
         record.reset = Style.RESET_ALL
-        record.default_color = Fore.WHITE + Back.LIGHTBLACK_EX
+        record.default_color = Fore.WHITE
         return super().format(record)
 
 
@@ -98,10 +99,10 @@ def get_formatter(is_jupyter_env):
             style="{",
             datefmt="%Y-%m-%d %H:%M:%S",
             colors={
-                "DEBUG": Fore.CYAN + Back.LIGHTBLACK_EX,
-                "INFO": Fore.GREEN + Back.LIGHTBLACK_EX,
-                "WARNING": Fore.YELLOW + Back.LIGHTBLACK_EX,
-                "ERROR": Fore.RED + Back.LIGHTBLACK_EX,
+                "DEBUG": Fore.CYAN,
+                "INFO": Fore.GREEN,
+                "WARNING": Fore.YELLOW,
+                "ERROR": Fore.RED,
                 "CRITICAL": Fore.RED + Back.WHITE + Style.BRIGHT,
             },
         )

@@ -127,7 +127,7 @@ def close_windows(sb, url):
 
     """
     open_windows = sb.driver.window_handles
-    logger.info(f"close {len(open_windows)} open windows")
+    logger.info(f"close {len(open_windows)-1} open windows")
     for window in open_windows:
         sb.driver.switch_to.window(window)
         if url not in sb.get_current_url():

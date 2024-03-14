@@ -74,10 +74,11 @@ pip install folioflex
 Other options can be installed if using more functionality
 
 ```
-pip install folioflex[dev]
-pip install folioflex[gpt]
-pip install folioflex[web]
-pip install folioflex[worker]
+pip install folioflex[budget] # if using the budget modules
+pip install folioflex[dev]    # if needing to develop or lint
+pip install folioflex[gpt]    # if using the mailer or gpt code
+pip install folioflex[web]    # if using the web dashboard
+pip install folioflex[worker] # if using the web dashboard
 ``````
 
 Or could be done using GitHub.
