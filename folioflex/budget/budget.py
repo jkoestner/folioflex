@@ -35,6 +35,7 @@ class Budget:
         the location of the config file
     budget : str
         the name of the budget to analyze
+
     """
 
     def __init__(
@@ -75,6 +76,7 @@ class Budget:
                 - pending: whether the transaction is pending
                 - type: type of transaction
                 - label: label of transaction that is determined by user
+
         """
         if engine is None:
             engine = self._create_engine()
@@ -145,6 +147,7 @@ class Budget:
         -------
         tx_df : DataFrame
             The modified transactions for the budget.
+
         """
         if columns_to_zero is None:
             columns_to_zero = ["credit card", "transfer"]
@@ -191,6 +194,7 @@ class Budget:
         -------
         tx_df : DataFrame
             The transactions with the amount zeroed out for the given columns.
+
         """
         condition = tx_df["label"].isin(columns)
         tx_df["amount"] = np.where(condition, 0, tx_df["amount"])
@@ -209,6 +213,7 @@ class Budget:
         -------
         str
             The text between quotes.
+
         """
         quote_pattern = r'"([^"]*)"'
         match = re.search(quote_pattern, column)
@@ -227,6 +232,7 @@ class Budget:
         -------
         str
             The text with the emoji preprocessed.
+
         """
         text_with_emoji = emoji.demojize(text, delimiters=(" ", " "))
         text_with_spaces = re.sub(
@@ -247,6 +253,7 @@ class Budget:
         -------
         tx_df : DataFrame
             The transactions with the pending transactions removed.
+
         """
         tx_df = tx_df[tx_df["pending"] == False]
 
@@ -268,6 +275,7 @@ class Budget:
         -------
         str
             The category of the transaction.
+
         """
         if "Test" in row["name"]:
             return "Test Category"
@@ -294,6 +302,7 @@ class Budget:
         -------
         budget_df : DataFrame
             The budget status for each category.
+
         """
         budgets = self.config_dict["budgets"]
         if exclude_labels is not None:
@@ -370,6 +379,7 @@ class Budget:
         -------
         fig : Figure
             The budget view as a bar chart.
+
         """
         colors = ["blue", "red", "lightgray"]
         fig = px.bar(
@@ -399,6 +409,7 @@ class Budget:
         -------
         fig : Figure
             The budget view as a bar chart.
+
         """
         grouped_data = tx_df.groupby(["month"])["amount"].sum().reset_index()
         fig = px.line(
@@ -428,6 +439,7 @@ class Budget:
         -------
         fig : Figure
             The budget view as a line chart.
+
         """
         if target_date is None:
             target_date = tx_df["date"].max().strftime("%Y-%m")
@@ -522,6 +534,7 @@ class Budget:
         -------
         cat_tx_df : DataFrame
             The category of transactions view as a table.
+
         """
         cat_tx_df = tx_df[
             (tx_df["date"].dt.to_period("M") == target_date)
@@ -545,6 +558,7 @@ class Budget:
         Returns
         -------
         None
+
         """
         if engine is None:
             engine = self._create_engine()
@@ -585,6 +599,7 @@ class Budget:
         -------
         engine : SQLAlchemy engine
             The engine to connect to the database.
+
         """
         db_user = self.config_dict.get("db_user", None)
         db_pass = self.config_dict.get("db_pass", None)
