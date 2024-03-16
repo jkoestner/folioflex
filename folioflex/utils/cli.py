@@ -4,7 +4,6 @@ import argparse
 import ast
 from argparse import ArgumentDefaultsHelpFormatter
 
-from folioflex import app
 from folioflex.portfolio.portfolio import Manager, Portfolio
 from folioflex.utils import mailer
 
@@ -213,11 +212,6 @@ def _create_argparser():
         help=("The proxy to use for the chatbot - user:password@ip:port"),
     )
 
-    # subparser: web
-    _web_parser = _subparsers.add_parser("web", help="web command")
-
-    return _parser
-
 
 parser = _create_argparser()
 
@@ -251,9 +245,6 @@ def cli():
             chatbot=args.chatbot,
         )
         print(f"status sent: {email_status}")
-
-    elif args.command == "web":
-        app.run_server(debug=False, host="0.0.0.0")
 
 
 if __name__ == "__main__":

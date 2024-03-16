@@ -1,0 +1,5 @@
+# ignore the following files for docker
+
+.git
+__pycache__
+*.pyc

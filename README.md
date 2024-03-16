@@ -15,12 +15,17 @@ Simple investment portfolio tool that will track stock and provide returns and o
 ## Table of Contents
 - [Overview](#overview)
 - [Installation](#installation)
-  - [Install packages](#install-packages)
+  - [Local Install](#local-install)
+  - [Docker Install](#docker-install)
 - [Usage](#usage)
   - [CLI](#cli)
   - [Python](#python)
-  - [Web Dashboard](#web-dashboard)
+  - [Web Dashboard](#web-dashboard---invest)
+  - [Plaid Dashboard](#plaid-dashboard)
 - [Other Tools](#other-tools)
+  - [Jupyter Lab Usage](#jupyter-lab-usage)
+  - [Logging](#logging)
+  - [Coverage](#coverage)
 
 ## Overview
 
