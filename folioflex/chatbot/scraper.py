@@ -6,23 +6,24 @@ to share to a gpt.
 
 """
 
-import logging
-import logging.config
-import os
 import re
 
 from seleniumbase import SB
 
-from folioflex.utils import config_helper
+from folioflex.utils import config_helper, custom_logger
 
-# create logger
-logging.config.fileConfig(
-    os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
-)
-logger = logging.getLogger(__name__)
+logger = custom_logger.setup_logging(__name__)
 
 
-def scrape_html(url, binary_location=None, extension_dir=None, headless=True, **kwargs):
+def scrape_html(
+    url,
+    binary_location=None,
+    extension_dir=None,
+    headless2=True,
+    wait_time=10,
+    proxy=None,
+    **kwargs,
+):
     """
     Scrape the html of a website.
 
@@ -34,9 +35,13 @@ def scrape_html(url, binary_location=None, extension_dir=None, headless=True, **
         location of the binary for the browser
     extension_dir : str (optional)
         location of the extension for the browser
-    headless : bool (optional)
+    headless2 : bool (optional)
         whether to run the browser in headless mode
         True by default
+    wait_time : int
+        time in seconds to wait for page load
+    proxy : str (optional)
+        proxy to use for the browser
     **kwargs : dict (optional)
         keyword arguments for the options of the driver
 
@@ -45,6 +50,7 @@ def scrape_html(url, binary_location=None, extension_dir=None, headless=True, **
     scrape_results : dict
         dictionary with the url and the text of the website
     """
+    scrape_results = {"url": url, "text": None}
     if binary_location or config_helper.BROWSER_LOCATION:
         logger.info("using binary location for browser")
         binary_location = binary_location or config_helper.BROWSER_LOCATION
@@ -53,35 +59,28 @@ def scrape_html(url, binary_location=None, extension_dir=None, headless=True, **
         extension_dir = extension_dir or config_helper.BROWSER_EXTENSION
     with SB(
         uc=True,
-        headless=headless,
+        headless2=headless2,
         binary_location=binary_location,
         extension_dir=extension_dir,
+        proxy=proxy,
         **kwargs,
     ) as sb:
         logger.info("initializing the driver")
-        sb.sleep(2)
-        # sb needs only one tab
-        open_windows = sb.driver.window_handles
-        if len(open_windows) >= 2:
-            sb.driver.switch_to.window(open_windows[1])
-            sb.driver.close()
-            sb.driver.switch_to.window(open_windows[0])
-        logger.info(f"loading {url}")
 
-        if url.startswith("https://www.wsj.com/livecoverage/"):
-            logger.info("wsj has specific landing page")
-            url = "https://www.wsj.com/livecoverage/stock-market-today-dow-jones-bank-earnings-01-16-2024"
-            sb.driver.uc_open_with_reconnect(url, reconnect_time=10)
-            sb.sleep(2)
+        # wsj
+        if url.startswith("https://www.wsj.com/finance"):
+            url = "https://www.wsj.com/finance"
+            sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
+            close_windows(sb, url)
             try:
-                sb.driver.uc_click('span:contains("Today\'s Action")')
+                logger.info("wsj has specific landing page")
+                sb.driver.uc_click("(//p[contains(text(), 'View All')])[1]")
             except Exception:
-                logger.error("no Today's Action button returning None")
-                scrape_text = None
-                return scrape_text
+                logger.error("WSJ probably flagged bot: returning None")
+                return scrape_results
 
             logger.info(f"scraping {sb.get_current_url()}")
-            sb.sleep(2)  # wait for page to load
+            sb.sleep(wait_time)  # wait for page to load
             soup = sb.get_beautiful_soup()
 
             # removing the html tags
@@ -100,9 +99,10 @@ def scrape_html(url, binary_location=None, extension_dir=None, headless=True, **
 
         # TODO: think about adding in https://www.bloomberg.com/ here
 
+        # all other websites
         else:
-            sb.driver.uc_open_with_reconnect(url, reconnect_time=10)
-            sb.sleep(2)  # wait for page to load
+            sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
+            close_windows(sb, url)
 
             logger.info(f"scraping {url}")
             soup = sb.get_beautiful_soup()
@@ -112,3 +112,25 @@ def scrape_html(url, binary_location=None, extension_dir=None, headless=True, **
         scrape_results = {"url": url, "text": scrape_text}
 
     return scrape_results
+
+
+def close_windows(sb, url):
+    """
+    Close windows except url.
+
+    Parameters
+    ----------
+    sb : seleniumbase.SB
+        seleniumbase instance
+    url : str
+        url of the website to scrape
+
+    """
+    open_windows = sb.driver.window_handles
+    logger.info(f"close {len(open_windows)-1} open windows")
+    for window in open_windows:
+        sb.driver.switch_to.window(window)
+        if url not in sb.get_current_url():
+            sb.driver.close()
+    open_windows = sb.driver.window_handles
+    sb.driver.switch_to.window(open_windows[0])

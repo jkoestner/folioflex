@@ -7,9 +7,6 @@ to send in the emails.
 """
 
 import datetime
-import logging
-import logging.config
-import os
 import smtplib
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
@@ -18,13 +15,9 @@ from email.mime.text import MIMEText
 from folioflex.chatbot import providers
 from folioflex.portfolio import heatmap, helper, wrappers
 from folioflex.portfolio.portfolio import Manager, Portfolio
-from folioflex.utils import config_helper
+from folioflex.utils import config_helper, custom_logger
 
-# create logger
-logging.config.fileConfig(
-    os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
-)
-logger = logging.getLogger(__name__)
+logger = custom_logger.setup_logging(__name__)
 
 
 def send_email(message, subject, email_list, image_list=None):
@@ -73,9 +66,15 @@ def send_email(message, subject, email_list, image_list=None):
             email.attach(email_image)
 
     # Send the email
+    smtp_port = config_helper.SMTP_PORT
+    smtp_ssl = "465"
+    smtp_class = smtplib.SMTP_SSL if smtp_port == smtp_ssl else smtplib.SMTP
+
     try:
-        with smtplib.SMTP(config_helper.SMTP_SERVER, config_helper.SMTP_PORT) as smtp:
-            smtp.starttls()
+        logger.debug(f"Connecting to {config_helper.SMTP_SERVER}:{smtp_port}")
+        with smtp_class(config_helper.SMTP_SERVER, config_helper.SMTP_PORT) as smtp:
+            if smtp_port != smtp_ssl:
+                smtp.starttls()  # Upgrade to secure connection if not using SMTP_SSL
             smtp.login(config_helper.SMTP_USERNAME, config_helper.SMTP_PASSWORD)
             smtp.send_message(email)
         logger.info("Email sent successfully")
@@ -144,6 +143,7 @@ def generate_report(
     -------
     bool
         True if email was sent successfully, False otherwise.
+
     """
     # building the email message
 
@@ -328,11 +328,11 @@ def generate_report(
         formatted_today = today.strftime("%m-%d-%Y")
 
         # get the url to scrape
-        scrape_url = f"https://www.wsj.com/livecoverage/stock-market-today-dow-jones-{formatted_today}"
+        scrape_url = "https://www.wsj.com/finance"
 
         # get the query
         response = chatbot.chat(
-            query="could you summarize this ",
+            query=f"could you summarize this for me? {formatted_today}",
             scrape_url=scrape_url,
             proxy=proxy,
         )

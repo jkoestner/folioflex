@@ -1,7 +1,5 @@
 """Creates categories for transactions."""
 
-import logging
-import logging.config
 import os
 
 import gensim.downloader as api
@@ -15,13 +13,9 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, OrdinalEncoder, StandardScaler
 
-from folioflex.utils import config_helper
+from folioflex.utils import config_helper, custom_logger
 
-# create logger
-logging.config.fileConfig(
-    os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
-)
-logger = logging.getLogger(__name__)
+logger = custom_logger.setup_logging(__name__)
 
 
 class Classifier:
@@ -41,6 +35,7 @@ class Classifier:
             - name: the description of the transactions
             - plaid_institution_id: the account associated with transaction
             - label: the category of the transactions
+
     """
 
     def __init__(
@@ -70,8 +65,9 @@ class Classifier:
               - output_transformer
               - clf
               - test_results
+
         """
-        train_df = self.train_df
+        train_df = self.train_df.copy()
         logger.info(f"creating a classifier model with {len(train_df)} rows")
 
         # cleaning up columns and reformatting
@@ -81,34 +77,33 @@ class Classifier:
         # augmenting columns that have little data by repeating them
         # format the target_variable (Y)
         logger.info("cleaning up data")
-        train_df["amount"] = self._clean_column(
-            train_df["amount"],
-            str_replace_comma=True,
-            as_type_float=True,
-        )
-        train_df["name"] = self._clean_column(
-            train_df["name"],
-            str_replace_special=True,
-            lower=True,
-            as_type_str=True,
-        )
+        train_df = self.preprocess_data(train_df)
         train_df = self._duplicate_sparse_data_rows(train_df, min_count=10)
+
+        # x values
+        logger.info("creating the features")
+        features, encoders = self._create_features(
+            description=train_df["name"],
+            amount=train_df["amount"],
+            institution=train_df["plaid_institution_id"],
+        )
+
+        # y values
         output_transformer = OrdinalEncoder()
         Y = output_transformer.fit_transform(train_df[["label"]])
 
-        logger.info("creating the features")
-        features, encoders = self._create_features(
-            train_df["name"], train_df["amount"], train_df["plaid_institution_id"]
-        )
-
+        # split into train/test
         logger.info("training the data with logistic regression")
         X_train, X_test, Y_train, Y_test = train_test_split(
             features, Y.ravel(), test_size=test_size, random_state=2
         )
+
+        # fit the data
+        # tried MultinomialNB(), but not as accurate
         clf = LogisticRegression(max_iter=300)
-        # clf = MultinomialNB()
         clf.fit(X_train, Y_train)
 
+        # predict the data
         logger.info("creating predicitons and calculating accuracy")
         y_pred = clf.predict(X_test)
         y_pred_prob = clf.predict_proba(X_test)
@@ -165,6 +160,7 @@ class Classifier:
         ----------
         model_name : str
            the name of the file to save the model to
+
         """
         if not self.components:
             logger.warning("no components to save")
@@ -181,6 +177,7 @@ class Classifier:
         ----------
         model_name : str
            the name of the file to load the model from
+
         """
         model_path = os.path.join(config_helper.CONFIG_PATH, "models", model_name)
         logger.info(f"loading model from {model_path}")
@@ -201,12 +198,14 @@ class Classifier:
         -------
         predicted_df : DataFrame
            the dataframe that contains the predicted labels
+
         """
         if unlabeled_df.empty:
             logger.warning("the dataframe is empty")
             return unlabeled_df
         predicted_df = unlabeled_df.copy()
         logger.info(f"predicting labels for {len(predicted_df)} rows")
+        predicted_df = self.preprocess_data(predicted_df)
 
         desription = predicted_df["name"]
         amount = predicted_df["amount"]
@@ -233,6 +232,36 @@ class Classifier:
 
         return predicted_df
 
+    def preprocess_data(self, df):
+        """
+        Preprocess the data for the model.
+
+        Parameters
+        ----------
+        df : DataFrame
+           the dataframe to preprocess
+
+        Returns
+        -------
+        df : DataFrame
+           the dataframe that has been preprocessed
+
+        """
+        logger.info("preprocessing data")
+        df = df.copy()
+        df["amount"] = self._clean_column(
+            df["amount"],
+            str_replace_comma=True,
+            as_type_float=True,
+        )
+        df["name"] = self._clean_column(
+            df["name"],
+            str_replace_special=True,
+            lower=True,
+            as_type_str=True,
+        )
+        return df
+
     def _document_to_avg_vector(self, text, model):
         """
         Provide a word embedding average for words.
@@ -248,6 +277,7 @@ class Classifier:
         -------
         null : array
            array of average word embeddings
+
         """
         words = text.split()
         word_embeddings = [model[word] for word in words if word in model]
@@ -258,6 +288,18 @@ class Classifier:
     def _create_features(self, description, amount, institution, components=None):
         """
         Create features for model.
+
+        glove:
+          - Provides word embeddings for the "description" field.
+            Uses a Global Vectors (glove) model for word representation. The
+            wikiword model is used currently for being lightweight and fast.
+        vectorizer:
+          - Provides a word count for the "description" field that's output to
+            a sparse matrix.
+        scalar:
+          - Provides a scaled amount of the "amount" field.
+        le:
+          - Provides a label encoding for the "institution" field.
 
         Parameters
         ----------
@@ -273,14 +315,8 @@ class Classifier:
               - vec
               - scalar
               - le
+
         """
-        # data cleansing
-        description = self._clean_column(
-            description,
-            str_replace_special=True,
-            lower=True,
-            as_type_str=True,
-        )
         # Use the components from the trained model to transform new data
         if components:
             # encoders
@@ -296,13 +332,14 @@ class Classifier:
 
         else:
             # encoders
-            # glove_model = api.load("word2vec-google-news-300")
+            # other models to consider
+            # "word2vec-google-news-300" which is a larger model
             glove_model = api.load("glove-wiki-gigaword-50")
             vec = CountVectorizer(
                 analyzer="word",
                 token_pattern="[a-zA-Z_]{3,}",
                 max_features=5000,
-                # ngram_range = (1,3)
+                # ngram_range = (1,3) # 3 words can be slow
             )
 
             scaler = StandardScaler()
@@ -342,6 +379,25 @@ class Classifier:
         return features, encoders
 
     def _duplicate_sparse_data_rows(self, df, min_count=10):
+        """
+        Repeat data that have a limited label count.
+
+        Need to duplicate data that has limited label count due to training
+        needing at least one value to train on.
+
+        Parameters
+        ----------
+        df : DataFrame
+            The DataFrame to duplicate transactions
+        min_count : int
+            The min number of records a label should have
+
+        Returns
+        -------
+        df_augmented : DataFrame
+            The DataFrame with added transactions.
+
+        """
         label_counts = df.groupby("label").size()
         labels_to_augment = label_counts[label_counts < min_count].index.tolist()
 

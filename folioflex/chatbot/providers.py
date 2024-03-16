@@ -5,23 +5,15 @@ This section will be a work in progress as integrations will be refined
 over time depending on the openness and reliability of the data sources are.
 """
 
-import logging
-import logging.config
-import os
-
 import g4f
 from hugchat import hugchat
 from hugchat.login import Login
 from openai import OpenAI
 
 from folioflex.chatbot import scraper
-from folioflex.utils import config_helper
+from folioflex.utils import config_helper, custom_logger
 
-# create logger
-logging.config.fileConfig(
-    os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
-)
-logger = logging.getLogger(__name__)
+logger = custom_logger.setup_logging(__name__)
 
 
 class GPTchat:
@@ -42,6 +34,7 @@ class GPTchat:
             - (g4f, hugchat, openai)
         kwargs : dict
             keyword arguments to pass to the get_chatbot method
+
         """
         if provider is None:
             self.provider = G4FProvider()
@@ -75,6 +68,7 @@ class GPTchat:
         -------
         response : str
             the response from the chatbot
+
         """
         response = self.provider.get_query(query, scrape_url=scrape_url, **kwargs)
         return response
@@ -113,6 +107,7 @@ class G4FProvider(ChatBotProvider):
     ----------
     ChatBotProvider : class
         base structure for chatbot providers
+
     """
 
     def get_chatbot(
@@ -135,6 +130,7 @@ class G4FProvider(ChatBotProvider):
         -------
         chatbot : chatbot
             the chatbot object
+
         """
         # Create a ChatBot
         self.chatbot = {
@@ -157,12 +153,13 @@ class G4FProvider(ChatBotProvider):
         scrape_url : str
             the url to scrape
         kwargs : dict
-            keyword arguments for the options of the driver
+            keyword arguments for the options of the chromedriver
 
         Returns
         -------
         formatted_response : str
             the response from the chatbot
+
         """
         scrape_text = None
         if not self.chatbot:
@@ -187,7 +184,8 @@ class G4FProvider(ChatBotProvider):
             auth=self.chatbot["auth"],
             access_token=self.chatbot["access_token"],
         )
-        formatted_response = response
+        formatted_response = f"{url}\n\n"
+        formatted_response += response
 
         return formatted_response
 
@@ -204,6 +202,7 @@ class HugChatProvider(ChatBotProvider):
     ----------
     ChatBotProvider : class
         base structure for chatbot providers
+
     """
 
     def get_chatbot(self, hugchat_login=None, hugchat_password=None):
@@ -221,6 +220,7 @@ class HugChatProvider(ChatBotProvider):
         -------
         chatbot : chatbot
             the chatbot object
+
         """
         self.hugchat_login = hugchat_login or config_helper.HUGCHAT_LOGIN
         self.hugchat_password = hugchat_password or config_helper.HUGCHAT_PASSWORD
@@ -250,12 +250,13 @@ class HugChatProvider(ChatBotProvider):
         scrape_url : str
             the url to scrape
         kwargs : dict
-            keyword arguments for the options of the driver
+            keyword arguments for the options of the chromedriver
 
         Returns
         -------
         formatted_response : str
             the response from the chatbot
+
         """
         scrape_text = None
         if not self.chatbot:
@@ -279,7 +280,8 @@ class HugChatProvider(ChatBotProvider):
             formatted_response.append(source.hostname)
 
         # join as new lines
-        formatted_response = "\n".join(formatted_response)
+        formatted_response = f"{url}\n\n"
+        formatted_response += "\n".join(formatted_response)
 
         return formatted_response
 
@@ -297,6 +299,7 @@ class OpenaiProvider(ChatBotProvider):
     ----------
     ChatBotProvider : class
         base structure for chatbot providers
+
     """
 
     def get_chatbot(self):
@@ -307,6 +310,7 @@ class OpenaiProvider(ChatBotProvider):
         -------
         chatbot : chatbot
             the chatbot object
+
         """
         # Create a ChatBot
         logger.info("create a chatbot with OpenAI")
@@ -329,14 +333,16 @@ class OpenaiProvider(ChatBotProvider):
         model : str
             the model to use
         kwargs : dict
-            keyword arguments for the options of the driver
+            keyword arguments for the options of the chromedriver
 
         Returns
         -------
         formatted_response : str
             the response from the chatbot
+
         """
         scrape_text = None
+        url = None
         if not self.chatbot:
             raise ValueError("Please initialize the chatbot first.")
         if scrape_url:
@@ -357,6 +363,9 @@ class OpenaiProvider(ChatBotProvider):
             ],
         )
 
-        formatted_response = response.choices[0].message.content
+        # TODO add in handler for rate limits
+
+        formatted_response = f"{url}\n\n"
+        formatted_response += response.choices[0].message.content
 
         return formatted_response

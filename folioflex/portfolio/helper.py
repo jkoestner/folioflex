@@ -6,22 +6,15 @@ module.
 
 """
 
-import logging
-import logging.config
-import os
 from datetime import date, datetime, timedelta
 
 import pandas as pd
 import pandas_market_calendars as mcal
 from dateutil.parser import parse
 
-from folioflex.utils import config_helper
+from folioflex.utils import custom_logger
 
-# create logger
-logging.config.fileConfig(
-    os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
-)
-logger = logging.getLogger(__name__)
+logger = custom_logger.setup_logging(__name__)
 
 
 def check_stock_dates(tx_df, fix=False, timezone="US/Eastern", warning=True):

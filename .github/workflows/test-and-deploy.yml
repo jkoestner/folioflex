@@ -20,9 +20,6 @@ jobs:
           pip install .
           pip install .[budget]
           pip install .[dev]
-          pip install .[gpt]
-          pip install .[web]
-          pip install .[worker]
       - name: test imports
         run: |
           python -c "

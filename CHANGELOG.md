@@ -1,5 +1,29 @@
 # Changelog
 
+## [v1.1.0](https://github.com/jkoestner/folioflex/tree/v1.1.0)
+
+[Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.0.0...v1.1.0)
+
+**Enhancements**
+- update dockerfile to be slimmer
+- add in custom logging
+- upgrade to python 3.9
+- format and lint fixes
+- add in functionality for vpn in mailer module
+
+**Documentation**
+- update README
+- add in tests for budget module
+
+## [v1.0.0](https://github.com/jkoestner/folioflex/tree/v1.0.0)
+
+[Full Changelog](https://github.com/jkoestner/folioflex/compare/v0.1.4...v1.0.0)
+
+**Enhancements**
+
+**Documentation**
+- bumping to 1.0.0
+
 ## [v0.1.4](https://github.com/jkoestner/folioflex/tree/v0.1.4)
 
 [Full Changelog](https://github.com/jkoestner/folioflex/compare/v0.1.3...v0.1.4)

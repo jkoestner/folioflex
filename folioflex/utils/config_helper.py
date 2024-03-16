@@ -2,9 +2,10 @@
 
 import ast
 import configparser
-import logging
 import os
 from pathlib import Path
+
+from folioflex.utils import custom_logger
 
 ROOT_PATH = Path(__file__).resolve().parent.parent.parent
 CONFIG_PATH = (
@@ -15,25 +16,7 @@ CONFIG_PATH = (
 TESTS_PATH = ROOT_PATH / "tests" / "files"
 
 
-def set_log_level(new_level):
-    """
-    Set the log level.
-
-    Parameters
-    ----------
-    new_level : int
-        the new log level
-
-    """
-    options = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-    if new_level not in options:
-        raise ValueError(f"Log level must be one of {options}")
-    # update the log level for all folioflex loggers
-    for logger_name, logger in logging.Logger.manager.loggerDict.items():
-        # Check if the logger's name starts with the specified prefix
-        if logger_name.startswith("folioflex"):
-            if isinstance(logger, logging.Logger):
-                logger.setLevel(new_level)
+logger = custom_logger.setup_logging(__name__)
 
 
 def get_config(path):
@@ -130,8 +113,13 @@ def _config_reference(config, section, option, **kwargs):
     There are certain special characters
     `static`: reference to static section
     `$`: reference to an environment variable
+
     """
-    raw_value = config.get(section, option, **kwargs)
+    try:
+        raw_value = config.get(section, option, **kwargs)
+    except Exception as e:
+        logger.warning(f"Error getting config option {section}.{option}: {e}")
+        raw_value = None
     # removing comments
     raw_value = raw_value.split("# ", 1)[0].strip()
     # handling complex structures such as lists, tuples, and dicts
@@ -182,29 +170,33 @@ def is_complex_structure(s):
 config_file = os.path.join(CONFIG_PATH, "config.ini")
 
 # credentials
-FFX_USERNAME = get_config_options(config_file, "credentials")["ffx_username"]
-FFX_PASSWORD = get_config_options(config_file, "credentials")["ffx_password"]
+FFX_USERNAME = get_config_options(config_file, "credentials").get("ffx_username", None)
+FFX_PASSWORD = get_config_options(config_file, "credentials").get("ffx_password", None)
 
 # apis
-FRED_API = get_config_options(config_file, "api")["fred_api"]
-YODLEE_CLIENT_ID = get_config_options(config_file, "api")["yodlee_client_id"]
-YODLEE_SECRET = get_config_options(config_file, "api")["yodlee_secret"]
-YODLEE_ENDPOINT = get_config_options(config_file, "api")["yodlee_endpoint"]
+FRED_API = get_config_options(config_file, "api").get("fred_api", None)
+YODLEE_CLIENT_ID = get_config_options(config_file, "api").get("yodlee_client_id", None)
+YODLEE_SECRET = get_config_options(config_file, "api").get("yodlee_secret", None)
+YODLEE_ENDPOINT = get_config_options(config_file, "api").get("yodlee_endpoint", None)
 
 # gpts
-HUGCHAT_LOGIN = get_config_options(config_file, "gpt")["hugchat_login"]
-HUGCHAT_PASSWORD = get_config_options(config_file, "gpt")["hugchat_password"]
-OPENAI_API_KEY = get_config_options(config_file, "gpt")["openai_api_key"]
-BROWSER_LOCATION = get_config_options(config_file, "gpt")["browser_location"]
-BROWSER_EXTENSION = get_config_options(config_file, "gpt")["browser_extension"]
+HUGCHAT_LOGIN = get_config_options(config_file, "gpt").get("hugchat_login", None)
+HUGCHAT_PASSWORD = get_config_options(config_file, "gpt").get("hugchat_password", None)
+OPENAI_API_KEY = get_config_options(config_file, "gpt").get("openai_api_key", None)
+BROWSER_LOCATION = get_config_options(config_file, "gpt").get("browser_location", None)
+BROWSER_EXTENSION = get_config_options(config_file, "gpt").get(
+    "browser_extension", None
+)
 
 # other
 if os.path.exists(r"/app/tests"):
-    REDIS_URL = get_config_options(config_file, "other")["redis_url"]
+    REDIS_URL = get_config_options(config_file, "other")["redis_url"].get(
+        "redis_url", None
+    )
 else:
     # if debugging locally will need a redis
-    REDIS_URL = get_config_options(config_file, "other")["local_redis"]
-SMTP_USERNAME = get_config_options(config_file, "other")["smtp_username"]
-SMTP_PASSWORD = get_config_options(config_file, "other")["smtp_password"]
-SMTP_SERVER = get_config_options(config_file, "other")["smtp_server"]
-SMTP_PORT = get_config_options(config_file, "other")["smtp_port"]
+    REDIS_URL = get_config_options(config_file, "other").get("local_redis", None)
+SMTP_USERNAME = get_config_options(config_file, "other").get("smtp_username", None)
+SMTP_PASSWORD = get_config_options(config_file, "other").get("smtp_password", None)
+SMTP_SERVER = get_config_options(config_file, "other").get("smtp_server", None)
+SMTP_PORT = get_config_options(config_file, "other").get("smtp_port", None)

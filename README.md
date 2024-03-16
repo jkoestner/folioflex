@@ -15,12 +15,17 @@ Simple investment portfolio tool that will track stock and provide returns and o
 ## Table of Contents
 - [Overview](#overview)
 - [Installation](#installation)
-  - [Install packages](#install-packages)
+  - [Local Install](#local-install)
+  - [Docker Install](#docker-install)
 - [Usage](#usage)
   - [CLI](#cli)
   - [Python](#python)
-  - [Web Dashboard](#web-dashboard)
+  - [Web Dashboard](#web-dashboard---invest)
+  - [Plaid Dashboard](#plaid-dashboard)
 - [Other Tools](#other-tools)
+  - [Jupyter Lab Usage](#jupyter-lab-usage)
+  - [Logging](#logging)
+  - [Coverage](#coverage)
 
 ## Overview
 
@@ -32,19 +37,22 @@ Simple investment portfolio tool that will track stock and provide returns and o
 
 **🔧 Features:**
 
-- **Dashboard Helper**: Get a quick overview of your portfolio with our dashboard. 🖥️
 - **Market Screener**: Filter and find trending stocks. 🔍
+![screener](assets/screenshots/screener.png)
+![heatmap](assets/screenshots/heatmap.png)
 - **Portfolio Management**: Organize and track, your investments. 💼
-- **Config Helper**: Customize your experience with easy configurations. ⚙️
+![portfolio](assets/screenshots/portfolio.png)
+- **Budget Tool**: Create and monitor a budget. 💰
+![budget](assets/screenshots/budget.png)
+![budget_compare](assets/screenshots/budget_compare.png)
 
 **📚 Documentation:**
 
 - [Installation Guide](https://jkoestner.github.io/folioflex/installation.html): Get started with FolioFlex in no time! 🛠️
-- [Usage Guide](https://jkoestner.github.io/folioflex/usage.html): Learn how to make the most out of FolioFlex. 🤓
 
 **🎥 See It In Action:**
 
-- **FolioFlex Demo**: Visit a dashboard (https://invest.koestner.fun/) of FolioFlex and witness the magic! 🌟
+- **FolioFlex Demo**: Visit a dashboard (https://koestner.fly.dev/) of FolioFlex and witness the magic! 🌟
 
 **🔬 Jupyter Notebook:**
 
@@ -74,10 +82,11 @@ pip install folioflex
 Other options can be installed if using more functionality
 
 ```
-pip install folioflex[dev]
-pip install folioflex[gpt]
-pip install folioflex[web]
-pip install folioflex[worker]
+pip install folioflex[budget] # if using the budget modules
+pip install folioflex[dev]    # if needing to develop or lint
+pip install folioflex[gpt]    # if using the mailer or gpt code
+pip install folioflex[web]    # if using the web dashboard
+pip install folioflex[worker] # if using the web dashboard
 ``````
 
 Or could be done using GitHub.

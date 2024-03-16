@@ -6,9 +6,6 @@ from the larger portfolio project, and allows easier integration.
 
 """
 
-import logging
-import logging.config
-import os
 import ssl
 from datetime import datetime, time, timedelta
 from io import StringIO
@@ -21,15 +18,11 @@ import yfinance as yf
 from bs4 import BeautifulSoup
 
 from folioflex.portfolio import helper
-from folioflex.utils import config_helper
+from folioflex.utils import config_helper, custom_logger
 
 pd.options.display.float_format = "{:,.2f}".format
 
-# create logger
-logging.config.fileConfig(
-    os.path.join(config_helper.CONFIG_PATH, "logging.ini"),
-)
-logger = logging.getLogger(__name__)
+logger = custom_logger.setup_logging(__name__)
 
 
 class BLS:
@@ -54,6 +47,7 @@ class BLS:
         -------
         cpi : dict
             dictionary of CPI information
+
         """
         # Series ID for CPI-U (U.S. city average, All items)
         series_id = "CUSR0000SA0"
@@ -105,6 +99,7 @@ class Finviz:
         -------
         pd.DataFrame
             Dataframe of tickers, changes and sectors
+
         """
         # dict of valid timeframes
         timeframe_map = {
@@ -185,6 +180,7 @@ class Fred:
         -------
         fred_summary : dict
             provides dictionary of FRED data
+
         """
         fred_lkup = {
             "recession": "RECPROUSM156N",
@@ -249,6 +245,7 @@ class TradingView:
         -------
         calendar : DataFrame
             DataFrame of economic calendar
+
         """
 
         def normalize_date(date, time):
@@ -320,6 +317,7 @@ class Web:
         -------
         sp500_tickers : DataFrame
         sp500 tickers and sectors
+
         """
         url = r"https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
         context = ssl._create_unverified_context()
@@ -328,12 +326,11 @@ class Web:
 
         sp500_tickers = pd.read_html(html)[0][["Symbol", "GICS Sector"]]
 
-        sp500_tickers.rename(
+        sp500_tickers = sp500_tickers.rename(
             columns={
                 "GICS Sector": "sector",
                 "Symbol": "ticker",
             },
-            inplace=True,
         )
 
         return sp500_tickers
@@ -354,6 +351,7 @@ class Web:
         -------
         df_insider : DataFrame
             Insider activity data
+
         """
         url = f"https://markets.businessinsider.com/stocks/{ticker.lower()}-stock"
         response = requests.get(url, headers=_get_header(), timeout=10)
@@ -401,6 +399,7 @@ def _get_header():
     -------
     headers : str
         header for requests
+
     """
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -423,6 +422,7 @@ def _convert_to_number(s):
     -------
     s : float
         float value of string
+
     """
     s = str(s).strip()
     if s[-1] == "M":  # for million values
@@ -465,6 +465,7 @@ class Yahoo:
                - ticker
                - date
                - last price
+
         """
         stock_data = yf.download(
             tickers,
@@ -472,18 +473,18 @@ class Yahoo:
             end=datetime(2100, 1, 1),
             actions=True,  # get dividends and stock splits
         )
-        self._clean_index(clean_df=stock_data, lvl=0, tickers=tickers)
-        stock_data.index.rename("date", inplace=True)
-        stock_data.columns.rename("measure", level=0, inplace=True)
-        stock_data.columns.rename("ticker", level=1, inplace=True)
+        stock_data = self._clean_index(clean_df=stock_data, lvl=0, tickers=tickers)
+        stock_data.index = stock_data.index.rename("date")
+        stock_data.columns = stock_data.columns.rename("measure", level=0)
+        stock_data.columns = stock_data.columns.rename("ticker", level=1)
 
-        stock_data = stock_data.stack(level="ticker")
+        stock_data = stock_data.stack(level="ticker", future_stack=True)
         stock_data.index = stock_data.index.swaplevel("date", "ticker")
-        stock_data.sort_index(axis=0, level="ticker", inplace=True)
+        stock_data = stock_data.sort_index(axis=0, level="ticker")
         stock_data = stock_data.reset_index()
         cols = ["ticker", "date", "adj_close", "stock_splits"]
         stock_data = stock_data[cols]
-        stock_data.rename(columns={"adj_close": "last_price"}, inplace=True)
+        stock_data = stock_data.rename(columns={"adj_close": "last_price"})
 
         return stock_data
 
@@ -500,10 +501,11 @@ class Yahoo:
         -------
         news : DataFrame
             provides news articles on ticker
+
         """
         yf_ticker = yf.Ticker(ticker)
         news = pd.DataFrame(yf_ticker.news)
-        news.drop(columns=["thumbnail", "uuid"], inplace=True)
+        news = news.drop(columns=["thumbnail", "uuid"])
         news["providerPublishTime"] = pd.to_datetime(
             news["providerPublishTime"], unit="s"
         )
@@ -523,6 +525,7 @@ class Yahoo:
         -------
         info : DataFrame
             provides info on ticker
+
         """
         yf_ticker = yf.Ticker(ticker)
         info = pd.DataFrame([yf_ticker.info])
@@ -544,6 +547,7 @@ class Yahoo:
         -------
         fast_info : dict
             provides dictionary of info on ticker
+
         """
         fast_info = yf.Ticker(ticker).fast_info
 
@@ -562,6 +566,7 @@ class Yahoo:
         -------
         quote : DataFrame
             provides quote on ticker
+
         """
         d = yf.Ticker(ticker).fast_info
         keys = list(d.keys())
@@ -569,7 +574,7 @@ class Yahoo:
 
         # Create a DataFrame from these lists
         quote = pd.DataFrame({"Keys": keys, "Values": values})
-        quote.set_index("Keys", inplace=True)
+        quote = quote.set_index("Keys")
 
         return quote
 
@@ -586,6 +591,7 @@ class Yahoo:
         -------
         most_active : DataFrame
         DataFrame of most active stocks
+
         """
         min_count = 0
         max_count = 101
@@ -649,6 +655,7 @@ class Yahoo:
         -------
         change_percent : float
             the percentage change of the stock over the given number of days
+
         """
         # fixing the date to the last valid stock date
         end_date = helper.most_recent_stock_date()
@@ -688,6 +695,7 @@ class Yahoo:
         -------
         sma : float
             the simple moving average
+
         """
         end_date = datetime.today().strftime("%Y-%m-%d")
         start_date = (datetime.today() - timedelta(days=days)).strftime("%Y-%m-%d")
@@ -717,6 +725,7 @@ class Yahoo:
         -------
         clean_df : DataFrame
             a clean DataFrame
+
         """
         if clean_df.columns.nlevels == 1:
             clean_df.columns = pd.MultiIndex.from_product([clean_df.columns, tickers])

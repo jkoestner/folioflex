@@ -9,7 +9,6 @@ ideas, macros, and trackers...
    :caption: Contents:
 
    installation
-   usage
    development
    reference
 

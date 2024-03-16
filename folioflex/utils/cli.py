@@ -21,6 +21,7 @@ def _parse_input_to_list(input_str):
     -------
     result : list
         list of parsed input
+
     """
     try:
         # Safely evaluate the string
@@ -210,8 +211,6 @@ def _create_argparser():
         default=None,
         help=("The proxy to use for the chatbot - user:password@ip:port"),
     )
-
-    return _parser
 
 
 parser = _create_argparser()
