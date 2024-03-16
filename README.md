@@ -37,14 +37,18 @@ Simple investment portfolio tool that will track stock and provide returns and o
 
 **🔧 Features:**
 
-- **Dashboard Helper**: Get a quick overview of your portfolio with our dashboard. 🖥️
 - **Market Screener**: Filter and find trending stocks. 🔍
+![screener](assets/screenshots/screener.png)
+![heatmap](assets/screenshots/heatmap.png)
 - **Portfolio Management**: Organize and track, your investments. 💼
+![portfolio](assets/screenshots/portfolio.png)
+- **Budget Tool**: Create and monitor a budget. 💰
+![budget](assets/screenshots/budget.png)
+![budget_compare](assets/screenshots/budget_compare.png)
 
 **📚 Documentation:**
 
 - [Installation Guide](https://jkoestner.github.io/folioflex/installation.html): Get started with FolioFlex in no time! 🛠️
-- [Usage Guide](https://jkoestner.github.io/folioflex/usage.html): Learn how to make the most out of FolioFlex. 🤓
 
 **🎥 See It In Action:**
 

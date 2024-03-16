@@ -22,7 +22,7 @@ be run to install the packages in the requirements.txt file.
    
 .. code-block:: bash
    
-   pip install -r requirements.txt
+   pip install -e .
 
 Configuration
 -------------
