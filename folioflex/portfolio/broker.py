@@ -9,7 +9,6 @@ data from brokers as it is already connecting to the brokers automatically.
 
 """
 
-
 import os
 import re
 
@@ -102,8 +101,7 @@ def ally(broker_file, output_file=None, broker="ally"):
             trades = append_trades(trades, output_file, broker)
         else:
             logger.warning(f"{output_file} does not exist. Creating new file.")
-
-        trades.sort_values(by=["date", "ticker"], ascending=False, inplace=True)
+        trades = trades.sort_values(by=["date", "ticker"], ascending=False)
         trades.to_csv(output_file, index=False)
 
     return trades
@@ -206,8 +204,7 @@ def fidelity(broker_file, output_file=None, broker="fidelity"):
             trades = append_trades(trades, output_file, broker)
         else:
             logger.warning(f"{output_file} does not exist. Creating new file.")
-
-        trades.sort_values(by=["date", "ticker"], ascending=False, inplace=True)
+        trades = trades.sort_values(by=["date", "ticker"], ascending=False)
         trades.to_csv(output_file, index=False)
 
     return trades
@@ -347,7 +344,7 @@ def ib(broker_file, output_file=None, broker="ib", funds=None, delisted=None):
         acquisition_symbol_lkup = acquisitions[
             acquisitions["orig_symbol"] != acquisitions["new_symbol"]
         ][["orig_symbol", "new_symbol"]]
-        acquisitions.set_index("orig_symbol", inplace=True)
+        acquisitions = acquisitions.set_index("orig_symbol")
         acquisitions.update(acquisition_symbol_lkup.set_index("orig_symbol"))
         acquisitions = acquisitions.reset_index()
 
@@ -374,7 +371,9 @@ def ib(broker_file, output_file=None, broker="ib", funds=None, delisted=None):
         )
 
         # add in the stock price at transition
-        acquisition_price_history.rename(columns={"ticker": "new_symbol"}, inplace=True)
+        acquisition_price_history = acquisition_price_history.rename(
+            columns={"ticker": "new_symbol"}
+        )
         acquisition_price_history = acquisition_price_history.sort_values(by="date")
         acquisitions = pd.merge_asof(
             acquisitions,
@@ -430,8 +429,7 @@ def ib(broker_file, output_file=None, broker="ib", funds=None, delisted=None):
             trades = append_trades(trades, output_file, broker)
         else:
             logger.warning(f"{output_file} does not exist. Creating new file.")
-
-        trades.sort_values(by=["date", "ticker"], ascending=False, inplace=True)
+        trades = trades.sort_values(by=["date", "ticker"], ascending=False)
         trades.to_csv(output_file, index=False)
 
     return trades
@@ -548,13 +546,12 @@ def ybr(broker_file, output_file=None, broker="ybr", reinvest=True):
     # cleaning dataframe by formatting columns and removing whitespace
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
     df = df.apply(lambda x: x.strip() if isinstance(x, str) else x)
-    df.rename(
+    df = df.rename(
         columns={
             "amount": "cost",
             "fund_nav/price": "price",
             "fund_units": "units",
         },
-        inplace=True,
     )
 
     # update date column type
@@ -632,7 +629,7 @@ def ybr(broker_file, output_file=None, broker="ybr", reinvest=True):
         else:
             logger.warning(f"{output_file} does not exist. Creating new file.")
 
-        trades.sort_values(by=["date", "ticker"], ascending=False, inplace=True)
+        trades = trades.sort_values(by=["date", "ticker"], ascending=False)
         trades.to_csv(output_file, index=False)
 
     return trades

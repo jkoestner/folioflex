@@ -322,10 +322,10 @@ class Budget:
         grouped_transactions = pd.concat(
             [grouped_transactions, unused_keys_df], ignore_index=True
         )
-        grouped_transactions.fillna(0, inplace=True)
+        grouped_transactions = grouped_transactions.fillna(0)
         grouped_transactions["budget"] = grouped_transactions["label"].map(budgets)
-        grouped_transactions["budget"].fillna(
-            float(self.config_dict["default"]), inplace=True
+        grouped_transactions["budget"] = grouped_transactions["budget"].fillna(
+            float(self.config_dict["default"])
         )
         # providing a total
         totals = grouped_transactions.sum(numeric_only=True).to_frame().T

@@ -326,12 +326,11 @@ class Web:
 
         sp500_tickers = pd.read_html(html)[0][["Symbol", "GICS Sector"]]
 
-        sp500_tickers.rename(
+        sp500_tickers = sp500_tickers.rename(
             columns={
                 "GICS Sector": "sector",
                 "Symbol": "ticker",
             },
-            inplace=True,
         )
 
         return sp500_tickers
@@ -474,18 +473,18 @@ class Yahoo:
             end=datetime(2100, 1, 1),
             actions=True,  # get dividends and stock splits
         )
-        self._clean_index(clean_df=stock_data, lvl=0, tickers=tickers)
-        stock_data.index.rename("date", inplace=True)
-        stock_data.columns.rename("measure", level=0, inplace=True)
-        stock_data.columns.rename("ticker", level=1, inplace=True)
+        stock_data = self._clean_index(clean_df=stock_data, lvl=0, tickers=tickers)
+        stock_data.index = stock_data.index.rename("date")
+        stock_data.columns = stock_data.columns.rename("measure", level=0)
+        stock_data.columns = stock_data.columns.rename("ticker", level=1)
 
         stock_data = stock_data.stack(level="ticker", future_stack=True)
         stock_data.index = stock_data.index.swaplevel("date", "ticker")
-        stock_data.sort_index(axis=0, level="ticker", inplace=True)
+        stock_data = stock_data.sort_index(axis=0, level="ticker")
         stock_data = stock_data.reset_index()
         cols = ["ticker", "date", "adj_close", "stock_splits"]
         stock_data = stock_data[cols]
-        stock_data.rename(columns={"adj_close": "last_price"}, inplace=True)
+        stock_data = stock_data.rename(columns={"adj_close": "last_price"})
 
         return stock_data
 
@@ -506,7 +505,7 @@ class Yahoo:
         """
         yf_ticker = yf.Ticker(ticker)
         news = pd.DataFrame(yf_ticker.news)
-        news.drop(columns=["thumbnail", "uuid"], inplace=True)
+        news = news.drop(columns=["thumbnail", "uuid"])
         news["providerPublishTime"] = pd.to_datetime(
             news["providerPublishTime"], unit="s"
         )
@@ -575,7 +574,7 @@ class Yahoo:
 
         # Create a DataFrame from these lists
         quote = pd.DataFrame({"Keys": keys, "Values": values})
-        quote.set_index("Keys", inplace=True)
+        quote = quote.set_index("Keys")
 
         return quote
 

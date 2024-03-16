@@ -363,8 +363,7 @@ class OpenaiProvider(ChatBotProvider):
             ],
         )
 
-        if response.status_code == 429:
-            return "OpenAI chatbot is currently rate limited."
+        # TODO add in handler for rate limits
 
         formatted_response = f"{url}\n\n"
         formatted_response += response.choices[0].message.content

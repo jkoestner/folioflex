@@ -167,6 +167,10 @@ ignore = [
     "ISC001",
     # ignore magic numbers
     "PLR2004",
+    # ignore too many return statements or branches
+    "PLR0911",
+    "PLR0912",
+    "PLR0915",
 ]
 
 [tool.ruff.lint]

@@ -143,6 +143,7 @@ def generate_report(
     -------
     bool
         True if email was sent successfully, False otherwise.
+
     """
     # building the email message
 

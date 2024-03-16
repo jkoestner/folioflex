@@ -168,7 +168,7 @@ def update_newsanalysis(n_clicks, input_value):
         news_table = (None, None)
     else:
         news_table = wrappers.Yahoo().news(input_value)
-        news_table.drop(columns=["relatedTickers"], inplace=True)
+        news_table = news_table.drop(columns=["relatedTickers"])
         news_table = news_table.reset_index()
 
         news_table = (
@@ -326,7 +326,7 @@ def update_SectorGraph(slide_value, yf_data, sector_status):
         ].copy()
         for col in sector_data.columns:
             sector_data["change"] = sector_data[col] / sector_data[col].iat[0] - 1
-            sector_data.drop([col], axis=1, inplace=True)
+            sector_data = sector_data.drop([col], axis=1)
             sector_data["change"] = sector_data["change"].map("{0:.1%}".format)
             sector_data = sector_data.rename(columns={"change": col})
             res.append(

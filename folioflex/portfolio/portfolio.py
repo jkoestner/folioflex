@@ -163,7 +163,7 @@ class Portfolio:
         performance["lookback_date"] = lookback_date
         performance = performance[performance["date"] == date]
         performance = performance.reset_index().set_index("ticker")
-        performance.drop(["index", "units", "cost"], axis=1, inplace=True)
+        performance = performance.drop(["index", "units", "cost"], axis=1)
 
         # add in portfolio metrics
         condition = performance.index.str.contains("Cash")
@@ -712,7 +712,7 @@ class Portfolio:
 
             fund_hist_df = fund_hist_df.groupby(["date", "ticker"]).min().reset_index()
             fund_hist_df[["price"]] = fund_hist_df.groupby("ticker")[["price"]].ffill()
-            fund_hist_df.rename(columns={"price": "last_price"}, inplace=True)
+            fund_hist_df = fund_hist_df.rename(columns={"price": "last_price"})
             price_history = pd.concat([price_history, fund_hist_df])
 
         # adding ticker `Cash` for price history lookup
@@ -938,7 +938,7 @@ class Portfolio:
             .sum(numeric_only=True)
             .reset_index()
         )
-        dividends.rename(columns={"cost": "dividend"}, inplace=True)
+        dividends = dividends.rename(columns={"cost": "dividend"})
 
         # cash dividends are treated as interest
         dividends.loc[dividends["ticker"] == "Cash", "dividend"] = 0
@@ -1210,7 +1210,7 @@ class Portfolio:
             ].sum(axis=1)
             portfolio_tx_hist[view] = view_df["portfolio"]
         portfolio_tx_hist["ticker"] = "portfolio"
-        portfolio_tx_hist.reset_index(inplace=True)
+        portfolio_tx_hist = portfolio_tx_hist.reset_index()
         portfolio_tx_hist = pd.concat([tx_hist_df, portfolio_tx_hist], axis=0)
 
         return portfolio_tx_hist
@@ -1854,7 +1854,7 @@ class Manager:
             return_view_filtered.loc[return_view_filtered[col] != 0, "change"] = (
                 return_view_filtered[col] + cost_view_filtered[col]
             ) / cost_view_filtered[col] - 1
-            return_view_filtered.drop([col], axis=1, inplace=True)
+            return_view_filtered = return_view_filtered.drop([col], axis=1)
             return_view_filtered = return_view_filtered.rename(columns={"change": col})
             return_view_filtered[col] = return_view_filtered[col].fillna(0)
             return_view_filtered[col] = (

@@ -16,7 +16,7 @@ RUN apt-get update && \
 WORKDIR /code
 
 # Install requirements
-RUN pip install --no-cache-dir "git+https://github.com/jkoestner/folioflex.git@dev#egg=folioflex[budget,gpt,web,worker]"
+RUN pip install --no-cache-dir "git+https://github.com/jkoestner/folioflex.git@main#egg=folioflex[budget,gpt,web,worker]"
 
 # Create new user
 RUN adduser --disabled-password --gecos '' ffx && \

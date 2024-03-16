@@ -35,7 +35,6 @@ Simple investment portfolio tool that will track stock and provide returns and o
 - **Dashboard Helper**: Get a quick overview of your portfolio with our dashboard. 🖥️
 - **Market Screener**: Filter and find trending stocks. 🔍
 - **Portfolio Management**: Organize and track, your investments. 💼
-- **Config Helper**: Customize your experience with easy configurations. ⚙️
 
 **📚 Documentation:**
 
@@ -44,7 +43,7 @@ Simple investment portfolio tool that will track stock and provide returns and o
 
 **🎥 See It In Action:**
 
-- **FolioFlex Demo**: Visit a dashboard (https://invest.koestner.fun/) of FolioFlex and witness the magic! 🌟
+- **FolioFlex Demo**: Visit a dashboard (https://koestner.fly.dev/) of FolioFlex and witness the magic! 🌟
 
 **🔬 Jupyter Notebook:**
 

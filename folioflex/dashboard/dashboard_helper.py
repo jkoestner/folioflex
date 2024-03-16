@@ -53,8 +53,8 @@ def get_menu():
 def get_defaults():
     """Provide default initializations for pages."""
     # TODO
-    # These are needed so that the variable can be none. With some work this could probably
-    # be removed and put in individual pages.
+    # These are needed so that the variable can be none. With some work
+    # this could probably be removed and put in individual pages.
     defaults = (
         html.Div(id="task-status", children="none", style={"display": "none"}),
         html.Div(id="refresh_text", children="none", style={"display": "none"}),
@@ -113,6 +113,7 @@ def getMarks(start, end, nth=365):
     -------
     marks : series
         the values that will have marks
+
     """
     result = []
     while start <= end:
@@ -145,6 +146,7 @@ def get_slider_values(daterange):
         values to use
     marks : series
         marks on slider
+
     """
     # due to range step granularity, range needs to be extended to be inclusive of ends
     min = unix_time_millis(daterange.min()) - 1000000
@@ -175,6 +177,7 @@ def update_graph(slide_value, view_return, view_cost):
     -------
     fig : Dash figure
        dash figure
+
     """
     res = []
     layout = go.Layout(hovermode="closest")
@@ -196,7 +199,7 @@ def update_graph(slide_value, view_return, view_cost):
         return_grph.loc[return_grph[col] != 0, "change"] = (
             return_grph[col] + cost_grph[col]
         ) / cost_grph[col] - 1
-        return_grph.drop([col], axis=1, inplace=True)
+        return_grph = return_grph.drop([col], axis=1)
         return_grph = return_grph.rename(columns={"change": col})
         res.append(
             go.Scatter(
