@@ -18,8 +18,8 @@ WORKDIR /code
 # COPY files for web dashboard
 COPY app.py ./assets /code/
 
-# Install requirements
-RUN pip install --no-cache-dir  . .[budget]
+# Install requirements (without copying the whole directory)
+RUN pip install --no-cache-dir "git+https://github.com/jkoestner/folioflex.git@dev#egg=folioflex[budget]"
 
 # Create new user
 RUN adduser --disabled-password --gecos '' ffx && \
