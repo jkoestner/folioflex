@@ -16,7 +16,8 @@ RUN apt-get update && \
 WORKDIR /code
 
 # COPY files for web dashboard
-COPY app.py ./assets /code/
+COPY app.py /code/
+COPY ./assets /code/assets/
 
 # Install requirements (without copying the whole directory)
 RUN pip install --no-cache-dir "git+https://github.com/jkoestner/folioflex.git@dev#egg=folioflex[budget]"
