@@ -19,7 +19,7 @@ WORKDIR /code
 COPY app.py ./assets /code/
 
 # Install requirements
-RUN pip install --no-cache-dir "git+https://github.com/jkoestner/folioflex.git@main#egg=folioflex[budget]"
+RUN pip install --no-cache-dir  . .[budget]
 
 # Create new user
 RUN adduser --disabled-password --gecos '' ffx && \
