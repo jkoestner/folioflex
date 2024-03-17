@@ -7,7 +7,7 @@ from hugchat import hugchat
 from folioflex.chatbot import providers
 
 
-def test_g4f_init():
+def test_g4f():
     """Checks g4f initialize."""
     chatbot = providers.GPTchat()
     assert isinstance(
@@ -34,6 +34,7 @@ def test_openai():
     assert response == "test", "Response not as expected."
 
 
+# hugchat needs api key to be set in environment variable to login
 def test_hugchat():
     """Checks hugchat initialize."""
     chatbot = providers.GPTchat(provider="hugchat")

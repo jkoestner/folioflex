@@ -119,7 +119,7 @@ def fidelity(broker_file, output_file=None, broker="fidelity"):
 
     Notes
     -----
-    - The headers have started on line 6, if this changes need to update
+    - The headers seem to change, and if greater than 10 code should be updated
     - the date has had a space at beggining of string, so need to strip
 
     Parameters
@@ -146,16 +146,31 @@ def fidelity(broker_file, output_file=None, broker="fidelity"):
         "YOU SOLD": "SELL",
     }
 
+    def find_header_row(broker_file):
+        with open(broker_file, "r") as file:
+            for i, line in enumerate(file):
+                if i >= 10:
+                    break
+                columns = [col.strip() for col in line.split(",")]
+                if "Run Date" in columns:
+                    logger.info(f"using header row at line {i}")
+                    return i
+        raise ValueError(
+            "Could not find column 'Run Date' in the first 10 lines of the file"
+        )
+
     # read in the transactions file
     try:
-        df = pd.read_csv(broker_file, skiprows=5)
+        skiprows = find_header_row(broker_file) - 1
+        df = pd.read_csv(broker_file, skiprows=skiprows)
     except FileNotFoundError:
         logger.error("Transactions file not found")
         return
 
     # cleaning dataframe by formatting columns and removing whitespace from strings
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
-    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    for column in df.columns:
+        df[column] = df[column].map(lambda x: x.strip() if isinstance(x, str) else x)
 
     # remove footer of dataframe
     df_end = df[df["action"].isna()].index.min()
@@ -292,7 +307,7 @@ def ib(broker_file, output_file=None, broker="ib", funds=None, delisted=None):
     df["tradeprice"] = df["tradeprice"].astype(float)
 
     # update date column type
-    df["date"] = pd.to_datetime(df["datetime"]).dt.date
+    df["date"] = pd.to_datetime(df["datetime"], format="mixed").dt.date
 
     # Loop through each type_lkup and update type
     for string, tag in type_lkup.items():
