@@ -1,5 +1,7 @@
 """Tests the chatbot."""
 
+import os
+
 import g4f
 import openai
 from hugchat import hugchat
@@ -21,23 +23,30 @@ def test_g4f():
     assert response == "test", "Response not as expected."
 
 
-def test_openai():
-    """Checks openai initialize."""
-    chatbot = providers.GPTchat(provider="openai")
-    assert isinstance(
-        chatbot.provider, providers.OpenaiProvider
-    ), "Default provider - OpenAI - not initialized correctly."
-    assert isinstance(chatbot.chatbot, openai.OpenAI), "Default model not set."
-    response = "test"
-    # # openai has billing so not testing unless needed
-    # response = chatbot.chat("return back 'test' for test purpose")
-    assert response == "test", "Response not as expected."
+# openai has billing so not testing unless needed
+# def test_openai():
+#     """Checks openai initialize."""
+#     chatbot = providers.GPTchat(provider="openai")
+#     assert isinstance(
+#         chatbot.provider, providers.OpenaiProvider
+#     ), "Default provider - OpenAI - not initialized correctly."
+#     assert isinstance(chatbot.chatbot, openai.OpenAI), "Default model not set."
+#     response = chatbot.chat("return back 'test' for test purpose")
+#     assert response == "test", "Response not as expected."
 
 
 # hugchat needs api key to be set in environment variable to login
 def test_hugchat():
     """Checks hugchat initialize."""
-    chatbot = providers.GPTchat(provider="hugchat")
+    # Access credentials from environment variables
+    hugchat_login = os.environ.get("HUGCHAT_LOGIN")
+    hugchat_password = os.environ.get("HUGCHAT_PASSWORD")
+
+    chatbot = providers.GPTchat(
+        provider="hugchat",
+        hugchat_login=hugchat_login,
+        hugchat_password=hugchat_password,
+    )
     assert isinstance(
         chatbot.provider, providers.HugChatProvider
     ), "Default provider - HugChat - not initialized correctly."
