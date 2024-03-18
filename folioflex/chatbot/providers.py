@@ -6,6 +6,7 @@ over time depending on the openness and reliability of the data sources are.
 """
 
 import g4f
+import nest_asyncio
 from hugchat import hugchat
 from hugchat.login import Login
 from openai import OpenAI
@@ -161,17 +162,23 @@ class G4FProvider(ChatBotProvider):
             the response from the chatbot
 
         """
+        nest_asyncio.apply()
         scrape_text = None
+        url = None
+        formatted_response = ""
         if not self.chatbot:
             raise ValueError("Please initialize the chatbot first.")
         if scrape_url:
             scrape_results = scraper.scrape_html(scrape_url, **kwargs)
             scrape_text = scrape_results["text"]
             url = scrape_results["url"]
+            formatted_response = f"{url}\n\n"
             if scrape_text is None:
                 return f"Did not find any text to scrape at {url}."
 
-        logger.info(f"querying the chatbot - G4F with {self.chatbot['provider']}")
+        logger.info(
+            f"querying the chatbot - G4F with {self.chatbot['provider'].__module__}"
+        )
         response = g4f.ChatCompletion.create(
             model=self.chatbot["model"],
             messages=[
@@ -184,7 +191,7 @@ class G4FProvider(ChatBotProvider):
             auth=self.chatbot["auth"],
             access_token=self.chatbot["access_token"],
         )
-        formatted_response = f"{url}\n\n"
+
         formatted_response += response
 
         return formatted_response
@@ -230,7 +237,7 @@ class HugChatProvider(ChatBotProvider):
                 "or set them in the config file."
             )
 
-        logger.info("logging in to HugChat with {}")
+        logger.info("logging in to HugChat")
         sign = Login(self.hugchat_login, self.hugchat_password)
         cookies = sign.login()
 
@@ -259,29 +266,29 @@ class HugChatProvider(ChatBotProvider):
 
         """
         scrape_text = None
+        url = None
+        web_search = kwargs.get("web_search", False)
+        formatted_response = ""
         if not self.chatbot:
             raise ValueError("Please initialize the chatbot first.")
         if scrape_url:
             scrape_results = scraper.scrape_html(scrape_url, **kwargs)
             scrape_text = scrape_results["text"]
             url = scrape_results["url"]
+            formatted_response = f"{url}\n\n"
             if scrape_text is None:
                 return f"Did not find any text to scrape at {url}."
 
-        logger.info("querying the chatbot - HugChat")
+        logger.info(f"querying the chatbot - HugChat - web_search: {web_search}")
         response = self.chatbot.query(
             f"{query} {scrape_text}",
-            web_search=True,
+            web_search=web_search,
         )
         formatted_response = [response["text"]]
-        for source in response.web_search_sources:
-            formatted_response.append(source.link)
-            formatted_response.append(source.title)
-            formatted_response.append(source.hostname)
-
-        # join as new lines
-        formatted_response = f"{url}\n\n"
-        formatted_response += "\n".join(formatted_response)
+        for source in response["web_search_sources"]:
+            formatted_response.append(source["link"])
+            formatted_response.append(source["title"])
+            formatted_response.append(source["hostname"])
 
         return formatted_response
 
@@ -343,12 +350,14 @@ class OpenaiProvider(ChatBotProvider):
         """
         scrape_text = None
         url = None
+        formatted_response = ""
         if not self.chatbot:
             raise ValueError("Please initialize the chatbot first.")
         if scrape_url:
             scrape_results = scraper.scrape_html(scrape_url, **kwargs)
             scrape_text = scrape_results["text"]
             url = scrape_results["url"]
+            formatted_response = f"{url}\n\n"
             if scrape_text is None:
                 return f"Did not find any text to scrape at {url}."
 
@@ -365,7 +374,6 @@ class OpenaiProvider(ChatBotProvider):
 
         # TODO add in handler for rate limits
 
-        formatted_response = f"{url}\n\n"
         formatted_response += response.choices[0].message.content
 
         return formatted_response

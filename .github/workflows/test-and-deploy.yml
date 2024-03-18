@@ -28,6 +28,9 @@ jobs:
           from folioflex.utils import cli, config_helper, cq, mailer
           "
       - name: Run tests with pytest and upload coverage
+        env:
+          HUGCHAT_LOGIN: ${{ secrets.HUGCHAT_LOGIN }}
+          HUGCHAT_PASSWORD: ${{ secrets.HUGCHAT_PASSWORD }}
         run: pytest --cov=folioflex --cov-report=xml
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3

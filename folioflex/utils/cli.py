@@ -212,6 +212,8 @@ def _create_argparser():
         help=("The proxy to use for the chatbot - user:password@ip:port"),
     )
 
+    return _parser
+
 
 parser = _create_argparser()
 
