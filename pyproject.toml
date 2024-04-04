@@ -42,7 +42,7 @@ dependencies = [
     "redis>=3.3.8",
 
     # gpt
-    "g4f==0.1.9.3",         # this package has loose testing support
+    "g4f==0.2.4.1",         # this package has loose testing support
     "hugchat>=0.3.8",
     "openai>=1.3.7",
     "seleniumbase>=4.22.0",
