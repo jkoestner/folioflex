@@ -272,7 +272,7 @@ config_helper.set_log_level("DEBUG")
 
 ### Coverage
 
-To see the test coverage the following command is run in the root directory. This is also documented in the `.coveragerc` file.
+To see the test coverage the following command is run in the root directory.
 ```
 pytest --cov=folioflex --cov-report=html
 ```
