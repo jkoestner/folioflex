@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.2.0](https://github.com/jkoestner/folioflex/tree/v1.2.0)
+
+[Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.1.0...v1.2.0)
+
+**Enhancements**
+- update fidelity broker
+- upgrade the g4f library
+
+**Documentation**
+- update README
+- add in tests for chat module
+
 ## [v1.1.0](https://github.com/jkoestner/folioflex/tree/v1.1.0)
 
 [Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.0.0...v1.1.0)
