@@ -24,7 +24,9 @@ from dash.dash_table.Format import Format, Scheme
 from dash.dependencies import Input, Output, State
 
 from folioflex.budget import budget
-from folioflex.dashboard import dashboard_helper, layouts, pages
+from folioflex.dashboard import pages
+from folioflex.dashboard.components import layouts
+from folioflex.dashboard.utils import dashboard_helper
 from folioflex.portfolio import heatmap, wrappers
 from folioflex.utils import config_helper, cq
 

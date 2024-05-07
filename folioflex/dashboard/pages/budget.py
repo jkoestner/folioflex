@@ -2,7 +2,7 @@
 
 from dash import dcc, html
 
-from folioflex.dashboard import dashboard_helper
+from folioflex.dashboard.utils import dashboard_helper
 
 
 def layout(login_status, login_alert):

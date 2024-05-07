@@ -24,7 +24,7 @@ from datetime import datetime
 import yfinance as yf
 from celery import Celery
 
-from folioflex.dashboard import layouts
+from folioflex.dashboard.components import layouts
 from folioflex.portfolio import portfolio
 from folioflex.utils import config_helper
 

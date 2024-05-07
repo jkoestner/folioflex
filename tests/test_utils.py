@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from folioflex.dashboard import dashboard_helper
+from folioflex.dashboard.utils import dashboard_helper
 from folioflex.utils import config_helper
 
 config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_portfolio.ini"

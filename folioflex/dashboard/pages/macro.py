@@ -2,7 +2,7 @@
 
 from dash import dash_table, dcc, html
 
-from folioflex.dashboard import dashboard_helper
+from folioflex.dashboard.utils import dashboard_helper
 from folioflex.portfolio.wrappers import BLS, Fred, TradingView
 
 # Creating the dash app

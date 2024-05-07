@@ -2,7 +2,7 @@
 
 from dash import dash_table, dcc, html
 
-from folioflex.dashboard import dashboard_helper
+from folioflex.dashboard.utils import dashboard_helper
 from folioflex.utils import config_helper
 
 portfolio_list = config_helper.get_config("portfolio_personal.ini").sections()

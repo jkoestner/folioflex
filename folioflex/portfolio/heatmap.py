@@ -28,6 +28,7 @@ def get_heatmap(config_path=None, portfolio=None, lookback=None):
     -------
     fig : Figure
        heatmap figure
+
     """
     if portfolio is None:
         returns = Finviz().get_heatmap_data()
