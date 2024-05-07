@@ -1,11 +1,22 @@
 """Macro dashboard."""
 
+import dash
 from dash import dash_table, dcc, html
 
 from folioflex.dashboard.utils import dashboard_helper
 from folioflex.portfolio.wrappers import BLS, Fred, TradingView
+from folioflex.utils import custom_logger
 
-# Creating the dash app
+logger = custom_logger.setup_logging(__name__)
+
+dash.register_page(__name__, path="/", title="folioflex - Stocks", order=0)
+
+#   _                            _
+#  | |    __ _ _   _  ___  _   _| |_
+#  | |   / _` | | | |/ _ \| | | | __|
+#  | |__| (_| | |_| | (_) | |_| | |_
+#  |_____\__,_|\__, |\___/ \__,_|\__|
+#              |___/
 
 
 def layout(login_status, login_alert):
