@@ -14,7 +14,7 @@ from folioflex.utils import cq, custom_logger
 
 logger = custom_logger.setup_logging(__name__)
 
-dash.register_page(__name__, path="/", title="folioflex - Stocks", order=0)
+dash.register_page(__name__, path="/sectors", title="folioflex - Sectors", order=1)
 
 #   _                            _
 #  | |    __ _ _   _  ___  _   _| |_
@@ -24,18 +24,15 @@ dash.register_page(__name__, path="/", title="folioflex - Stocks", order=0)
 #              |___/
 
 
-def layout(login_status, login_alert):
+def layout():
     """Sectors layout."""
     return html.Div(
         [
             # adding variables needed that are used in callbacks.
             *dashboard_helper.get_defaults(),
-            dcc.Store(id="login-status", data=login_status),
-            html.Div(id="login-alert", children=login_alert, style={"display": "none"}),
             # ---------------------------------------------------------------
             html.Div(
                 [
-                    dashboard_helper.get_menu(),
                     html.Button(
                         "Sector initialize", id="sector-initialize", n_clicks=0
                     ),

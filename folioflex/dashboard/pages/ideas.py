@@ -10,7 +10,7 @@ from folioflex.utils import custom_logger
 
 logger = custom_logger.setup_logging(__name__)
 
-dash.register_page(__name__, path="/", title="folioflex - Stocks", order=0)
+dash.register_page(__name__, path="/ideas", title="folioflex - Ideas", order=3)
 
 #   _                            _
 #  | |    __ _ _   _  ___  _   _| |_
@@ -20,18 +20,15 @@ dash.register_page(__name__, path="/", title="folioflex - Stocks", order=0)
 #              |___/
 
 
-def layout(login_status, login_alert):
+def layout():
     """Ideas layout."""
     return html.Div(
         [
             # adding variables needed that are used in callbacks.
             *dashboard_helper.get_defaults(),
-            dcc.Store(id="login-status", data=login_status),
-            html.Div(id="login-alert", children=login_alert, style={"display": "none"}),
             # ---------------------------------------------------------------
             html.Div(
                 [
-                    dashboard_helper.get_menu(),
                     dcc.Markdown(
                         """
                     Momentum and Value are 2 metrics that determine the viability of investing in the market.

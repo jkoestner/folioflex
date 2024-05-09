@@ -20,18 +20,15 @@ dash.register_page(__name__, path="/", title="folioflex - Stocks", order=0)
 #              |___/
 
 
-def layout(login_status, login_alert):
+def layout():
     """Stocks layout."""
     return html.Div(
         [
             # adding variables needed that are used in callbacks.
             *dashboard_helper.get_defaults(),
-            dcc.Store(id="login-status", data=login_status),
-            html.Div(id="login-alert", children=login_alert, style={"display": "none"}),
             # ---------------------------------------------------------------
             html.Div(
                 [
-                    dashboard_helper.get_menu(),
                     html.Label("Stock Analysis"),
                     html.P(),
                     dcc.Markdown(

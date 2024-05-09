@@ -6,14 +6,18 @@ import plotly.graph_objs as go
 from celery.result import AsyncResult
 from dash import Input, Output, State, callback, dash_table, dcc, html
 from dash.dash_table.Format import Format, Scheme
+from flask_login import current_user
+from utils.login_handler import require_login
 
 from folioflex.dashboard.components import layouts
 from folioflex.dashboard.utils import dashboard_helper
 from folioflex.utils import config_helper, cq, custom_logger
 
 logger = custom_logger.setup_logging(__name__)
+require_login(__name__)
 
-dash.register_page(__name__, path="/", title="folioflex - Stocks", order=0)
+
+dash.register_page(__name__, path="/personal", title="folioflex - Personal", order=4)
 
 #   _                            _
 #  | |    __ _ _   _  ___  _   _| |_
@@ -29,21 +33,15 @@ if value in portfolio_list:
     portfolio_list.remove(value)
 
 
-def layout(login_status, login_alert):
+def layout():
     """Create layout for the personal dashboard."""
+    if not current_user.is_authenticated:
+        return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])
     return html.Div(
         [
             # adding variables needed that are used in callbacks.
             *dashboard_helper.get_defaults(),
-            dcc.Store(id="login-status", data=login_status),
-            html.Div(id="login-alert", children=login_alert, style={"display": "none"}),
             # ---------------------------------------------------------------
-            html.Div(
-                [
-                    dashboard_helper.get_menu(),
-                ],
-                className="row",
-            ),
             html.Div(
                 [
                     html.Label("Lookback", style={"paddingRight": "10px"}),

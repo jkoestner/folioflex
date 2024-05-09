@@ -1,8 +1,13 @@
 """Personal dashboard."""
 
+import datetime
+
 import dash
 import plotly.graph_objs as go
 from dash import Input, Output, State, callback, dcc, html
+from dateutil.relativedelta import relativedelta
+from flask_login import current_user
+from utils.login_handler import require_login
 
 from folioflex.budget import budget
 from folioflex.dashboard.utils import dashboard_helper
@@ -10,7 +15,12 @@ from folioflex.utils import custom_logger
 
 logger = custom_logger.setup_logging(__name__)
 
-dash.register_page(__name__, path="/", title="folioflex - Stocks", order=0)
+dash.register_page(__name__, path="/budget", title="folioflex - Budget", order=5)
+require_login(__name__)
+
+# get the prior month
+prior_month = (datetime.datetime.now() - relativedelta(months=1)).strftime("%Y-%m")
+
 
 #   _                            _
 #  | |    __ _ _   _  ___  _   _| |_
@@ -20,28 +30,22 @@ dash.register_page(__name__, path="/", title="folioflex - Stocks", order=0)
 #              |___/
 
 
-def layout(login_status, login_alert):
+def layout():
     """Create layout for the personal dashboard."""
+    if not current_user.is_authenticated:
+        return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])
     return html.Div(
         [
             # adding variables needed that are used in callbacks.
             *dashboard_helper.get_defaults(),
-            dcc.Store(id="login-status", data=login_status),
-            html.Div(id="login-alert", children=login_alert, style={"display": "none"}),
             # ---------------------------------------------------------------
-            html.Div(
-                [
-                    dashboard_helper.get_menu(),
-                ],
-                className="row",
-            ),
             html.Div(
                 [
                     html.Label("Date (YYYY-MM)", style={"paddingRight": "10px"}),
                     dcc.Input(
                         id="budget-chart-input",
-                        placeholder="Enter Date...",
-                        type="string",
+                        value=prior_month,
+                        type="text",
                         style={"marginRight": "10px"},
                     ),
                 ],

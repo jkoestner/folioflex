@@ -1,80 +1,33 @@
-"""Login dashboard."""
+"""
+Dashboard login.
+
+inspired by:
+https://community.plotly.com/t/dash-app-pages-with-flask-login-flow-using-flask/69507
+"""
 
 import dash
-from dash import Input, Output, State, callback, dcc, html
+from dash import dcc, html
 
-from folioflex.dashboard.utils import dashboard_helper
-from folioflex.utils import config_helper, custom_logger
+dash.register_page(__name__)
 
-logger = custom_logger.setup_logging(__name__)
-
-dash.register_page(__name__, path="/", title="folioflex - Stocks", order=0)
-
-#   _                            _
-#  | |    __ _ _   _  ___  _   _| |_
-#  | |   / _` | | | |/ _ \| | | | __|
-#  | |__| (_| | |_| | (_) | |_| | |_
-#  |_____\__,_|\__, |\___/ \__,_|\__|
-#              |___/
-
-
-def layout(login_status, login_alert):
-    """Login layout."""
-    return html.Div(
-        [
-            # adding variables needed that are used in callbacks.
-            dcc.Store(id="login-status", data=login_status),
-            # ---------------------------------------------------------------
-            dashboard_helper.get_menu(),
-            dcc.Input(id="username", type="text", placeholder="Enter username"),
-            dcc.Input(id="password", type="password", placeholder="Enter password"),
-            html.Button("Login", id="login-button"),
-            html.Div(id="login-alert", children=login_alert),
-        ]
-    )
-
-
-#    ____      _ _ _                _
-#   / ___|__ _| | | |__   __ _  ___| | _____
-#  | |   / _` | | | '_ \ / _` |/ __| |/ / __|
-#  | |__| (_| | | | |_) | (_| | (__|   <\__ \
-#   \____\__,_|_|_|_.__/ \__,_|\___|_|\_\___/
-
-
-# User credentials
-# dictionary of username and password
-# e.g. {"username": "password"}
-credentials = {config_helper.FFX_USERNAME: config_helper.FFX_PASSWORD}
-
-
-@callback(
+# Login screen
+layout = html.Form(
     [
-        Output("login-status", "data"),
-        Output("login-alert", "children"),
+        html.H2("Please log in to continue:", id="h1"),
+        dcc.Input(
+            placeholder="Enter your username",
+            type="text",
+            id="uname-box",
+            name="username",
+        ),
+        dcc.Input(
+            placeholder="Enter your password",
+            type="password",
+            id="pwd-box",
+            name="password",
+        ),
+        html.Button(children="Login", n_clicks=0, type="submit", id="login-button"),
+        html.Div(children="", id="output-state"),
     ],
-    Input("login-button", "n_clicks"),
-    [State("username", "value"), State("password", "value")],
-    prevent_initial_call=True,
+    method="POST",
 )
-def validate_login(n_clicks, username, password):
-    """Validate login credentials."""
-    if not n_clicks:
-        # Return empty values if the button has not been clicked yet
-        return (
-            dash.no_update,
-            dash.no_update,
-        )
-    elif (
-        username is not None
-        and password is not None
-        and (username, password) in credentials.items()
-    ):
-        return (
-            {"logged_in": True},
-            "Success (switch pages to see the change)",
-        )
-    else:
-        return (
-            {"logged_in": False},
-            "Invalid Credentials",
-        )

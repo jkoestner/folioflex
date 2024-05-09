@@ -15,9 +15,8 @@ dependencies = [
     "ipywidgets>=8.1.0",
     "fredapi>=0.4.3",
     "jupyter-dash>=0.4.2",
-    "jupyterlab>=4.0.5",
-    "jupyterlab-code-formatter>=2.2.1",
-    "kaleido>=0.1.0,<0.2.0",            # as of Kaleido 0.2.1, the image processig is too slow.
+    "jupyterlab>=4.0.10",
+    "kaleido>=0.1.0,<0.2.0",          # as of Kaleido 0.2.1, the image processig is too slow.
     "numpy>=1.22.3",
     "openpyxl>=3.0.7",
     "pandas>=0.25.0",
@@ -60,10 +59,11 @@ dependencies = [
 dev = [
     "black>=23.7.0",
     "isort>=5.13.2",
+    "jupyterlab-code-formatter>=2.2.1",
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
     "ruff>=0.1.5",
-    "sphinx>=6.0, <7.2",       # 7.2 breaks the docs build
+    "sphinx>=6.0, <7.2",                # 7.2 breaks the docs build
     "sphinx_rtd_theme>=1.2.2",
 ]
 
