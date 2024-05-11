@@ -17,7 +17,7 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import Input, Output, callback, dcc, html
 
-from folioflex.dashboard.components.auth import server
+from folioflex.dashboard.components import auth
 from folioflex.utils import custom_logger
 
 #      _    ____  ____
@@ -31,7 +31,7 @@ dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.mi
 # app configs
 app = dash.Dash(
     __name__,
-    server=server,
+    server=auth.server,
     use_pages=True,
     external_stylesheets=[
         dbc_css,
@@ -56,7 +56,7 @@ navbar = dbc.Navbar(
                 [
                     dbc.Col(
                         html.Img(
-                            src=app.get_asset_url("folioflex_logo.ico"), height="40px"
+                            src=app.get_asset_url("folioflex_logo.png"), height="40px"
                         )
                     ),
                     dbc.Col(
