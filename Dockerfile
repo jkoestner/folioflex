@@ -18,6 +18,7 @@ WORKDIR /code
 # COPY files for web dashboard
 COPY ./folioflex/dashboard/app.py /code/
 COPY ./folioflex/dashboard/assets /code/assets/
+COPY ./folioflex/dashboard/pages /code/pages/
 
 # Install requirements (without copying the whole directory)
 RUN pip install --no-cache-dir "git+https://github.com/jkoestner/folioflex.git@main"
