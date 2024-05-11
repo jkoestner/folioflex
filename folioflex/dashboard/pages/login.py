@@ -13,7 +13,7 @@ dash.register_page(__name__)
 # Login screen
 layout = html.Form(
     [
-        html.H2("Please log in to continue:", id="h1"),
+        html.H4("Please log in to continue:", id="h1"),
         dcc.Input(
             placeholder="Enter your username",
             type="text",

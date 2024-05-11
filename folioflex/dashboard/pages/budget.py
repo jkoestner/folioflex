@@ -3,11 +3,11 @@
 import datetime
 
 import dash
+import dash_bootstrap_components as dbc
 import plotly.graph_objs as go
 from dash import Input, Output, State, callback, dcc, html
 from dateutil.relativedelta import relativedelta
 from flask_login import current_user
-from utils.login_handler import require_login
 
 from folioflex.budget import budget
 from folioflex.dashboard.utils import dashboard_helper
@@ -16,7 +16,6 @@ from folioflex.utils import custom_logger
 logger = custom_logger.setup_logging(__name__)
 
 dash.register_page(__name__, path="/budget", title="folioflex - Budget", order=5)
-require_login(__name__)
 
 # get the prior month
 prior_month = (datetime.datetime.now() - relativedelta(months=1)).strftime("%Y-%m")
@@ -41,12 +40,18 @@ def layout():
             # ---------------------------------------------------------------
             html.Div(
                 [
-                    html.Label("Date (YYYY-MM)", style={"paddingRight": "10px"}),
-                    dcc.Input(
-                        id="budget-chart-input",
-                        value=prior_month,
-                        type="text",
-                        style={"marginRight": "10px"},
+                    dbc.Col(
+                        [
+                            html.Label(
+                                "Date (YYYY-MM)", style={"paddingRight": "10px"}
+                            ),
+                            dcc.Input(
+                                id="budget-chart-input",
+                                value=prior_month,
+                                type="text",
+                                style={"marginRight": "10px"},
+                            ),
+                        ]
                     ),
                 ],
                 style={"display": "flex", "alignItems": "center"},
@@ -55,19 +60,29 @@ def layout():
             html.Div(
                 [
                     # budget chart
-                    html.Button("Budget Chart", id="budget-chart-button", n_clicks=0),
+                    dbc.Col(
+                        html.Button(
+                            "Budget Chart", id="budget-chart-button", n_clicks=0
+                        ),
+                    ),
                     dcc.Graph(
                         id="budget-chart",
                     ),
                     html.Div(id="budget-chart-labels", children=""),
                     # income chart
-                    html.Button("Income Chart", id="income-chart-button", n_clicks=0),
+                    dbc.Col(
+                        html.Button(
+                            "Income Chart", id="income-chart-button", n_clicks=0
+                        ),
+                    ),
                     dcc.Graph(
                         id="income-chart",
                     ),
                     # compare chart
-                    html.Button(
-                        "Compare Chart", id="budget-compare-button", n_clicks=0
+                    dbc.Col(
+                        html.Button(
+                            "Compare Chart", id="budget-compare-button", n_clicks=0
+                        ),
                     ),
                     dcc.Graph(
                         id="compare-chart",

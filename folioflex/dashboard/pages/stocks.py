@@ -1,6 +1,7 @@
 """Stocks dashboard."""
 
 import dash
+import dash_bootstrap_components as dbc
 from dash import Input, Output, State, callback, dash_table, dcc, html
 
 from folioflex.dashboard.components import layouts
@@ -38,17 +39,25 @@ def layout():
                     """
                     ),
                     html.P(),
-                    dcc.Input(
-                        id="stock-input", placeholder="Enter Stock...", type="text"
-                    ),
-                    html.Button("Active Submit", id="active-button", n_clicks=0),
-                    html.Button("Stock Submit", id="stock-button", n_clicks=0),
-                    html.Button("Quote Submit", id="quote-button", n_clicks=0),
-                    html.Button("News Submit", id="news-button", n_clicks=0),
-                    html.Button(
-                        "Insider Summary Submit",
-                        id="insider-summary-button",
-                        n_clicks=0,
+                    dbc.Col(
+                        [
+                            dcc.Input(
+                                id="stock-input",
+                                placeholder="Enter Stock...",
+                                type="text",
+                            ),
+                            html.Button(
+                                "Active Submit", id="active-button", n_clicks=0
+                            ),
+                            html.Button("Stock Submit", id="stock-button", n_clicks=0),
+                            html.Button("Quote Submit", id="quote-button", n_clicks=0),
+                            html.Button("News Submit", id="news-button", n_clicks=0),
+                            html.Button(
+                                "Insider Summary Submit",
+                                id="insider-summary-button",
+                                n_clicks=0,
+                            ),
+                        ]
                     ),
                 ],
                 className="row",

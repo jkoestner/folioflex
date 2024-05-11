@@ -3,6 +3,7 @@
 from io import StringIO
 
 import dash
+import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objs as go
 from celery.result import AsyncResult
@@ -33,8 +34,10 @@ def layout():
             # ---------------------------------------------------------------
             html.Div(
                 [
-                    html.Button(
-                        "Sector initialize", id="sector-initialize", n_clicks=0
+                    dbc.Col(
+                        html.Button(
+                            "Sector initialize", id="sector-initialize", n_clicks=0
+                        ),
                     ),
                     html.Div(id="refresh_text", children="none"),
                     # graph
@@ -64,8 +67,10 @@ def layout():
                     html.P(),
                     html.P(),
                     # heatmap graph
-                    html.Button(
-                        "Heatmap initialize", id="heatmap-initialize", n_clicks=0
+                    dbc.Col(
+                        html.Button(
+                            "Heatmap initialize", id="heatmap-initialize", n_clicks=0
+                        ),
                     ),
                     dcc.Graph(
                         id="Heatmap-Graph",

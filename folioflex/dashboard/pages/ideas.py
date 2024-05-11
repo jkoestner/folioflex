@@ -1,6 +1,7 @@
 """Ideas dashboard."""
 
 import dash
+import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, State, callback, dash_table, dcc, html
 
@@ -38,10 +39,16 @@ def layout():
                     """
                     ),
                     html.P(),
-                    dcc.Input(
-                        id="idea-input", placeholder="Enter Stock...", type="text"
+                    dbc.Col(
+                        [
+                            dcc.Input(
+                                id="idea-input",
+                                placeholder="Enter Stock...",
+                                type="text",
+                            ),
+                            html.Button("SMA Submit", id="sma-button", n_clicks=0),
+                        ]
                     ),
-                    html.Button("SMA Submit", id="sma-button", n_clicks=0),
                     html.P(),
                     # creating fed fund rate
                     html.A(

@@ -13,6 +13,6 @@ def layout():
         logout_user()
     return html.Div(
         [
-            html.Div(html.H2("You have been logged out")),
+            html.Div(html.H4("You have been logged out")),
         ]
     )

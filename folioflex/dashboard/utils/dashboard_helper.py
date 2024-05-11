@@ -12,44 +12,6 @@ from dash import dcc, html
 from dateutil.relativedelta import relativedelta
 
 
-def get_menu():
-    """Provide menu for pages."""
-    menu = html.Div(
-        [
-            dcc.Link(
-                "Stocks   ",
-                href="/stocks",
-            ),
-            dcc.Link(
-                "Sectors   ",
-                href="/sectors",
-                style={"padding": 10},
-            ),
-            dcc.Link(
-                "Ideas   ",
-                href="/ideas",
-                style={"padding": 10},
-            ),
-            dcc.Link(
-                "Macro   ",
-                href="/macro",
-                style={"padding": 10},
-            ),
-            dcc.Link(
-                "Personal   ",
-                href="/personal",
-                style={"padding": 10},
-            ),
-            dcc.Link(
-                "Budget   ",
-                href="/budget",
-                style={"padding": 10},
-            ),
-        ]
-    )
-    return menu
-
-
 def get_defaults():
     """Provide default initializations for pages."""
     # TODO

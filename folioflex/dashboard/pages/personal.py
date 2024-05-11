@@ -1,20 +1,19 @@
 """Personal dashboard."""
 
 import dash
+import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objs as go
 from celery.result import AsyncResult
 from dash import Input, Output, State, callback, dash_table, dcc, html
 from dash.dash_table.Format import Format, Scheme
 from flask_login import current_user
-from utils.login_handler import require_login
 
 from folioflex.dashboard.components import layouts
 from folioflex.dashboard.utils import dashboard_helper
 from folioflex.utils import config_helper, cq, custom_logger
 
 logger = custom_logger.setup_logging(__name__)
-require_login(__name__)
 
 
 dash.register_page(__name__, path="/personal", title="folioflex - Personal", order=4)
@@ -44,12 +43,16 @@ def layout():
             # ---------------------------------------------------------------
             html.Div(
                 [
-                    html.Label("Lookback", style={"paddingRight": "10px"}),
-                    dcc.Input(
-                        id="lookback-input",
-                        placeholder="Enter Lookback...",
-                        type="number",
-                        style={"marginRight": "10px"},
+                    dbc.Col(
+                        [
+                            html.Label("Lookback", style={"paddingRight": "10px"}),
+                            dcc.Input(
+                                id="lookback-input",
+                                placeholder="Enter Lookback...",
+                                type="number",
+                                style={"marginRight": "10px"},
+                            ),
+                        ]
                     ),
                 ],
                 style={"display": "flex", "alignItems": "center"},
@@ -58,10 +61,14 @@ def layout():
             html.Div(
                 [
                     html.P(),
-                    html.Button(
-                        "Portfolio Manager", id="manager-initialize", n_clicks=0
+                    dbc.Col(
+                        [
+                            html.Button(
+                                "Portfolio Manager", id="manager-initialize", n_clicks=0
+                            ),
+                            html.Div(id="manager_refresh_text", children=""),
+                        ]
                     ),
-                    html.Div(id="manager_refresh_text", children=""),
                     # creating table for portfolio manager
                     html.Label("Portfolio Manager Table"),
                     dash_table.DataTable(
@@ -76,12 +83,18 @@ def layout():
             html.Div(
                 [
                     # initializing the portfolio
-                    html.Button("Portfolio", id="personal-initialize", n_clicks=0),
-                    dcc.Dropdown(
-                        portfolio_list,
-                        id="personal-dropdown",
+                    dbc.Col(
+                        [
+                            html.Button(
+                                "Portfolio", id="personal-initialize", n_clicks=0
+                            ),
+                            dcc.Dropdown(
+                                portfolio_list,
+                                id="personal-dropdown",
+                            ),
+                            html.Div(id="personal_refresh_text", children=""),
+                        ]
                     ),
-                    html.Div(id="personal_refresh_text", children=""),
                     # graph
                     dcc.Graph(
                         id="personal_graph",
