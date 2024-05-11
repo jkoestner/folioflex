@@ -1,14 +1,25 @@
 """Macro dashboard."""
 
+import dash
 from dash import dash_table, dcc, html
 
-from folioflex.dashboard import dashboard_helper
+from folioflex.dashboard.utils import dashboard_helper
 from folioflex.portfolio.wrappers import BLS, Fred, TradingView
+from folioflex.utils import custom_logger
 
-# Creating the dash app
+logger = custom_logger.setup_logging(__name__)
+
+dash.register_page(__name__, path="/macro", title="folioflex - Macro", order=2)
+
+#   _                            _
+#  | |    __ _ _   _  ___  _   _| |_
+#  | |   / _` | | | |/ _ \| | | | __|
+#  | |__| (_| | |_| | (_) | |_| | |_
+#  |_____\__,_|\__, |\___/ \__,_|\__|
+#              |___/
 
 
-def layout(login_status, login_alert):
+def layout():
     """Macro layout."""
     # getting data from wrappers
     fred_summary = Fred().get_summary()
@@ -75,85 +86,65 @@ def layout(login_status, login_alert):
         [
             # adding variables needed that are used in callbacks.
             *dashboard_helper.get_defaults(),
-            dcc.Store(id="login-status", data=login_status),
-            html.Div(id="login-alert", children=login_alert, style={"display": "none"}),
             # ---------------------------------------------------------------
-            # menu section
-            html.Div(
-                [
-                    dashboard_helper.get_menu(),
-                    dcc.Markdown(
-                        """
+            dcc.Markdown(
+                """
                         Macro indicators
                         """
-                    ),
-                    html.P(),
-                ],
-                className="row",
             ),
+            html.P(),
             # key indicators section
             html.Div(
-                [
-                    html.Div(
-                        indicators_table,
-                        className="four columns",
-                    ),
-                ],
-                className="row",
+                indicators_table,
+                className="four columns",
             ),
             # economic calendar section
             html.Div(
                 [
-                    html.Div(
-                        [
-                            # creating economic calendar
-                            html.A(
-                                "Economic Calendar",
-                                href="https://www.tradingview.com/economic-calendar/",
-                                target="_blank",
-                            ),
-                            dash_table.DataTable(
-                                id="economic-calendar",
-                                columns=[
-                                    {"name": i, "id": i}
-                                    for i in economic_calendar.columns
-                                ],
-                                data=economic_calendar.to_dict("records"),
-                                style_cell={
-                                    "whiteSpace": "normal",
-                                    "height": "auto",
-                                    "textAlign": "left",
-                                },
-                                style_cell_conditional=[
-                                    # Apply a default width to all columns
-                                    {
-                                        "if": {"column_id": c},
-                                        "minWidth": "50px",
-                                        "width": "150px",
-                                        "maxWidth": "180px",
-                                    }
-                                    for c in economic_calendar.columns
-                                    if c != "comment"
-                                ]
-                                + [
-                                    # Specifically targeting the 'comment'
-                                    # column to have a larger width
-                                    {
-                                        "if": {"column_id": "comment"},
-                                        "minWidth": "150px",
-                                        "width": "2400px",
-                                        "maxWidth": "2450px",
-                                    },
-                                ],
-                                style_table={"overflowX": "auto"},
-                                page_action="none",
-                                style_data={"overflow": "hidden"},
-                            ),
+                    # creating economic calendar
+                    html.A(
+                        "Economic Calendar",
+                        href="https://www.tradingview.com/economic-calendar/",
+                        target="_blank",
+                    ),
+                    dash_table.DataTable(
+                        id="economic-calendar",
+                        columns=[
+                            {"name": i, "id": i} for i in economic_calendar.columns
                         ],
-                        className="ten columns",
+                        data=economic_calendar.to_dict("records"),
+                        style_cell={
+                            "whiteSpace": "normal",
+                            "height": "auto",
+                            "textAlign": "left",
+                        },
+                        style_cell_conditional=[
+                            # Apply a default width to all columns
+                            {
+                                "if": {"column_id": c},
+                                "minWidth": "50px",
+                                "width": "150px",
+                                "maxWidth": "180px",
+                            }
+                            for c in economic_calendar.columns
+                            if c != "comment"
+                        ]
+                        + [
+                            # Specifically targeting the 'comment'
+                            # column to have a larger width
+                            {
+                                "if": {"column_id": "comment"},
+                                "minWidth": "150px",
+                                "width": "2400px",
+                                "maxWidth": "2450px",
+                            },
+                        ],
+                        style_table={"overflowX": "auto"},
+                        page_action="none",
+                        style_data={"overflow": "hidden"},
                     ),
                 ],
-                className="row",
+                className="ten columns",
             ),
         ]
     )

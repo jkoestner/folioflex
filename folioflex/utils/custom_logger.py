@@ -3,6 +3,10 @@ Custom logger with color formatter.
 
 inspired by:
 https://gist.github.com/joshbode/58fac7ababc700f51e2a9ecdebe563ad
+
+The Jupyter formatter exists due to issues with getting a colored output.
+The following issue describes why the formatter doesn't work.
+https://github.com/seleniumbase/SeleniumBase/issues/2592
 """
 
 import logging
@@ -139,7 +143,7 @@ def setup_logging(name="folioflex"):
     return folioflex_logger
 
 
-def set_log_level(new_level):
+def set_log_level(new_level, module_prefix="folioflex"):
     """
     Set the log level.
 
@@ -147,6 +151,8 @@ def set_log_level(new_level):
     ----------
     new_level : int
         the new log level
+    module_prefix : str
+        the module logger prefix to set the log level for
 
     """
     options = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -155,9 +161,34 @@ def set_log_level(new_level):
     # update the log level for all project loggers
     for logger_name, logger in logging.Logger.manager.loggerDict.items():
         # Check if the logger's name starts with the specified prefix
-        if logger_name.startswith("folioflex"):
+        if logger_name.startswith(module_prefix):
             if isinstance(logger, logging.Logger):
                 logger.setLevel(new_level)
+
+
+def get_log_level(module_prefix="folioflex"):
+    """
+    Get the log level.
+
+    Parameters
+    ----------
+    module_prefix : str
+        the module logger prefix to get the log level for
+
+    Returns
+    -------
+    str
+        the log level
+
+    """
+    log_level = None
+    for logger_name, logger in logging.Logger.manager.loggerDict.items():
+        # Check if the logger's name starts with the specified prefix
+        if logger_name.startswith(module_prefix):
+            if isinstance(logger, logging.Logger):
+                log_level = logging.getLevelName(logger.getEffectiveLevel())
+                break
+    return log_level
 
 
 def test_logger(level="DEBUG"):

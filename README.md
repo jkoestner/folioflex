@@ -13,19 +13,21 @@ Simple investment portfolio tool that will track stock and provide returns and o
 
 
 ## Table of Contents
-- [Overview](#overview)
-- [Installation](#installation)
-  - [Local Install](#local-install)
-  - [Docker Install](#docker-install)
-- [Usage](#usage)
-  - [CLI](#cli)
-  - [Python](#python)
-  - [Web Dashboard](#web-dashboard---invest)
-  - [Plaid Dashboard](#plaid-dashboard)
-- [Other Tools](#other-tools)
-  - [Jupyter Lab Usage](#jupyter-lab-usage)
-  - [Logging](#logging)
-  - [Coverage](#coverage)
+- [Portfolio](#portfolio)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Installation](#installation)
+    - [Local Install](#local-install)
+    - [Docker Install](#docker-install)
+  - [Usage](#usage)
+    - [CLI](#cli)
+    - [Python](#python)
+    - [Web Dashboard - Invest](#web-dashboard---invest)
+    - [Plaid Dashboard](#plaid-dashboard)
+  - [Other Tools](#other-tools)
+    - [Jupyter Lab Usage](#jupyter-lab-usage)
+    - [Logging](#logging)
+    - [Coverage](#coverage)
 
 ## Overview
 
@@ -38,13 +40,13 @@ Simple investment portfolio tool that will track stock and provide returns and o
 **🔧 Features:**
 
 - **Market Screener**: Filter and find trending stocks. 🔍
-![screener](assets/screenshots/screener.png)
-![heatmap](assets/screenshots/heatmap.png)
+![screener](docs/screenshots/screener.png)
+![heatmap](docs/screenshots/heatmap.png)
 - **Portfolio Management**: Organize and track, your investments. 💼
-![portfolio](assets/screenshots/portfolio.png)
+![portfolio](docs/screenshots/portfolio.png)
 - **Budget Tool**: Create and monitor a budget. 💰
-![budget](assets/screenshots/budget.png)
-![budget_compare](assets/screenshots/budget_compare.png)
+![budget](docs/screenshots/budget.png)
+![budget_compare](docs/screenshots/budget_compare.png)
 
 **📚 Documentation:**
 
@@ -82,11 +84,8 @@ pip install folioflex
 Other options can be installed if using more functionality
 
 ```
-pip install folioflex[budget] # if using the budget modules
+pip install folioflex
 pip install folioflex[dev]    # if needing to develop or lint
-pip install folioflex[gpt]    # if using the mailer or gpt code
-pip install folioflex[web]    # if using the web dashboard
-pip install folioflex[worker] # if using the web dashboard
 ``````
 
 Or could be done using GitHub.

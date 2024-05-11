@@ -1,21 +1,33 @@
-"""Login dashboard."""
+"""
+Dashboard login.
 
+inspired by:
+https://community.plotly.com/t/dash-app-pages-with-flask-login-flow-using-flask/69507
+"""
+
+import dash
 from dash import dcc, html
 
-from folioflex.dashboard import dashboard_helper
+dash.register_page(__name__)
 
-
-def layout(login_status, login_alert):
-    """Login layout."""
-    return html.Div(
-        [
-            # adding variables needed that are used in callbacks.
-            dcc.Store(id="login-status", data=login_status),
-            # ---------------------------------------------------------------
-            dashboard_helper.get_menu(),
-            dcc.Input(id="username", type="text", placeholder="Enter username"),
-            dcc.Input(id="password", type="password", placeholder="Enter password"),
-            html.Button("Login", id="login-button"),
-            html.Div(id="login-alert", children=login_alert),
-        ]
-    )
+# Login screen
+layout = html.Form(
+    [
+        html.H4("Please log in to continue:", id="h1"),
+        dcc.Input(
+            placeholder="Enter your username",
+            type="text",
+            id="uname-box",
+            name="username",
+        ),
+        dcc.Input(
+            placeholder="Enter your password",
+            type="password",
+            id="pwd-box",
+            name="password",
+        ),
+        html.Button(children="Login", n_clicks=0, type="submit", id="login-button"),
+        html.Div(children="", id="output-state"),
+    ],
+    method="POST",
+)
