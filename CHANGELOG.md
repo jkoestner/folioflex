@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.2.1](https://github.com/jkoestner/folioflex/tree/v1.2.1)
+
+[Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.2.0...v1.2.1)
+
+**Enhancements**
+- refactor dashboard
+
 ## [v1.2.0](https://github.com/jkoestner/folioflex/tree/v1.2.0)
 
 [Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.1.0...v1.2.0)
