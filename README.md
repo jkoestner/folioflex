@@ -118,7 +118,7 @@ services:
   folioflex-web:
     image: dmbymdt/folioflex:latest
     container_name: folioflex-web
-    command: gunicorn -b 0.0.0.0:8001 app:server
+    command: gunicorn -b 0.0.0.0:8001 folioflex.dashboard.app:server
     restart: unless-stopped
     environment:
       FFX_CONFIG_PATH: /code/folioflex/configs

@@ -27,11 +27,12 @@ from folioflex.utils import custom_logger
 #  /_/   \_\_|   |_|
 
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
+server = auth.server
 
 # app configs
 app = dash.Dash(
     __name__,
-    server=auth.server,
+    server=server,
     use_pages=True,
     external_stylesheets=[
         dbc_css,
