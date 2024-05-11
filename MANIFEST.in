@@ -1,2 +1,3 @@
 # MANIFEST is used to include files in the distribution for setuptools
 graft folioflex/configs
+graft folioflex/dashboard/assets
