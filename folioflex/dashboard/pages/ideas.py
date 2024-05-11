@@ -28,51 +28,38 @@ def layout():
             # adding variables needed that are used in callbacks.
             *dashboard_helper.get_defaults(),
             # ---------------------------------------------------------------
-            html.Div(
-                [
-                    dcc.Markdown(
-                        """
-                    Momentum and Value are 2 metrics that determine the viability of investing in the market.
-                    **12 mo Moving Average** - current price of market is greater than the 12 month moving average.
-                    **12 mo TMOM** - 12 month return is greater than the return of the 10 year treasury bond
-                    It's recommended to do 50% of investment in one method and 50% in other
+            dcc.Markdown(
+                """
+                    Momentum and Value are 2 metrics that determine the viability of
+                    investing in the market. **12 mo Moving Average** - current price
+                    of market is greater than the 12 month moving average. **12 mo
+                    TMOM** - 12 month return is greater than the return of the 10
+                    year treasury bond It's recommended to do 50% of
+                    investment in one method and 50% in other
                     """
-                    ),
-                    html.P(),
-                    dbc.Col(
-                        [
-                            dcc.Input(
-                                id="idea-input",
-                                placeholder="Enter Stock...",
-                                type="text",
-                            ),
-                            html.Button("SMA Submit", id="sma-button", n_clicks=0),
-                        ]
-                    ),
-                    html.P(),
-                    # creating fed fund rate
-                    html.A(
-                        "10-Year Treasury",
-                        href="https://fred.stlouisfed.org/series/DGS10",
-                        target="_blank",
-                    ),
-                ],
-                className="row",
             ),
-            html.Div(
+            html.P(),
+            dbc.Col(
                 [
-                    html.Div(
-                        [
-                            # simple moving average
-                            dash_table.DataTable(
-                                id="sma-table",
-                                page_action="native",
-                            ),
-                        ],
-                        className="three columns",
+                    dcc.Input(
+                        id="idea-input",
+                        placeholder="Enter Stock...",
+                        type="text",
                     ),
-                ],
-                className="row",
+                    html.Button("SMA Submit", id="sma-button", n_clicks=0),
+                ]
+            ),
+            html.P(),
+            # creating fed fund rate
+            html.A(
+                "10-Year Treasury",
+                href="https://fred.stlouisfed.org/series/DGS10",
+                target="_blank",
+            ),
+            # simple moving average
+            dash_table.DataTable(
+                id="sma-table",
+                page_action="native",
             ),
         ]
     )

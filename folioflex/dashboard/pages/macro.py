@@ -87,81 +87,64 @@ def layout():
             # adding variables needed that are used in callbacks.
             *dashboard_helper.get_defaults(),
             # ---------------------------------------------------------------
-            # menu section
-            html.Div(
-                [
-                    dcc.Markdown(
-                        """
+            dcc.Markdown(
+                """
                         Macro indicators
                         """
-                    ),
-                    html.P(),
-                ],
-                className="row",
             ),
+            html.P(),
             # key indicators section
             html.Div(
-                [
-                    html.Div(
-                        indicators_table,
-                        className="four columns",
-                    ),
-                ],
-                className="row",
+                indicators_table,
+                className="four columns",
             ),
             # economic calendar section
             html.Div(
                 [
-                    html.Div(
-                        [
-                            # creating economic calendar
-                            html.A(
-                                "Economic Calendar",
-                                href="https://www.tradingview.com/economic-calendar/",
-                                target="_blank",
-                            ),
-                            dash_table.DataTable(
-                                id="economic-calendar",
-                                columns=[
-                                    {"name": i, "id": i}
-                                    for i in economic_calendar.columns
-                                ],
-                                data=economic_calendar.to_dict("records"),
-                                style_cell={
-                                    "whiteSpace": "normal",
-                                    "height": "auto",
-                                    "textAlign": "left",
-                                },
-                                style_cell_conditional=[
-                                    # Apply a default width to all columns
-                                    {
-                                        "if": {"column_id": c},
-                                        "minWidth": "50px",
-                                        "width": "150px",
-                                        "maxWidth": "180px",
-                                    }
-                                    for c in economic_calendar.columns
-                                    if c != "comment"
-                                ]
-                                + [
-                                    # Specifically targeting the 'comment'
-                                    # column to have a larger width
-                                    {
-                                        "if": {"column_id": "comment"},
-                                        "minWidth": "150px",
-                                        "width": "2400px",
-                                        "maxWidth": "2450px",
-                                    },
-                                ],
-                                style_table={"overflowX": "auto"},
-                                page_action="none",
-                                style_data={"overflow": "hidden"},
-                            ),
+                    # creating economic calendar
+                    html.A(
+                        "Economic Calendar",
+                        href="https://www.tradingview.com/economic-calendar/",
+                        target="_blank",
+                    ),
+                    dash_table.DataTable(
+                        id="economic-calendar",
+                        columns=[
+                            {"name": i, "id": i} for i in economic_calendar.columns
                         ],
-                        className="ten columns",
+                        data=economic_calendar.to_dict("records"),
+                        style_cell={
+                            "whiteSpace": "normal",
+                            "height": "auto",
+                            "textAlign": "left",
+                        },
+                        style_cell_conditional=[
+                            # Apply a default width to all columns
+                            {
+                                "if": {"column_id": c},
+                                "minWidth": "50px",
+                                "width": "150px",
+                                "maxWidth": "180px",
+                            }
+                            for c in economic_calendar.columns
+                            if c != "comment"
+                        ]
+                        + [
+                            # Specifically targeting the 'comment'
+                            # column to have a larger width
+                            {
+                                "if": {"column_id": "comment"},
+                                "minWidth": "150px",
+                                "width": "2400px",
+                                "maxWidth": "2450px",
+                            },
+                        ],
+                        style_table={"overflowX": "auto"},
+                        page_action="none",
+                        style_data={"overflow": "hidden"},
                     ),
                 ],
-                className="row",
+                className="ten columns",
             ),
         ]
     )

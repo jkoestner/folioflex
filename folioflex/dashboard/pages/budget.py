@@ -4,12 +4,11 @@ import datetime
 
 import dash
 import dash_bootstrap_components as dbc
-import plotly.graph_objs as go
 from dash import Input, Output, State, callback, dcc, html
 from dateutil.relativedelta import relativedelta
 from flask_login import current_user
 
-from folioflex.budget import budget
+from folioflex.budget import budget, models
 from folioflex.dashboard.utils import dashboard_helper
 from folioflex.utils import custom_logger
 
@@ -38,57 +37,63 @@ def layout():
             # adding variables needed that are used in callbacks.
             *dashboard_helper.get_defaults(),
             # ---------------------------------------------------------------
-            html.Div(
+            dbc.Row(
                 [
                     dbc.Col(
-                        [
-                            html.Label(
-                                "Date (YYYY-MM)", style={"paddingRight": "10px"}
-                            ),
-                            dcc.Input(
-                                id="budget-chart-input",
-                                value=prior_month,
-                                type="text",
-                                style={"marginRight": "10px"},
-                            ),
-                        ]
+                        html.Label("Date (YYYY-MM)"),
+                        width="auto",
                     ),
-                ],
-                style={"display": "flex", "alignItems": "center"},
-                className="row",
+                    dbc.Col(
+                        dcc.Input(
+                            id="budget-chart-input",
+                            value=prior_month,
+                            type="text",
+                        ),
+                        width="auto",
+                    ),
+                ]
             ),
-            html.Div(
+            # budget chart
+            dbc.Row(
                 [
-                    # budget chart
+                    dbc.Col(
+                        html.Button("Budget Chart", id="budget-chart-button"),
+                        width="auto",
+                    ),
                     dbc.Col(
                         html.Button(
-                            "Budget Chart", id="budget-chart-button", n_clicks=0
+                            "Update Budget Database",
+                            id="budget-update-db-button",
                         ),
+                        width="auto",
                     ),
-                    dcc.Graph(
-                        id="budget-chart",
-                    ),
-                    html.Div(id="budget-chart-labels", children=""),
-                    # income chart
-                    dbc.Col(
-                        html.Button(
-                            "Income Chart", id="income-chart-button", n_clicks=0
-                        ),
-                    ),
-                    dcc.Graph(
-                        id="income-chart",
-                    ),
-                    # compare chart
-                    dbc.Col(
-                        html.Button(
-                            "Compare Chart", id="budget-compare-button", n_clicks=0
-                        ),
-                    ),
-                    dcc.Graph(
-                        id="compare-chart",
-                    ),
-                ],
-                className="row",
+                ]
+            ),
+            dcc.Graph(
+                id="budget-chart",
+            ),
+            html.Div(id="budget-chart-labels", children=""),
+            dbc.Toast(
+                "Updated database tables.",
+                id="toast-update-db",
+                header="Updated Database",
+                is_open=False,
+                dismissable=True,
+                icon="success",
+            ),
+            # income chart
+            dbc.Col(
+                html.Button("Income Chart", id="income-chart-button", n_clicks=0),
+            ),
+            dcc.Graph(
+                id="income-chart",
+            ),
+            # compare chart
+            dbc.Col(
+                html.Button("Compare Chart", id="budget-compare-button", n_clicks=0),
+            ),
+            dcc.Graph(
+                id="compare-chart",
             ),
         ]
     )
@@ -109,27 +114,19 @@ def layout():
     ],
     [Input("budget-chart-button", "n_clicks")],
     [State("budget-chart-input", "value")],
+    prevent_initial_call=True,
 )
 def update_budgetchart(n_clicks, input_value):
     """Provide budget info chart."""
-    if n_clicks == 0:
-        budget_chart = go.Figure()
-        budget_chart.add_annotation(
-            text="No data available", x=0.5, y=0.5, showarrow=False, font_size=20
-        )
-        budget_chart.update_layout(xaxis={"visible": False}, yaxis={"visible": False})
-        len_label = 0
-        len_unlabel = 0
-    else:
-        bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
-        budget_df = bdgt.get_transactions()
-        budget_df = bdgt.modify_transactions(budget_df)
-        budget_view = bdgt.budget_view(
-            budget_df, target_date=input_value, exclude_labels=["income"]
-        )
-        budget_chart = bdgt.display_budget_view(budget_view)
-        len_label = len(budget_df[~budget_df["label"].isnull()])
-        len_unlabel = len(budget_df[budget_df["label"].isnull()])
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    budget_df = bdgt.get_transactions()
+    budget_df = bdgt.modify_transactions(budget_df)
+    budget_view = bdgt.budget_view(
+        budget_df, target_date=input_value, exclude_labels=["income"]
+    )
+    budget_chart = bdgt.display_budget_view(budget_view)
+    len_label = len(budget_df[~budget_df["label"].isnull()])
+    len_unlabel = len(budget_df[budget_df["label"].isnull()])
 
     return budget_chart, f"Labeled: {len_label} | Unlabeled: {len_unlabel}"
 
@@ -139,20 +136,14 @@ def update_budgetchart(n_clicks, input_value):
     Output("income-chart", "figure"),
     [Input("income-chart-button", "n_clicks")],
     [State("budget-chart-input", "value")],
+    prevent_initial_call=True,
 )
 def update_incomeview(n_clicks, input_value):
     """Provide income info chart."""
-    if n_clicks == 0:
-        income_chart = go.Figure()
-        income_chart.add_annotation(
-            text="No data available", x=0.5, y=0.5, showarrow=False, font_size=20
-        )
-        income_chart.update_layout(xaxis={"visible": False}, yaxis={"visible": False})
-    else:
-        bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
-        budget_df = bdgt.get_transactions()
-        budget_df = bdgt.modify_transactions(budget_df)
-        income_chart = bdgt.display_income_view(budget_df)
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    budget_df = bdgt.get_transactions()
+    budget_df = bdgt.modify_transactions(budget_df)
+    income_chart = bdgt.display_income_view(budget_df)
 
     return income_chart
 
@@ -162,21 +153,42 @@ def update_incomeview(n_clicks, input_value):
     Output("compare-chart", "figure"),
     [Input("budget-compare-button", "n_clicks")],
     [State("budget-chart-input", "value")],
+    prevent_initial_call=True,
 )
 def update_comparechart(n_clicks, input_value):
     """Provide budget compare info chart."""
-    if n_clicks == 0:
-        compare_chart = go.Figure()
-        compare_chart.add_annotation(
-            text="No data available", x=0.5, y=0.5, showarrow=False, font_size=20
-        )
-        compare_chart.update_layout(xaxis={"visible": False}, yaxis={"visible": False})
-    else:
-        bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
-        budget_df = bdgt.get_transactions()
-        budget_df = bdgt.modify_transactions(budget_df)
-        compare_chart = bdgt.display_compare_expenses_view(
-            budget_df, target_date=input_value, avg_months=3
-        )
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    budget_df = bdgt.get_transactions()
+    budget_df = bdgt.modify_transactions(budget_df)
+    compare_chart = bdgt.display_compare_expenses_view(
+        budget_df, target_date=input_value, avg_months=3
+    )
 
     return compare_chart
+
+
+# update budget db
+@callback(
+    Output("toast-update-db", "is_open"),
+    [Input("budget-update-db-button", "n_clicks")],
+    prevent_initial_call=True,
+)
+def update_budget_db(n_clicks):
+    """Provide budget compare info chart."""
+    # get the unlabeled transactions
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    budget_df = bdgt.get_transactions()
+    train_df = budget_df[~budget_df["label"].isna()]
+    unlabeled_df = budget_df[budget_df["label"].isna()]
+
+    # use trained model to predict labels
+    model = models.Classifier(train_df=train_df)
+    model.load_model(model_name="components.pkl")
+    predict_df = model.predict_labels(
+        unlabeled_df=unlabeled_df, components=model.components
+    )
+
+    # update the database with the predicted labels
+    bdgt.update_labels_db(tx_df=predict_df, label_column="predicted_label")
+
+    return True
