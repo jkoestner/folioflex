@@ -4,6 +4,7 @@ import os
 
 import g4f
 import openai
+import pytest
 from hugchat import hugchat
 
 from folioflex.chatbot import providers
@@ -35,6 +36,7 @@ def test_g4f():
 #     assert response == "test", "Response not as expected."
 
 
+@pytest.mark.xfail
 # hugchat needs api key to be set in environment variable to login
 def test_hugchat():
     """Checks hugchat initialize."""

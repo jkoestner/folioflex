@@ -16,11 +16,11 @@ RUN apt-get update && \
 WORKDIR /code
 
 # COPY files for web dashboard
-COPY app.py /code/
-COPY ./assets /code/assets/
+COPY ./dashboard/app.py /code/
+COPY ./dashboard/assets /code/assets/
 
 # Install requirements (without copying the whole directory)
-RUN pip install --no-cache-dir "git+https://github.com/jkoestner/folioflex.git@main#egg=folioflex[budget]"
+RUN pip install --no-cache-dir "git+https://github.com/jkoestner/folioflex.git@main"
 
 # Create new user
 RUN adduser --disabled-password --gecos '' ffx && \
