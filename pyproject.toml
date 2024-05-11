@@ -34,6 +34,7 @@ dependencies = [
     "dash-table>=4.0.2",
     "Flask>=1.1.1",
     "Flask-Compress>=1.4.0",
+    "Flask-Login>=0.6.3",
     "gunicorn>=19.9.0",
 
     # worker
