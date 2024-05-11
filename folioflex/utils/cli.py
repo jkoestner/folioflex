@@ -4,6 +4,7 @@ import argparse
 import ast
 from argparse import ArgumentDefaultsHelpFormatter
 
+from folioflex.dashboard import app
 from folioflex.portfolio.portfolio import Manager, Portfolio
 from folioflex.utils import mailer
 
@@ -212,6 +213,9 @@ def _create_argparser():
         help=("The proxy to use for the chatbot - user:password@ip:port"),
     )
 
+    # subparser: dashboard
+    _dash_parser = _subparsers.add_parser("dash", help="dashboard command")
+
     return _parser
 
 
@@ -247,6 +251,9 @@ def cli():
             chatbot=args.chatbot,
         )
         print(f"status sent: {email_status}")
+
+    elif args.command == "dash":
+        app.app.run_server(debug=True)
 
 
 if __name__ == "__main__":
