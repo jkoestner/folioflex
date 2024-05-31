@@ -70,12 +70,12 @@ def scrape_html(
 
         # wsj
         if url.startswith("https://www.wsj.com/finance"):
-            url = "https://www.wsj.com/"
+            url = "https://www.wsj.com/finance"
             sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
             close_windows(sb, url)
             try:
                 logger.info("wsj has specific landing page")
-                sb.driver.uc_click("(//a[text()='Finance'])[2]")
+                # sb.driver.uc_click("(//a[text()='Finance'])[2]")
                 sb.driver.uc_click("(//p[contains(text(), 'View All')])[1]")
             except Exception:
                 logger.error("WSJ probably flagged bot: returning None")
