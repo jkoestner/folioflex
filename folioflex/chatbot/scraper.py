@@ -22,7 +22,7 @@ logger = custom_logger.setup_logging(__name__)
 
 def scrape_html(
     url,
-    scraper="bee",
+    scraper="selenium",
     **kwargs,
 ):
     """

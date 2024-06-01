@@ -217,7 +217,7 @@ def _create_argparser():
         "-s",
         "--scraper",
         type=str,
-        default="bee",
+        default="selenium",
         help=("The scraper to use for the chatbot - 'bee' or 'selenium'"),
     )
 
