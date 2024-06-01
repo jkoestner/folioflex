@@ -92,6 +92,7 @@ def generate_report(
     portfolio_performance=None,
     chatbot=False,
     proxy=None,
+    scraper="bee",
 ):
     """
     Generate report of portfolio performance and send to email.
@@ -138,6 +139,8 @@ def generate_report(
         Whether to use the chatbot to get the query
     proxy : str (optional)
         Proxy to use for the chatbot
+    scraper : str (optional)
+        Scraper to use for the chatbot, "bee" by default
 
     Returns
     -------
@@ -323,6 +326,7 @@ def generate_report(
             query="could you summarize this for me?",
             scrape_url=scrape_url,
             proxy=proxy,
+            scraper=scraper,
         )
         response = response.replace("\n", "<br>")
 

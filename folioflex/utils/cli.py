@@ -213,6 +213,14 @@ def _create_argparser():
         help=("The proxy to use for the chatbot - user:password@ip:port"),
     )
 
+    _email_parser.add_argument(
+        "-s",
+        "--scraper",
+        type=str,
+        default="bee",
+        help=("The scraper to use for the chatbot - 'bee' or 'selenium'"),
+    )
+
     # subparser: dashboard
     _dash_parser = _subparsers.add_parser("dash", help="dashboard command")
 
@@ -249,6 +257,8 @@ def cli():
             manager_performance=args.manager_performance,
             portfolio_performance=args.portfolio_performance,
             chatbot=args.chatbot,
+            proxy=args.proxy,
+            scraper=args.scraper,
         )
         print(f"status sent: {email_status}")
 

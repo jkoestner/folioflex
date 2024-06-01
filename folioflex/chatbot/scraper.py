@@ -142,6 +142,8 @@ def scrape_selenium(
     if extension_dir or config_helper.BROWSER_EXTENSION:
         logger.info("using extension location for browser")
         extension_dir = extension_dir or config_helper.BROWSER_EXTENSION
+    if proxy:
+        logger.info("using proxy for browser")
 
     with SB(
         uc=True,
