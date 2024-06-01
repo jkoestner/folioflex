@@ -315,24 +315,12 @@ def generate_report(
 
     if chatbot:
         chatbot = providers.GPTchat(provider="openai")
-        # get todays date and make sure it's a valid trading day to use in url
-        now = datetime.datetime.now()
-        start_hour = 8
-        if now.hour < start_hour:
-            today = datetime.date.today() - datetime.timedelta(days=1)
-        else:
-            today = datetime.date.today()
-        today = helper.check_stock_dates(today, fix=True, warning=False)["fix_tx_df"][
-            "date"
-        ][0]
-        formatted_today = today.strftime("%m-%d-%Y")
-
         # get the url to scrape
         scrape_url = "https://www.wsj.com/finance"
 
         # get the query
         response = chatbot.chat(
-            query=f"could you summarize this for me? {formatted_today}",
+            query="could you summarize this for me?",
             scrape_url=scrape_url,
             proxy=proxy,
         )

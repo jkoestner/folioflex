@@ -175,6 +175,7 @@ FFX_PASSWORD = get_config_options(config_file, "credentials").get("ffx_password"
 
 # apis
 FRED_API = get_config_options(config_file, "api").get("fred_api", None)
+SCRAPINGBEE_API = get_config_options(config_file, "api").get("scrapingbee_api", None)
 YODLEE_CLIENT_ID = get_config_options(config_file, "api").get("yodlee_client_id", None)
 YODLEE_SECRET = get_config_options(config_file, "api").get("yodlee_secret", None)
 YODLEE_ENDPOINT = get_config_options(config_file, "api").get("yodlee_endpoint", None)
