@@ -181,7 +181,7 @@ def fidelity(broker_file, output_file=None, broker="fidelity"):
     start_df_len = len(df)
 
     # update date column type
-    df["date"] = pd.to_datetime(df["run_date"], format="%m/%d/%Y").dt.date
+    df["date"] = pd.to_datetime(df["run_date"], format="%b-%d-%Y").dt.date
 
     # Loop through each type_lkup and update type
     for string, tag in type_lkup.items():
