@@ -56,6 +56,8 @@ def scrape_html(
             "date"
         ][0]
         formatted_today = today.strftime("%m-%d-%Y")
+
+        # go to url
         url = (
             "https://www.wsj.com/livecoverage/stock-market-today-dow-jones-earnings-"
             + formatted_today
@@ -154,8 +156,23 @@ def scrape_selenium(
         **kwargs,
     ) as sb:
         logger.info("initializing the driver")
-        sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
-        close_windows(sb, url)
+        # wsj has a specific landing page
+        if url.startswith("https://www.wsj.com/livecoverage"):
+            url = "https://www.wsj.com/finance"
+            sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
+            close_windows(sb, url)
+            try:
+                logger.info("wsj has specific landing page")
+                sb.driver.uc_click("(//p[contains(text(), 'View All')])[1]")
+            except Exception:
+                logger.error("WSJ probably flagged bot: returning None")
+                html_content = "<html><body><p>could not scrape wsj</p></body></html>"
+                soup = BeautifulSoup(html_content, "html.parser")
+                return soup
+        # all other
+        else:
+            sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
+            close_windows(sb, url)
         logger.info(f"scraping {sb.get_current_url()}")
         sb.sleep(wait_time)  # wait for page to load
         soup = sb.get_beautiful_soup()
