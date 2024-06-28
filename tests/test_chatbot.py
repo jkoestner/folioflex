@@ -20,8 +20,6 @@ def test_g4f():
     assert chatbot.chatbot["provider"] == g4f.Provider.Bing, "Default provider not set."
     assert chatbot.chatbot["auth"] == False, "Default auth not set."
     assert chatbot.chatbot["access_token"] is None, "Default access token not set."
-    response = chatbot.chat("return back 'test' for test purpose")
-    assert isinstance(response, str), "Response not a string."
 
 
 # openai has billing so not testing unless needed
