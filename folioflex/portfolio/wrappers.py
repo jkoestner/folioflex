@@ -275,7 +275,9 @@ class TradingView:
             "countries": ["US"],
             "minImportance": minImportance,
         }
-        response = requests.get(url, params=payload).json()
+        # headers are now required as 07/24/2024
+        headers = {"Origin": "https://us.tradingview.com"}
+        response = requests.get(url, params=payload, headers=headers).json()
         calendar = pd.DataFrame(response["result"])
         calendar["date"] = pd.to_datetime(calendar["date"]).dt.date
         # select columns to keep
