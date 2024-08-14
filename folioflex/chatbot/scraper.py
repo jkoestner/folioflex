@@ -77,7 +77,7 @@ def scrape_html(
         # Use regex to find everything between "LIVE UPDATES"
         # and "What to Read Next"
         logger.info("cleaning the text")
-        pattern = r"LIVE(.*?)— By"
+        pattern = r"LIVE(.*?)By "
         match = re.search(pattern, scrape_text, re.DOTALL)
         try:
             scrape_text = match.group(1)
