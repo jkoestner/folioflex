@@ -163,7 +163,16 @@ def scrape_selenium(
             close_windows(sb, url)
             try:
                 logger.info("wsj has specific landing page")
-                sb.driver.uc_click("(//p[contains(text(), 'View All')])[1]")
+                selector = "//p[contains(text(), 'View All')]/ancestor::a[1]"
+                url = sb.get_attribute(
+                    selector=selector,
+                    attribute="href",
+                    by="xpath",
+                    timeout=6,
+                    hard_fail=True,
+                )
+                sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
+                close_windows(sb, url)
             except Exception:
                 logger.error("WSJ probably flagged bot: returning None")
                 html_content = "<html><body><p>could not scrape wsj</p></body></html>"
