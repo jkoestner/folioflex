@@ -162,7 +162,6 @@ def scrape_selenium(
             sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
             close_windows(sb, url)
             try:
-                logger.info("wsj has specific landing page")
                 selector = "//p[contains(text(), 'View All')]/ancestor::a[1]"
                 url = sb.get_attribute(
                     selector=selector,
@@ -171,6 +170,8 @@ def scrape_selenium(
                     timeout=6,
                     hard_fail=True,
                 )
+                logger.info("wsj has specific landing page")
+                sb.sleep(3)
                 sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
                 close_windows(sb, url)
             except Exception:
