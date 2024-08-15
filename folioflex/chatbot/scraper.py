@@ -134,7 +134,7 @@ def scrape_selenium(
     # kwargs defaults
     binary_location = kwargs.pop("binary_location", None)
     extension_dir = kwargs.pop("extension_dir", None)
-    headless2 = kwargs.pop("headless2", True)
+    headless2 = kwargs.pop("headless2", False)
     wait_time = kwargs.pop("wait_time", 10)
     proxy = kwargs.pop("proxy", None)
 
