@@ -155,6 +155,9 @@ def scrape_selenium(
     # wsj has a specific landing page
     #
     # this breaks frequently. added the following due to breaks
+    # good issue describing the detection:
+    # https://github.com/seleniumbase/SeleniumBase/issues/2842
+    #
     # incognito=True, to avoid detection
     # xvfb=True, uc works better when display is shown and linux usually needs xvfb
     # headless2=False, uc works better when display is shown
@@ -172,17 +175,31 @@ def scrape_selenium(
             **kwargs,
         ) as sb:
             logger.info("obtaining the landing page")
+            sb.driver.uc_open_with_reconnect("google.com", reconnect_time=wait_time)
+            sb.sleep(3)  # wait times
             sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
             close_windows(sb, url)
             try:
+                sb.sleep(3)  # wait times
                 selector = "//p[contains(text(), 'View All')]/ancestor::a[1]"
                 url = sb.get_attribute(
                     selector=selector,
                     attribute="href",
                     by="xpath",
-                    timeout=6,
+                    timeout=wait_time,
                     hard_fail=True,
                 )
+                logger.info("initializing the driver")
+                sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
+                close_windows(sb, url)
+                logger.info(f"scraping {sb.get_current_url()}")
+                sb.sleep(wait_time)
+                soup = sb.get_beautiful_soup()
+                if screenshot:
+                    logger.info(
+                        "screenshot saved to 'folioflex/configs/screenshot.png'"
+                    )
+                    sb.driver.save_screenshot("folioflex/configs/screenshot.png")
             except Exception:
                 logger.error("WSJ probably flagged bot: returning None")
                 html_content = "<html><body><p>could not scrape wsj</p></body></html>"
@@ -194,27 +211,27 @@ def scrape_selenium(
                     sb.driver.save_screenshot("folioflex/configs/screenshot.png")
                 return soup, url
 
-    # scrape the website
-    with SB(
-        uc=True,
-        incognito=True,
-        xvfb=xvfb,
-        headless2=headless2,
-        binary_location=binary_location,
-        extension_dir=extension_dir,
-        proxy=proxy,
-        agent=agent,
-        **kwargs,
-    ) as sb:
-        logger.info("initializing the driver")
-        sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
-        close_windows(sb, url)
-        logger.info(f"scraping {sb.get_current_url()}")
-        sb.sleep(wait_time)  # wait for page to load
-        soup = sb.get_beautiful_soup()
-        if screenshot:
-            logger.info("screenshot saved to 'folioflex/configs/screenshot.png'")
-            sb.driver.save_screenshot("folioflex/configs/screenshot.png")
+    else:
+        with SB(
+            uc=True,
+            incognito=True,
+            xvfb=xvfb,
+            headless2=headless2,
+            binary_location=binary_location,
+            extension_dir=extension_dir,
+            proxy=proxy,
+            agent=agent,
+            **kwargs,
+        ) as sb:
+            logger.info("initializing the driver")
+            sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
+            close_windows(sb, url)
+            logger.info(f"scraping {sb.get_current_url()}")
+            sb.sleep(wait_time)  # wait for page to load
+            soup = sb.get_beautiful_soup()
+            if screenshot:
+                logger.info("screenshot saved to 'folioflex/configs/screenshot.png'")
+                sb.driver.save_screenshot("folioflex/configs/screenshot.png")
 
     return soup, url
 
