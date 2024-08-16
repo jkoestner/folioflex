@@ -176,7 +176,7 @@ def scrape_selenium(
         ) as sb:
             logger.info("obtaining the landing page")
             sb.driver.uc_open_with_reconnect("google.com", reconnect_time=wait_time)
-            sb.sleep(3)  # wait times
+            sb.sleep(wait_time)  # wait times
             sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
             close_windows(sb, url)
             try:
