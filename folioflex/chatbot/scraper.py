@@ -150,6 +150,7 @@ def scrape_selenium(
     if url.startswith("https://www.wsj.com/finance"):
         with SB(
             uc=True,
+            incognito=True,
             xvfb=xvfb,
             headless2=headless2,
             binary_location=binary_location,
@@ -183,6 +184,7 @@ def scrape_selenium(
     # scrape the website
     with SB(
         uc=True,
+        incognito=True,
         xvfb=xvfb,
         headless2=headless2,
         binary_location=binary_location,
