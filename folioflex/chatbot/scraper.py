@@ -6,7 +6,6 @@ to share to a gpt.
 
 """
 
-import datetime
 import http.client
 import re
 
@@ -14,7 +13,6 @@ import requests
 from bs4 import BeautifulSoup
 from seleniumbase import SB
 
-from folioflex.portfolio import helper
 from folioflex.utils import config_helper, custom_logger
 
 logger = custom_logger.setup_logging(__name__)
@@ -44,25 +42,6 @@ def scrape_html(
 
     """
     scrape_results = {"url": url, "text": None}
-    if url.startswith("https://www.wsj.com/finance"):
-        # get todays date and make sure it's a valid trading day to use in url
-        now = datetime.datetime.now()
-        start_hour = 8
-        if now.hour < start_hour:
-            today = datetime.date.today() - datetime.timedelta(days=1)
-        else:
-            today = datetime.date.today()
-        today = helper.check_stock_dates(today, fix=True, warning=False)["fix_tx_df"][
-            "date"
-        ][0]
-        formatted_today = today.strftime("%m-%d-%Y")
-
-        # go to url
-        url = (
-            "https://www.wsj.com/livecoverage/stock-market-today-dow-jones-earnings-"
-            + formatted_today
-        )
-
     logger.info(f"scraping '{url}' with '{scraper}'")
     if scraper == "selenium":
         soup = scrape_selenium(url, **kwargs)
@@ -113,6 +92,7 @@ def close_windows(sb, url):
 
 def scrape_selenium(
     url,
+    screenshot=False,
     **kwargs,
 ):
     """
@@ -122,6 +102,8 @@ def scrape_selenium(
     ----------
     url : str
         url of the website to scrape
+    screenshot : bool (optional)
+        take a screenshot of the website
     **kwargs : dict (optional)
         keyword arguments for the options of the driver
 
@@ -147,18 +129,17 @@ def scrape_selenium(
     if proxy:
         logger.info("using proxy for browser")
 
-    with SB(
-        uc=True,
-        headless2=headless2,
-        binary_location=binary_location,
-        extension_dir=extension_dir,
-        proxy=proxy,
-        **kwargs,
-    ) as sb:
-        logger.info("initializing the driver")
-        # wsj has a specific landing page
-        if url.startswith("https://www.wsj.com/livecoverage"):
-            url = "https://www.wsj.com/finance"
+    # wsj has a specific landing page
+    if url.startswith("https://www.wsj.com/finance"):
+        with SB(
+            uc=True,
+            headless2=headless2,
+            binary_location=binary_location,
+            extension_dir=extension_dir,
+            proxy=proxy,
+            **kwargs,
+        ) as sb:
+            logger.info("obtaining the landing page")
             sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
             close_windows(sb, url)
             try:
@@ -170,22 +151,35 @@ def scrape_selenium(
                     timeout=6,
                     hard_fail=True,
                 )
-                logger.info("wsj has specific landing page")
-                sb.sleep(3)
-                sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
-                close_windows(sb, url)
             except Exception:
                 logger.error("WSJ probably flagged bot: returning None")
                 html_content = "<html><body><p>could not scrape wsj</p></body></html>"
                 soup = BeautifulSoup(html_content, "html.parser")
+                if screenshot:
+                    logger.info(
+                        "screenshot saved to 'folioflex/configs/screenshot.png'"
+                    )
+                    sb.driver.save_screenshot("folioflex/configs/screenshot.png")
                 return soup
-        # all other
-        else:
-            sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
-            close_windows(sb, url)
+
+    # scrape the website
+    with SB(
+        uc=True,
+        headless2=headless2,
+        binary_location=binary_location,
+        extension_dir=extension_dir,
+        proxy=proxy,
+        **kwargs,
+    ) as sb:
+        logger.info("initializing the driver")
+        sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
+        close_windows(sb, url)
         logger.info(f"scraping {sb.get_current_url()}")
         sb.sleep(wait_time)  # wait for page to load
         soup = sb.get_beautiful_soup()
+        if screenshot:
+            logger.info("screenshot saved to 'folioflex/configs/screenshot.png'")
+            sb.driver.save_screenshot("folioflex/configs/screenshot.png")
 
     return soup
 
