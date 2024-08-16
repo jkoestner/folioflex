@@ -131,6 +131,7 @@ def scrape_selenium(
     headless2 = kwargs.pop("headless2", False)
     wait_time = kwargs.pop("wait_time", 10)
     proxy = kwargs.pop("proxy", None)
+    agent = kwargs.pop("agent", None)
 
     # use xvfb if running a linux os and xvfb is not specified
     if xvfb is None and os.name == "posix":
@@ -145,8 +146,19 @@ def scrape_selenium(
         extension_dir = extension_dir or config_helper.BROWSER_EXTENSION
     if proxy:
         logger.info("using proxy for browser")
+    if agent:
+        agent = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+        )
 
     # wsj has a specific landing page
+    #
+    # this breaks frequently. added the following due to breaks
+    # incognito=True, to avoid detection
+    # xvfb=True, uc works better when display is shown and linux usually needs xvfb
+    # headless2=False, uc works better when display is shown
+    # agent=agent, uc works better when agent is assumed to be windows
     if url.startswith("https://www.wsj.com/finance"):
         with SB(
             uc=True,
@@ -156,6 +168,7 @@ def scrape_selenium(
             binary_location=binary_location,
             extension_dir=extension_dir,
             proxy=proxy,
+            agent=agent,
             **kwargs,
         ) as sb:
             logger.info("obtaining the landing page")
@@ -179,7 +192,7 @@ def scrape_selenium(
                         "screenshot saved to 'folioflex/configs/screenshot.png'"
                     )
                     sb.driver.save_screenshot("folioflex/configs/screenshot.png")
-                return soup
+                return soup, url
 
     # scrape the website
     with SB(
@@ -190,6 +203,7 @@ def scrape_selenium(
         binary_location=binary_location,
         extension_dir=extension_dir,
         proxy=proxy,
+        agent=agent,
         **kwargs,
     ) as sb:
         logger.info("initializing the driver")
