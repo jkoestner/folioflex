@@ -7,6 +7,7 @@ to share to a gpt.
 """
 
 import http.client
+import os
 import re
 
 import requests
@@ -44,7 +45,7 @@ def scrape_html(
     scrape_results = {"url": url, "text": None}
     logger.info(f"scraping '{url}' with '{scraper}'")
     if scraper == "selenium":
-        soup = scrape_selenium(url, **kwargs)
+        soup, url = scrape_selenium(url, **kwargs)
     elif scraper == "bee":
         soup = scrape_bee(url, **kwargs)
 
@@ -92,16 +93,25 @@ def close_windows(sb, url):
 
 def scrape_selenium(
     url,
+    xvfb=None,
     screenshot=False,
     **kwargs,
 ):
     """
     Scrape the html of a website using seleniumbase.
 
+    seleniumbase has a lot of methods that can be used in kwargs shown here:
+    https://github.com/seleniumbase/SeleniumBase/blob/af3d9545473e55b2a25cdbab8be0b1ed5e1f6afa/seleniumbase/plugins/sb_manager.py
+
+
+
     Parameters
     ----------
     url : str
         url of the website to scrape
+    xvfb : bool (optional)
+        It's recommended if using uc=True to not run the headless2=True option and to
+        have xvfb=True if running in linux.
     screenshot : bool (optional)
         take a screenshot of the website
     **kwargs : dict (optional)
@@ -111,14 +121,21 @@ def scrape_selenium(
     -------
     soup : bs4.BeautifulSoup
         beautiful soup object with the html of the website
+    url : str
+        url of the website
 
     """
     # kwargs defaults
     binary_location = kwargs.pop("binary_location", None)
     extension_dir = kwargs.pop("extension_dir", None)
-    headless2 = kwargs.pop("headless2", True)
+    headless2 = kwargs.pop("headless2", False)
     wait_time = kwargs.pop("wait_time", 10)
     proxy = kwargs.pop("proxy", None)
+
+    # use xvfb if running a linux os and xvfb is not specified
+    if xvfb is None and os.name == "posix":
+        logger.info("using xvfb for browser")
+        xvfb = True
 
     if binary_location or config_helper.BROWSER_LOCATION:
         logger.info("using binary location for browser")
@@ -133,6 +150,7 @@ def scrape_selenium(
     if url.startswith("https://www.wsj.com/finance"):
         with SB(
             uc=True,
+            xvfb=xvfb,
             headless2=headless2,
             binary_location=binary_location,
             extension_dir=extension_dir,
@@ -165,6 +183,7 @@ def scrape_selenium(
     # scrape the website
     with SB(
         uc=True,
+        xvfb=xvfb,
         headless2=headless2,
         binary_location=binary_location,
         extension_dir=extension_dir,
@@ -181,7 +200,7 @@ def scrape_selenium(
             logger.info("screenshot saved to 'folioflex/configs/screenshot.png'")
             sb.driver.save_screenshot("folioflex/configs/screenshot.png")
 
-    return soup
+    return soup, url
 
 
 def scrape_bee(url, **kwargs):
