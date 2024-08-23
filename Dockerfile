@@ -5,11 +5,13 @@
 # from where the dockerfile is located.
 FROM python:3.9-slim
 
-# Install git, chromium, and x11 display(lighter version of Chrome for seleniumbase)
+# Install git, chromium, openssh, and x11 display(lighter version of Chrome for seleniumbase)
+# openssh and x11 are only needed when debugging
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    git \
     chromium \
+    git \
+    openssh-server \
     xvfb \
     x11vnc \
     xfonts-base \
