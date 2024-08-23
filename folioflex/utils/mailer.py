@@ -327,6 +327,7 @@ def generate_report(
             scrape_url=scrape_url,
             proxy=proxy,
             scraper=scraper,
+            port=9225,
         )
         response = response.replace("\n", "<br>")
 

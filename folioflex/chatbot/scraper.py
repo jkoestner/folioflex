@@ -12,7 +12,9 @@ import re
 
 import requests
 from bs4 import BeautifulSoup
-from seleniumbase import SB
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.remote.webdriver import WebDriver
+from seleniumbase import SB, Driver
 
 from folioflex.utils import config_helper, custom_logger
 
@@ -64,7 +66,7 @@ def scrape_html(
         except AttributeError:
             logger.info("no match found")
 
-        scrape_results = {"url": url, "text": scrape_text}
+    scrape_results = {"url": url, "text": scrape_text}
 
     return scrape_results
 
@@ -82,10 +84,12 @@ def close_windows(sb, url):
 
     """
     open_windows = sb.driver.window_handles
-    logger.info(f"close {len(open_windows)-1} open windows")
+    nbr_windows = len(open_windows)
+    logger.info(f"close {nbr_windows-1} open windows")
     for window in open_windows:
         sb.driver.switch_to.window(window)
-        if url not in sb.get_current_url():
+        nbr_windows = len(sb.driver.window_handles)
+        if url not in sb.get_current_url() and nbr_windows > 1:
             sb.driver.close()
     open_windows = sb.driver.window_handles
     sb.driver.switch_to.window(open_windows[0])
@@ -95,6 +99,7 @@ def scrape_selenium(
     url,
     xvfb=None,
     screenshot=False,
+    port=None,
     **kwargs,
 ):
     """
@@ -114,6 +119,8 @@ def scrape_selenium(
         have xvfb=True if running in linux.
     screenshot : bool (optional)
         take a screenshot of the website
+    port : int (optional)
+        port to use for debugging
     **kwargs : dict (optional)
         keyword arguments for the options of the driver
 
@@ -131,12 +138,15 @@ def scrape_selenium(
     headless2 = kwargs.pop("headless2", False)
     wait_time = kwargs.pop("wait_time", 10)
     proxy = kwargs.pop("proxy", None)
-    agent = kwargs.pop("agent", None)
+    chromium_arg = None
 
     # use xvfb if running a linux os and xvfb is not specified
-    if xvfb is None and os.name == "posix":
+    if xvfb is None and os.name == "posix" and not headless2:
         logger.info("using xvfb for browser")
         xvfb = True
+    if port:
+        logger.info(f"using port {port} for browser debugging")
+        chromium_arg = "--remote-debugging-port=9225"
 
     if binary_location or config_helper.BROWSER_LOCATION:
         logger.info("using binary location for browser")
@@ -146,13 +156,8 @@ def scrape_selenium(
         extension_dir = extension_dir or config_helper.BROWSER_EXTENSION
     if proxy:
         logger.info("using proxy for browser")
-    if agent:
-        agent = (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
-        )
 
-    # wsj has a specific landing page
+    # specific landing page
     #
     # this breaks frequently. added the following due to breaks
     # good issue describing the detection:
@@ -161,8 +166,7 @@ def scrape_selenium(
     # incognito=True, to avoid detection
     # xvfb=True, uc works better when display is shown and linux usually needs xvfb
     # headless2=False, uc works better when display is shown
-    # agent=agent, uc works better when agent is assumed to be windows
-    if url.startswith("https://www.wsj.com/finance"):
+    if url == "https://www.wsj.com/finance":
         with SB(
             uc=True,
             incognito=True,
@@ -171,58 +175,56 @@ def scrape_selenium(
             binary_location=binary_location,
             extension_dir=extension_dir,
             proxy=proxy,
-            agent=agent,
+            chromium_arg=chromium_arg,
             **kwargs,
         ) as sb:
-            logger.info("obtaining the landing page")
-            sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
+            sb.sleep(2)
             close_windows(sb, url)
+            logger.info("obtaining the landing page")
+            sb.driver.uc_open_with_reconnect(url, reconnect_time=30)
             try:
-                selector = "//p[contains(text(), 'View All')]/ancestor::a[1]"
-                url = sb.get_attribute(
-                    selector=selector,
-                    attribute="href",
-                    by="xpath",
-                    timeout=wait_time,
-                    hard_fail=True,
+                sb.driver.uc_click(
+                    "(//p[contains(text(), 'View All')])[1]", reconnect_time=11
                 )
+                url = sb.get_current_url()
+                logger.info(f"scraping {url}")
+                soup = sb.get_beautiful_soup()
                 if screenshot:
-                    logger.info(
-                        "screenshot saved to 'folioflex/configs/screenshot.png'"
-                    )
-                    sb.driver.save_screenshot("folioflex/configs/screenshot.png")
+                    logger.info("screenshot saved to 'screenshot.png'")
+                    sb.driver.save_screenshot("screenshot.png")
             except Exception:
                 logger.error("WSJ probably flagged bot: returning None")
                 html_content = "<html><body><p>could not scrape wsj</p></body></html>"
                 soup = BeautifulSoup(html_content, "html.parser")
                 if screenshot:
-                    logger.info(
-                        "screenshot saved to 'folioflex/configs/screenshot.png'"
-                    )
-                    sb.driver.save_screenshot("folioflex/configs/screenshot.png")
+                    logger.info("screenshot saved to 'screenshot.png'")
+                    sb.driver.save_screenshot("screenshot.png")
                 return soup, url
 
-    # scrape the website
-    with SB(
-        uc=True,
-        incognito=True,
-        xvfb=xvfb,
-        headless2=headless2,
-        binary_location=binary_location,
-        extension_dir=extension_dir,
-        proxy=proxy,
-        agent=agent,
-        **kwargs,
-    ) as sb:
-        logger.info("initializing the driver")
-        sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
-        close_windows(sb, url)
-        logger.info(f"scraping {url}")
-        sb.sleep(wait_time)  # wait for page to load
-        soup = sb.get_beautiful_soup()
-        if screenshot:
-            logger.info("screenshot saved to 'folioflex/configs/screenshot.png'")
-            sb.driver.save_screenshot("folioflex/configs/screenshot.png")
+    else:
+        with SB(
+            uc=True,
+            incognito=True,
+            xvfb=xvfb,
+            headless2=headless2,
+            binary_location=binary_location,
+            extension_dir=extension_dir,
+            proxy=proxy,
+            chromium_arg=chromium_arg,
+            **kwargs,
+        ) as sb:
+            sb.sleep(2)
+            close_windows(sb, url)
+            logger.info("initializing the driver")
+            sb.driver.uc_open_with_reconnect(url, reconnect_time=20)
+            logger.info(f"scraping {url}")
+            sb.sleep(wait_time)  # wait for page to load
+            soup = sb.get_beautiful_soup()
+            if screenshot:
+                logger.info("screenshot saved to 'screenshot.png'")
+                sb.driver.save_screenshot("screenshot.png")
+
+    logger.info("scraped")
 
     return soup, url
 
@@ -259,3 +261,104 @@ def scrape_bee(url, **kwargs):
     soup = BeautifulSoup(response.content, "html.parser")
 
     return soup
+
+
+def scrape_test(url, **kwargs):
+    """
+    Test basic functionality of seleniumbase scraper.
+
+    When debugging a website it is useful if able to able to find the cause of
+    the error from the function or from another source. This function creates
+    a pause when connecting to the website that will temporarily stop the selenium
+    driver.
+
+    Here are some common test sites:
+    - pixelscan.net
+    - fingerprint.com/products/bot-detection/
+    - nowsecure.nl
+
+    Parameters
+    ----------
+    url : str
+        url of the website to scrape
+    **kwargs : dict (optional)
+        keyword arguments for the options of the driver
+
+    Returns
+    -------
+    soup : bs4.BeautifulSoup
+        beautiful soup object with the html of the website
+
+    """
+    driver = Driver(
+        uc=True,
+        headless2=False,
+    )
+    driver.sleep(2)
+    close_windows(driver, url)
+    logger.info("connecting to website")
+    driver.uc_open_with_reconnect(url, reconnect_time="breakpoint")
+    logger.info("exit site")
+    driver.quit()
+
+
+def attach_to_session(executor_url, session_id, options=None):
+    """
+    Attach to an existing browser session.
+
+    Parameters
+    ----------
+    executor_url : str
+        The URL of the WebDriver server to connect to.
+    session_id : str
+        The ID of the session to attach to.
+    options : Options, optional
+        The options to use when attaching to the session.
+
+    Returns
+    -------
+    WebDriver
+        A WebDriver instance that is attached to the existing session.
+
+    """
+    # save the original execute method of driver
+    original_execute = WebDriver.execute
+
+    def override_execute_method(self, command, params=None):
+        """
+        Override for the newSession command.
+
+        Parameters
+        ----------
+        self : WebDriver
+            The WebDriver instance to execute the command on.
+        command : str
+            The name of the command to execute.
+        params : dict, optional
+            The parameters for the command.
+
+        Returns
+        -------
+        dict
+            The result of the command execution.
+
+        """
+        # point to the existing session
+        if command == "newSession":
+            return {"value": {"sessionId": session_id, "capabilities": {}}}
+        else:
+            return original_execute(self, command, params)
+
+    # override the execute method with the original session
+    WebDriver.execute = override_execute_method
+
+    # create the driver
+    if options is None:
+        options = Options()
+    driver = WebDriver(command_executor=executor_url, options=options)
+    driver.session_id = session_id
+
+    # restore the method
+    WebDriver.execute = original_execute
+
+    return driver
