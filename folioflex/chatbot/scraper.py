@@ -146,7 +146,7 @@ def scrape_selenium(
         xvfb = True
     if port:
         logger.info(f"using port {port} for browser debugging")
-        chromium_arg = "--remote-debugging-port=9225"
+        chromium_arg = f"--remote-debugging-port={port}"
 
     if binary_location or config_helper.BROWSER_LOCATION:
         logger.info("using binary location for browser")
