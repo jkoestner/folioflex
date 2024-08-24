@@ -92,6 +92,7 @@ def generate_report(
     portfolio_performance=None,
     chatbot=False,
     proxy=None,
+    port=None,
     scraper="bee",
 ):
     """
@@ -139,6 +140,8 @@ def generate_report(
         Whether to use the chatbot to get the query
     proxy : str (optional)
         Proxy to use for the chatbot
+    port : int (optional)
+        Port to use for the chatbot
     scraper : str (optional)
         Scraper to use for the chatbot, "bee" by default
 
@@ -327,7 +330,7 @@ def generate_report(
             scrape_url=scrape_url,
             proxy=proxy,
             scraper=scraper,
-            port=8001,
+            port=port,
         )
         response = response.replace("\n", "<br>")
 
