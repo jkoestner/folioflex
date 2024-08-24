@@ -24,6 +24,7 @@ dependencies = [
     "pyxirr>=0.7.2",
     "sqlalchemy>=2.0.23",
     "yfinance>=0.2.32",
+    "tzlocal>=5.2",
 
     # web
     "dash>=1.0.2",
