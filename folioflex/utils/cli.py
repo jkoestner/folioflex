@@ -266,6 +266,7 @@ def cli():
             portfolio_performance=args.portfolio_performance,
             chatbot=args.chatbot,
             proxy=args.proxy,
+            port=args.port,
             scraper=args.scraper,
         )
         print(f"status sent: {email_status}")
