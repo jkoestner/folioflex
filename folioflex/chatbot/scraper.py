@@ -166,7 +166,7 @@ def scrape_selenium(
     # incognito=True, to avoid detection
     # xvfb=True, uc works better when display is shown and linux usually needs xvfb
     # headless2=False, uc works better when display is shown
-    if url == "https://www.wsj.com/finance":
+    if re.match(r"https://www\.w.j\.com/finance", url, re.IGNORECASE):
         with SB(
             uc=True,
             incognito=True,
@@ -181,10 +181,10 @@ def scrape_selenium(
             sb.sleep(2)
             close_windows(sb, url)
             logger.info("obtaining the landing page")
-            sb.driver.uc_open_with_reconnect(url, reconnect_time=30)
+            sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time + 5)
             try:
                 sb.driver.uc_click(
-                    "(//p[contains(text(), 'View All')])[1]", reconnect_time=11
+                    "(//p[contains(text(), 'View All')])[1]", reconnect_time=wait_time
                 )
                 url = sb.get_current_url()
                 logger.info(f"scraping {url}")
@@ -193,8 +193,8 @@ def scrape_selenium(
                     logger.info("screenshot saved to 'screenshot.png'")
                     sb.driver.save_screenshot("screenshot.png")
             except Exception:
-                logger.error("WSJ probably flagged bot: returning None")
-                html_content = "<html><body><p>could not scrape wsj</p></body></html>"
+                logger.error("probably flagged bot: returning None")
+                html_content = "<html><body><p>could not scrape</p></body></html>"
                 soup = BeautifulSoup(html_content, "html.parser")
                 if screenshot:
                     logger.info("screenshot saved to 'screenshot.png'")
@@ -216,9 +216,8 @@ def scrape_selenium(
             sb.sleep(2)
             close_windows(sb, url)
             logger.info("initializing the driver")
-            sb.driver.uc_open_with_reconnect(url, reconnect_time=20)
+            sb.driver.uc_open_with_reconnect(url, reconnect_time=wait_time)
             logger.info(f"scraping {url}")
-            sb.sleep(wait_time)  # wait for page to load
             soup = sb.get_beautiful_soup()
             if screenshot:
                 logger.info("screenshot saved to 'screenshot.png'")
