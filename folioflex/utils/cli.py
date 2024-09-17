@@ -214,6 +214,14 @@ def _create_argparser():
     )
 
     _email_parser.add_argument(
+        "-pt",
+        "--port",
+        type=int,
+        default=None,
+        help=("The remote debugging port to use for the chatbot"),
+    )
+
+    _email_parser.add_argument(
         "-s",
         "--scraper",
         type=str,
@@ -258,6 +266,7 @@ def cli():
             portfolio_performance=args.portfolio_performance,
             chatbot=args.chatbot,
             proxy=args.proxy,
+            port=args.port,
             scraper=args.scraper,
         )
         print(f"status sent: {email_status}")

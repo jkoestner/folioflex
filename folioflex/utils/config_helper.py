@@ -5,6 +5,8 @@ import configparser
 import os
 from pathlib import Path
 
+import tzlocal
+
 from folioflex.utils import custom_logger
 
 ROOT_PATH = Path(__file__).resolve().parent.parent.parent
@@ -14,6 +16,7 @@ CONFIG_PATH = (
     else ROOT_PATH / "folioflex" / "configs"
 )
 TESTS_PATH = ROOT_PATH / "tests" / "files"
+LOCAL_TIMEZONE = tzlocal.get_localzone()
 
 
 logger = custom_logger.setup_logging(__name__)

@@ -5,18 +5,29 @@
 # from where the dockerfile is located.
 FROM python:3.9-slim
 
-# Install git and chromium (lighter version of Chrome for seleniumbase)
+# Install git, chromium, and x11 display(lighter version of Chrome for seleniumbase)
+# x11 are only needed when debugging
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git chromium && \
+    apt-get install -y --no-install-recommends \
+    chromium \
+    git \
+    xvfb \
+    x11vnc \
+    xfonts-base \
+    xauth \
+    x11-apps && \
     ln -s /usr/bin/chromium /usr/bin/google-chrome && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Copy uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 # Set work directory
 WORKDIR /code
 
 # Install requirements (without copying the whole directory)
-RUN pip install --no-cache-dir "git+https://github.com/jkoestner/folioflex.git@main"
+RUN uv pip install --no-cache-dir --system "git+https://github.com/jkoestner/folioflex.git@main"
 
 # Create new user
 RUN adduser --disabled-password --gecos '' ffx && \

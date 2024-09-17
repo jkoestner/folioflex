@@ -28,7 +28,11 @@ import pandas_market_calendars as mcal
 import plotly.express as px
 from pyxirr import xirr
 
-from folioflex.portfolio.helper import check_stock_dates, convert_lookback
+from folioflex.portfolio.helper import (
+    check_stock_dates,
+    convert_date_to_timezone,
+    convert_lookback,
+)
 from folioflex.portfolio.wrappers import Yahoo
 from folioflex.utils import config_helper, custom_logger
 
@@ -321,6 +325,9 @@ class Portfolio:
         )
 
         transactions["date"] = pd.to_datetime(transactions["date"], format="%m/%d/%Y")
+        transactions["date"] = convert_date_to_timezone(
+            transactions["date"], timezone=None
+        )
 
         transactions["price"] = (transactions["cost"] / transactions["units"]) * -1
         transactions.loc[transactions["ticker"] == "Cash", "price"] = 1

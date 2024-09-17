@@ -487,6 +487,9 @@ class Yahoo:
         cols = ["ticker", "date", "adj_close", "stock_splits"]
         stock_data = stock_data[cols]
         stock_data = stock_data.rename(columns={"adj_close": "last_price"})
+        stock_data["date"] = helper.convert_date_to_timezone(
+            stock_data["date"], timezone=None
+        )
 
         return stock_data
 
