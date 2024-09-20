@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.2.2](https://github.com/jkoestner/folioflex/tree/v1.2.2)
+
+[Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.2.1...v1.2.2)
+
+**Enhancements**
+- add uv to docker image
+- update scraper logic
+
 ## [v1.2.1](https://github.com/jkoestner/folioflex/tree/v1.2.1)
 
 [Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.2.0...v1.2.1)

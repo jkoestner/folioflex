@@ -136,6 +136,12 @@ class Budget:
         """
         Modify the transactions for the budget.
 
+        The modifications include:
+          - Zero out the amount for the given columns
+          - Extract the text between quotes
+          - Preprocess the emoji in the text
+          - Remove the pending transactions.
+
         Parameters
         ----------
         tx_df : DataFrame
