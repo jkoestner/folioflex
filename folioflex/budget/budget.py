@@ -314,6 +314,7 @@ class Budget:
         if exclude_labels is not None:
             tx_df = tx_df[~tx_df["label"].isin(exclude_labels)]
             budgets = {k: v for k, v in budgets.items() if k not in exclude_labels}
+
         # grouping transactions
         grouped_transactions = (
             tx_df[tx_df["date"].dt.to_period("M") == target_date]
@@ -322,6 +323,7 @@ class Budget:
             .reset_index()
             .sort_values("amount", ascending=True)
         )
+
         # adding in the budget
         unused_keys = set(budgets.keys()) - set(grouped_transactions["label"])
         unused_keys_df = pd.DataFrame({"label": list(unused_keys)})
@@ -333,6 +335,7 @@ class Budget:
         grouped_transactions["budget"] = grouped_transactions["budget"].fillna(
             float(self.config_dict["default"])
         )
+
         # providing a total
         totals = grouped_transactions.sum(numeric_only=True).to_frame().T
         totals["label"] = "TOTAL"
@@ -523,7 +526,78 @@ class Budget:
 
         return fig
 
-    def category_tx_view(self, tx_df, target_date, category):
+    def display_category_trend(self, tx_df, category):
+        """
+        Display the category trend view as a bar chart.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            The transactions to view income status for.
+        category : str
+            The category to view the trend for.
+
+        Returns
+        -------
+        fig : Figure
+            The category trend view as a line chart.
+
+        """
+        # filter data for category
+        category_df = tx_df[tx_df["label"] == category]
+        category_df = category_df.groupby(["month"])["amount"].sum().reset_index()
+
+        # budgets
+        category_budget = self.budgets.get(category, 0)
+        average_budget = category_df["amount"].mean()
+        twelve_month_avg = category_df["amount"].rolling(window=12).mean()
+
+        # create bar chart
+        fig = px.bar(
+            category_df,
+            x="month",
+            y="amount",
+            title=f"'{category}' Spending Trend",
+            labels={"month": "Month", "amount": "Amount"},
+            color_discrete_sequence=["blue"],
+        )
+
+        # add budget line
+        fig.add_scatter(
+            x=category_df["month"],
+            y=[category_budget] * len(category_df),
+            mode="lines",
+            line={"color": "red", "dash": "dash"},
+            name="Budget",
+        )
+
+        # add average line
+        fig.add_scatter(
+            x=category_df["month"],
+            y=[average_budget] * len(category_df),
+            mode="lines",
+            line={"color": "black", "dash": "dash"},
+            name="Average",
+        )
+
+        # add 12 month average line
+        fig.add_scatter(
+            x=category_df["month"],
+            y=twelve_month_avg,
+            mode="lines",
+            line={"color": "green", "dash": "dash"},
+            name="12-Month Average",
+        )
+
+        return fig
+
+    def category_tx_view(
+        self,
+        tx_df,
+        target_date,
+        category,
+        columns=None,
+    ):
         """
         Display the transactions view as a table.
 
@@ -535,6 +609,8 @@ class Budget:
             The date to view transactions for. Format: YYYY-MM.
         category : str
             The category to view transactions for.
+        columns : list (optional)
+            The columns to view in the table.
 
         Returns
         -------
@@ -542,10 +618,20 @@ class Budget:
             The category of transactions view as a table.
 
         """
+        if columns is None:
+            columns = [
+                "date",
+                "amount",
+                "name",
+                "label",
+                "official_name",
+            ]
+
         cat_tx_df = tx_df[
             (tx_df["date"].dt.to_period("M") == target_date)
             & (tx_df["label"].str.contains(category))
-        ].sort_values(by="amount", ascending=False)
+        ].sort_values(by="date", ascending=False)
+        cat_tx_df = cat_tx_df[columns]
         return cat_tx_df
 
     def update_labels_db(self, tx_df, engine=None, label_column="label"):

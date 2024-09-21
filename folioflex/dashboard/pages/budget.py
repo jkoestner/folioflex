@@ -1,14 +1,17 @@
-"""Personal dashboard."""
+"""Budget dashboard."""
 
 import datetime
 
 import dash
+import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import pandas as pd
 from dash import Input, Output, State, callback, dcc, html
 from dateutil.relativedelta import relativedelta
 from flask_login import current_user
 
 from folioflex.budget import budget, models
+from folioflex.dashboard.components import dash_formats
 from folioflex.dashboard.utils import dashboard_helper
 from folioflex.utils import custom_logger
 
@@ -20,18 +23,19 @@ dash.register_page(__name__, path="/budget", title="folioflex - Budget", order=5
 prior_month = (datetime.datetime.now() - relativedelta(months=1)).strftime("%Y-%m")
 
 
-#   _                            _
-#  | |    __ _ _   _  ___  _   _| |_
-#  | |   / _` | | | |/ _ \| | | | __|
-#  | |__| (_| | |_| | (_) | |_| | |_
-#  |_____\__,_|\__, |\___/ \__,_|\__|
-#              |___/
-
-
 def layout():
-    """Create layout for the personal dashboard."""
+    """Create layout for the budget dashboard."""
     if not current_user.is_authenticated:
         return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])
+
+    # Get labels for the dropdown
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    budget_df = bdgt.get_transactions()
+    budget_df = bdgt.modify_transactions(budget_df)
+    labels = budget_df["label"].dropna().unique()
+    labels.sort()
+    label_options = [{"label": label, "value": label} for label in labels]
+
     return html.Div(
         [
             # adding variables needed that are used in callbacks.
@@ -51,15 +55,6 @@ def layout():
                         ),
                         width="auto",
                     ),
-                ]
-            ),
-            # budget chart
-            dbc.Row(
-                [
-                    dbc.Col(
-                        html.Button("Budget Chart", id="budget-chart-button"),
-                        width="auto",
-                    ),
                     dbc.Col(
                         html.Button(
                             "Update Budget Database",
@@ -69,33 +64,126 @@ def layout():
                     ),
                 ]
             ),
-            dcc.Graph(
-                id="budget-chart",
+            dbc.Accordion(
+                [
+                    dbc.AccordionItem(
+                        [
+                            # Budget chart
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        html.Button(
+                                            "Budget Chart", id="budget-chart-button"
+                                        ),
+                                        width="auto",
+                                    ),
+                                ]
+                            ),
+                            dbc.Col(
+                                dcc.Loading(
+                                    id="loading-budget-chart",
+                                    type="dot",
+                                    children=html.Div(id="budget-chart"),
+                                ),
+                                style={"overflow": "auto"},
+                            ),
+                            html.Div(id="budget-chart-labels", children=""),
+                            dbc.Toast(
+                                "Updated database tables.",
+                                id="toast-update-db",
+                                header="Updated Database",
+                                is_open=False,
+                                dismissable=True,
+                                icon="success",
+                            ),
+                        ],
+                        title="Budget Chart",
+                    ),
+                    dbc.AccordionItem(
+                        [
+                            # category chart
+                            html.Div(
+                                [
+                                    html.Label("Select Label"),
+                                    dcc.Dropdown(
+                                        id="label-dropdown",
+                                        options=label_options,
+                                        value=labels[0] if len(labels) > 0 else None,
+                                    ),
+                                ]
+                            ),
+                            # category table
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        dcc.Loading(
+                                            id="loading-expense-chart",
+                                            type="dot",
+                                            children=html.Div(id="expense-chart"),
+                                        ),
+                                        style={"overflow": "auto"},
+                                        width=6,
+                                    ),
+                                    dbc.Col(
+                                        dcc.Loading(
+                                            id="loading-expense-table",
+                                            type="dot",
+                                            children=html.Div(id="expense-table"),
+                                        ),
+                                        style={"overflow": "auto"},
+                                        width=6,
+                                    ),
+                                ]
+                            ),
+                        ],
+                        title="Label Dropdown",
+                    ),
+                    dbc.AccordionItem(
+                        [
+                            # Income chart
+                            dbc.Col(
+                                html.Button(
+                                    "Income Chart", id="income-chart-button", n_clicks=0
+                                ),
+                            ),
+                            dbc.Col(
+                                dcc.Loading(
+                                    id="loading-income-chart",
+                                    type="dot",
+                                    children=html.Div(id="income-chart"),
+                                ),
+                                style={"overflow": "auto"},
+                            ),
+                        ],
+                        title="Income Chart",
+                    ),
+                    dbc.AccordionItem(
+                        [
+                            # Compare chart
+                            dbc.Col(
+                                html.Button(
+                                    "Compare Chart",
+                                    id="budget-compare-button",
+                                    n_clicks=0,
+                                ),
+                            ),
+                            dbc.Col(
+                                dcc.Loading(
+                                    id="loading-compare-chart",
+                                    type="dot",
+                                    children=html.Div(id="compare-chart"),
+                                ),
+                                style={"overflow": "auto"},
+                            ),
+                        ],
+                        title="Expense Compare Chart",
+                    ),
+                ],
+                start_collapsed=True,
+                always_open=True,
             ),
-            html.Div(id="budget-chart-labels", children=""),
-            dbc.Toast(
-                "Updated database tables.",
-                id="toast-update-db",
-                header="Updated Database",
-                is_open=False,
-                dismissable=True,
-                icon="success",
-            ),
-            # income chart
-            dbc.Col(
-                html.Button("Income Chart", id="income-chart-button", n_clicks=0),
-            ),
-            dcc.Graph(
-                id="income-chart",
-            ),
-            # compare chart
-            dbc.Col(
-                html.Button("Compare Chart", id="budget-compare-button", n_clicks=0),
-            ),
-            dcc.Graph(
-                id="compare-chart",
-            ),
-        ]
+        ],
+        className="container",
     )
 
 
@@ -106,10 +194,10 @@ def layout():
 #   \____\__,_|_|_|_.__/ \__,_|\___|_|\_\___/
 
 
-# budget expense chart
+# budget chart
 @callback(
     [
-        Output("budget-chart", "figure"),
+        Output("budget-chart", "children"),
         Output("budget-chart-labels", "children"),
     ],
     [Input("budget-chart-button", "n_clicks")],
@@ -128,12 +216,14 @@ def update_budgetchart(n_clicks, input_value):
     len_label = len(budget_df[~budget_df["label"].isnull()])
     len_unlabel = len(budget_df[budget_df["label"].isnull()])
 
-    return budget_chart, f"Labeled: {len_label} | Unlabeled: {len_unlabel}"
+    return dcc.Graph(
+        figure=budget_chart
+    ), f"Labeled: {len_label} | Unlabeled: {len_unlabel}"
 
 
 # income chart
 @callback(
-    Output("income-chart", "figure"),
+    Output("income-chart", "children"),
     [Input("income-chart-button", "n_clicks")],
     [State("budget-chart-input", "value")],
     prevent_initial_call=True,
@@ -145,12 +235,12 @@ def update_incomeview(n_clicks, input_value):
     budget_df = bdgt.modify_transactions(budget_df)
     income_chart = bdgt.display_income_view(budget_df)
 
-    return income_chart
+    return dcc.Graph(figure=income_chart)
 
 
 # budget compare chart
 @callback(
-    Output("compare-chart", "figure"),
+    Output("compare-chart", "children"),
     [Input("budget-compare-button", "n_clicks")],
     [State("budget-chart-input", "value")],
     prevent_initial_call=True,
@@ -164,7 +254,7 @@ def update_comparechart(n_clicks, input_value):
         budget_df, target_date=input_value, avg_months=3
     )
 
-    return compare_chart
+    return dcc.Graph(figure=compare_chart)
 
 
 # update budget db
@@ -192,3 +282,54 @@ def update_budget_db(n_clicks):
     bdgt.update_labels_db(tx_df=predict_df, label_column="predicted_label")
 
     return True
+
+
+@callback(
+    Output("expense-chart", "children"),
+    Input("label-dropdown", "value"),
+)
+def update_category_chart(selected_label):
+    """Display category chart."""
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    budget_df = bdgt.get_transactions()
+    budget_df = bdgt.modify_transactions(budget_df)
+
+    expense_chart = bdgt.display_category_trend(budget_df, selected_label)
+
+    return dcc.Graph(figure=expense_chart, id="expense-chart-fig")
+
+
+@callback(
+    Output("expense-table", "children"),
+    [Input("expense-chart-fig", "clickData"), Input("label-dropdown", "value")],
+    prevent_initial_call=True,
+)
+def update_expenses_table(clickData, selected_label):
+    """Update the table with expenses for the selected label and month."""
+    if clickData is None:
+        return dash.no_update
+
+    clicked_month = clickData["points"][0]["x"]
+    clicked_month = pd.to_datetime(clicked_month).strftime("%Y-%m")
+    logger.info(f"Selected month: {clicked_month}")
+
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    budget_df = bdgt.get_transactions()
+    budget_df = bdgt.modify_transactions(budget_df)
+
+    expense_tbl = bdgt.category_tx_view(
+        tx_df=budget_df, target_date=clicked_month, category=selected_label
+    )
+
+    # create the table
+    expense_table_div = html.Div(
+        [
+            dag.AgGrid(
+                id="grid-expense",
+                rowData=expense_tbl.to_dict("records"),
+                columnDefs=dash_formats.get_column_defs(expense_tbl),
+            )
+        ]
+    )
+
+    return expense_table_div
