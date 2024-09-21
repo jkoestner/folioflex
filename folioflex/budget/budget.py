@@ -291,6 +291,74 @@ class Budget:
             return "Incoming Transfer"
         return "OTHER"
 
+    def identify_subscriptions(self, tx_df):
+        """
+        Identify possible subscriptions in the transactions.
+
+        The subscriptions are identified by the name and also the amount. If
+        the amount is similar for multiple transactions, and there are at least
+        a set amount of transcations, then it is likely a subscription.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            The transactions to identify subscriptions for.
+
+        Returns
+        -------
+        subscriptions : DataFrame
+            The subscriptions identified in the transactions.
+
+        """
+        # default values
+        min_transactions = 3
+        interval_std_threshold = 5
+        amount_std_threshold = 0.1
+
+        # group data by name
+        grouped_df = tx_df.groupby("name")
+
+        # identify subscriptions
+        subscriptions = []
+        for name, group in grouped_df:
+            if len(group) < min_transactions:
+                continue
+
+            # calculating the intervals and ensure they are regular
+            intervals = group["date"].diff().dropna().dt.days
+            regular = intervals.std() <= interval_std_threshold
+
+            # calculate the amount and ensure it is consistent
+            amount_mean = group["amount"].mean()
+            if amount_mean == 0:
+                continue
+            relative_std = group["amount"].std() / amount_mean
+            consistent_amount = relative_std <= amount_std_threshold
+
+            # get the last date and amount
+            last_date = group["date"].max()
+            last_amount = group[group["date"] == last_date]["amount"].values[0]
+
+            if regular and consistent_amount:
+                subscriptions.append(
+                    {
+                        "Description": name,
+                        "Occurrences": len(group),
+                        "Mean Interval (Days)": intervals.mean(),
+                        "Amount Mean": group["amount"].mean(),
+                        "Amount Std Dev": group["amount"].std(),
+                        "Last Date": last_date,
+                        "Last Amount": last_amount,
+                    }
+                )
+
+        subscriptions_df = pd.DataFrame(subscriptions)
+        subscriptions_df = subscriptions_df.sort_values(
+            by="Occurrences", ascending=False
+        )
+
+        return subscriptions_df
+
     def budget_view(self, tx_df, target_date, exclude_labels=None):
         """
         Provide a view of categories and their budget status.

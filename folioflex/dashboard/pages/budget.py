@@ -178,6 +178,27 @@ def layout():
                         ],
                         title="Expense Compare Chart",
                     ),
+                    dbc.AccordionItem(
+                        [
+                            # Subscription table
+                            dbc.Col(
+                                html.Button(
+                                    "Subscription Table",
+                                    id="subscription-button",
+                                    n_clicks=0,
+                                ),
+                            ),
+                            dbc.Col(
+                                dcc.Loading(
+                                    id="loading-subscription-table",
+                                    type="dot",
+                                    children=html.Div(id="subscription-table"),
+                                ),
+                                style={"overflow": "auto"},
+                            ),
+                        ],
+                        title="Subscription Table",
+                    ),
                 ],
                 start_collapsed=True,
                 always_open=True,
@@ -333,3 +354,33 @@ def update_expenses_table(clickData, selected_label):
     )
 
     return expense_table_div
+
+
+@callback(
+    Output("subscription-table", "children"),
+    [Input("subscription-button", "n_clicks")],
+    prevent_initial_call=True,
+)
+def update_subscription_table(clickData):
+    """Update the table with possible subscriptions."""
+    if clickData is None:
+        return dash.no_update
+
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    budget_df = bdgt.get_transactions()
+    budget_df = bdgt.modify_transactions(budget_df)
+
+    subscription_tbl = bdgt.identify_subscriptions(tx_df=budget_df)
+
+    # create the table
+    subscription_tbl_div = html.Div(
+        [
+            dag.AgGrid(
+                id="grid-subscription",
+                rowData=subscription_tbl.to_dict("records"),
+                columnDefs=dash_formats.get_column_defs(subscription_tbl),
+            )
+        ]
+    )
+
+    return subscription_tbl_div
