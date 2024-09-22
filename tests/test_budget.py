@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 
-from folioflex.budget import models
+from folioflex.budget import budget, models
 from folioflex.utils import config_helper
 
 config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_budget.ini"
@@ -27,9 +27,9 @@ def test_create_features():
         institution=train_df["plaid_institution_id"],
     )
 
-    assert features.shape == (27, 60), "Shape mismatch"
+    assert features.shape == (30, 61), "Shape mismatch"
     assert features.dtype == np.float64, "Data type mismatch"
-    assert features.nnz == 1425, "Number of stored elements mismatch"
+    assert features.nnz == 1581, "Number of stored elements mismatch"
     assert features.format == "coo", "Sparse format mismatch"
 
 
@@ -42,7 +42,7 @@ def test_predictions():
     )
 
     assert (
-        predict_df.loc[0, "predicted_label"] == "groceries"
+        predict_df.loc[3, "predicted_label"] == "groceries"
     ), "A description of 'groceries' was not predicted correctly"
 
 
@@ -87,3 +87,23 @@ def test_feature_embedding():
         "The cosine similarity shows that vacation is more similar "
         "to groceries than food. This is incorrect."
     )
+
+
+def test_subscription():
+    """Checks if the subscription identification is correct."""
+    df["date"] = pd.to_datetime(df["date"]).dt.date
+    bdgt = budget.Budget(config_path="test_budget.ini", budget="test")
+    subscription_tbl = bdgt.identify_subscriptions(tx_df=df)
+    utils_occurs = subscription_tbl[subscription_tbl["Description"] == "utils"][
+        "Occurrences"
+    ]
+
+    assert utils_occurs.values[0] == 3, "Utilities have 3 occurrences"
+
+
+def test_preprocess_emoji():
+    """Checks if emojis are removed from text."""
+    test_text = "I love 🐶"
+    bdgt = budget.Budget(config_path="test_budget.ini", budget="test")
+    clean_text = bdgt.modify_preprocess_emoji(test_text)
+    assert clean_text == "I love  dog_face ", "Emoji was not removed from text"

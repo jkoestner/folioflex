@@ -136,6 +136,12 @@ class Budget:
         """
         Modify the transactions for the budget.
 
+        The modifications include:
+          - Zero out the amount for the given columns
+          - Extract the text between quotes
+          - Preprocess the emoji in the text
+          - Remove the pending transactions.
+
         Parameters
         ----------
         tx_df : DataFrame
@@ -285,6 +291,74 @@ class Budget:
             return "Incoming Transfer"
         return "OTHER"
 
+    def identify_subscriptions(self, tx_df):
+        """
+        Identify possible subscriptions in the transactions.
+
+        The subscriptions are identified by the name and also the amount. If
+        the amount is similar for multiple transactions, and there are at least
+        a set amount of transcations, then it is likely a subscription.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            The transactions to identify subscriptions for.
+
+        Returns
+        -------
+        subscriptions : DataFrame
+            The subscriptions identified in the transactions.
+
+        """
+        # default values
+        min_transactions = 3
+        interval_std_threshold = 5
+        amount_std_threshold = 0.1
+
+        # group data by name
+        grouped_df = tx_df.groupby("name")
+
+        # identify subscriptions
+        subscriptions = []
+        for name, group in grouped_df:
+            if len(group) < min_transactions:
+                continue
+
+            # calculating the intervals and ensure they are regular
+            intervals = group["date"].diff().dropna().dt.days
+            regular = intervals.std() <= interval_std_threshold
+
+            # calculate the amount and ensure it is consistent
+            amount_mean = group["amount"].mean()
+            if amount_mean == 0:
+                continue
+            relative_std = group["amount"].std() / amount_mean
+            consistent_amount = relative_std <= amount_std_threshold
+
+            # get the last date and amount
+            last_date = group["date"].max()
+            last_amount = group[group["date"] == last_date]["amount"].values[0]
+
+            if regular and consistent_amount:
+                subscriptions.append(
+                    {
+                        "Description": name,
+                        "Occurrences": len(group),
+                        "Mean Interval (Days)": intervals.mean(),
+                        "Amount Mean": group["amount"].mean(),
+                        "Amount Std Dev": group["amount"].std(),
+                        "Last Date": last_date,
+                        "Last Amount": last_amount,
+                    }
+                )
+
+        subscriptions_df = pd.DataFrame(subscriptions)
+        subscriptions_df = subscriptions_df.sort_values(
+            by="Occurrences", ascending=False
+        )
+
+        return subscriptions_df
+
     def budget_view(self, tx_df, target_date, exclude_labels=None):
         """
         Provide a view of categories and their budget status.
@@ -308,6 +382,7 @@ class Budget:
         if exclude_labels is not None:
             tx_df = tx_df[~tx_df["label"].isin(exclude_labels)]
             budgets = {k: v for k, v in budgets.items() if k not in exclude_labels}
+
         # grouping transactions
         grouped_transactions = (
             tx_df[tx_df["date"].dt.to_period("M") == target_date]
@@ -316,6 +391,7 @@ class Budget:
             .reset_index()
             .sort_values("amount", ascending=True)
         )
+
         # adding in the budget
         unused_keys = set(budgets.keys()) - set(grouped_transactions["label"])
         unused_keys_df = pd.DataFrame({"label": list(unused_keys)})
@@ -327,6 +403,7 @@ class Budget:
         grouped_transactions["budget"] = grouped_transactions["budget"].fillna(
             float(self.config_dict["default"])
         )
+
         # providing a total
         totals = grouped_transactions.sum(numeric_only=True).to_frame().T
         totals["label"] = "TOTAL"
@@ -517,7 +594,78 @@ class Budget:
 
         return fig
 
-    def category_tx_view(self, tx_df, target_date, category):
+    def display_category_trend(self, tx_df, category):
+        """
+        Display the category trend view as a bar chart.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            The transactions to view income status for.
+        category : str
+            The category to view the trend for.
+
+        Returns
+        -------
+        fig : Figure
+            The category trend view as a line chart.
+
+        """
+        # filter data for category
+        category_df = tx_df[tx_df["label"] == category]
+        category_df = category_df.groupby(["month"])["amount"].sum().reset_index()
+
+        # budgets
+        category_budget = self.budgets.get(category, 0)
+        average_budget = category_df["amount"].mean()
+        twelve_month_avg = category_df["amount"].rolling(window=12).mean()
+
+        # create bar chart
+        fig = px.bar(
+            category_df,
+            x="month",
+            y="amount",
+            title=f"'{category}' Spending Trend",
+            labels={"month": "Month", "amount": "Amount"},
+            color_discrete_sequence=["blue"],
+        )
+
+        # add budget line
+        fig.add_scatter(
+            x=category_df["month"],
+            y=[category_budget] * len(category_df),
+            mode="lines",
+            line={"color": "red", "dash": "dash"},
+            name="Budget",
+        )
+
+        # add average line
+        fig.add_scatter(
+            x=category_df["month"],
+            y=[average_budget] * len(category_df),
+            mode="lines",
+            line={"color": "black", "dash": "dash"},
+            name="Average",
+        )
+
+        # add 12 month average line
+        fig.add_scatter(
+            x=category_df["month"],
+            y=twelve_month_avg,
+            mode="lines",
+            line={"color": "green", "dash": "dash"},
+            name="12-Month Average",
+        )
+
+        return fig
+
+    def category_tx_view(
+        self,
+        tx_df,
+        target_date,
+        category,
+        columns=None,
+    ):
         """
         Display the transactions view as a table.
 
@@ -529,6 +677,8 @@ class Budget:
             The date to view transactions for. Format: YYYY-MM.
         category : str
             The category to view transactions for.
+        columns : list (optional)
+            The columns to view in the table.
 
         Returns
         -------
@@ -536,10 +686,20 @@ class Budget:
             The category of transactions view as a table.
 
         """
+        if columns is None:
+            columns = [
+                "date",
+                "amount",
+                "name",
+                "label",
+                "official_name",
+            ]
+
         cat_tx_df = tx_df[
             (tx_df["date"].dt.to_period("M") == target_date)
             & (tx_df["label"].str.contains(category))
-        ].sort_values(by="amount", ascending=False)
+        ].sort_values(by="date", ascending=False)
+        cat_tx_df = cat_tx_df[columns]
         return cat_tx_df
 
     def update_labels_db(self, tx_df, engine=None, label_column="label"):

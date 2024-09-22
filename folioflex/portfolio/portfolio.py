@@ -21,11 +21,13 @@ The Manager class has a number of objects, such as:
 
 import os
 from datetime import timedelta
+from io import StringIO
 
 import numpy as np
 import pandas as pd
 import pandas_market_calendars as mcal
 import plotly.express as px
+import requests
 from pyxirr import xirr
 
 from folioflex.portfolio.helper import (
@@ -73,6 +75,8 @@ class Portfolio:
         config_dict = config_helper.get_config_options(config_path, portfolio)
         self.file = self.load_filename(config_dict["tx_file"])
         logger.info(f"retrieved filename {self.file}")
+        self.username = config_dict.get("username", None)
+        self.password = config_dict.get("password", None)
         self.name = config_dict["name"]
         logger.info(f"creating '{self.name}' portfolio")
         self.filter_type = config_dict["filter_type"]
@@ -85,6 +89,8 @@ class Portfolio:
             filter_type=self.filter_type,
             filter_broker=self.filter_broker,
             other_fields=self.other_fields,
+            username=self.username,
+            password=self.password,
         )
 
         self._min_year = self.transactions["date"].min().year
@@ -257,9 +263,18 @@ class Portfolio:
 
         return file_path
 
-    def get_transactions(self, filter_type=None, filter_broker=None, other_fields=None):
+    def get_transactions(
+        self,
+        filter_type=None,
+        filter_broker=None,
+        other_fields=None,
+        username=None,
+        password=None,
+    ):
         """
         Get the transactions made.
+
+        The current implementation supports csv, webdav, and xlsx files.
 
         Parameters
         ----------
@@ -270,6 +285,10 @@ class Portfolio:
             list of strings to include out of `broker` field.
         other_fields : list (optional)
             additional fields to include
+        username : str (optional)
+            username for downloading transactions
+        password : str (optional)
+            password for downloading transactions
 
         Returns
         -------
@@ -283,9 +302,21 @@ class Portfolio:
             filter_broker = []
         if other_fields is None:
             other_fields = []
+        if username is None:
+            username = ""
+        if password is None:
+            password = ""
 
         try:
-            if self.file.endswith(".csv"):
+            if username and password:
+                logger.info("using username and password")
+                response = requests.get(self.file, auth=(username, password))
+                if response.status_code == 200:
+                    data = StringIO(response.text)
+                    transactions = pd.read_csv(data, parse_dates=["date"])
+                else:
+                    raise ValueError(f"Failed to retrieve file: {response.status_code}")
+            elif self.file.endswith(".csv"):
                 transactions = pd.read_csv(self.file, parse_dates=["date"])
             elif self.file.endswith(".xlsx"):
                 transactions = pd.read_excel(self.file, engine="openpyxl")
