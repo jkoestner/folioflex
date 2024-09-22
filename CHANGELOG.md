@@ -1,5 +1,16 @@
 # Changelog
 
+## [v1.2.3](https://github.com/jkoestner/folioflex/tree/v1.2.3)
+
+[Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.2.2...v1.2.3)
+
+**Enhancements**
+- add subscription indentification in budget
+- add better charts for budget in dashboard
+
+**Documentation**
+- update budget tests
+
 ## [v1.2.2](https://github.com/jkoestner/folioflex/tree/v1.2.2)
 
 [Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.2.1...v1.2.2)

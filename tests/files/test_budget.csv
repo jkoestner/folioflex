@@ -1,4 +1,7 @@
 id,plaid_institution_id,date,name,amount,label
+32,ins_1,1/1/2024,utils,10,utils
+31,ins_1,2/1/2024,utils,10,utils
+30,ins_1,3/1/2024,utils,10,utils
 29,ins_2,3/3/2024,groceries,50,
 28,ins_1,3/2/2024,pet,-13,pets
 27,ins_1,3/1/2024,tickets,-60,shopping
@@ -9,7 +12,7 @@ id,plaid_institution_id,date,name,amount,label
 22,ins_2,2/25/2024,coffee,5,fast food
 21,ins_2,2/24/2024,groceries,50,groceries
 20,ins_3,2/23/2024,mortgage,1000,mortgage
-19,ins_1,2/22/2024,pet,-13,pets
+19,ins_1,2/22/2024,pet ??,-13,pets
 18,ins_1,2/21/2024,tickets,-60,shopping
 17,ins_2,2/20/2024,tickets,120,shopping
 16,ins_3,2/19/2024,payroll,2000,income
