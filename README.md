@@ -40,13 +40,11 @@ Simple investment portfolio tool that will track stock and provide returns and o
 **🔧 Features:**
 
 - **Market Screener**: Filter and find trending stocks. 🔍
-![screener](docs/screenshots/screener.png)
-![heatmap](docs/screenshots/heatmap.png)
+![stock](docs/screenshots/ffx_stock.gif)
 - **Portfolio Management**: Organize and track, your investments. 💼
-![portfolio](docs/screenshots/portfolio.png)
+![portfolio](docs/screenshots/ffx_invest.gif)
 - **Budget Tool**: Create and monitor a budget. 💰
-![budget](docs/screenshots/budget.png)
-![budget_compare](docs/screenshots/budget_compare.png)
+![budget](docs/screenshots/ffx_budget.gif)
 
 **📚 Documentation:**
 
