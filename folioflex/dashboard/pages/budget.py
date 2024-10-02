@@ -28,14 +28,6 @@ def layout():
     if not current_user.is_authenticated:
         return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])
 
-    # Get labels for the dropdown
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
-    budget_df = bdgt.get_transactions()
-    budget_df = bdgt.modify_transactions(budget_df)
-    labels = budget_df["label"].dropna().unique()
-    labels.sort()
-    label_options = [{"label": label, "value": label} for label in labels]
-
     return html.Div(
         [
             # adding variables needed that are used in callbacks.
@@ -114,13 +106,22 @@ def layout():
                     dbc.AccordionItem(
                         [
                             # category chart
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        html.Button(
+                                            "Label Chart", id="label-chart-button"
+                                        ),
+                                        width="auto",
+                                    ),
+                                ]
+                            ),
                             html.Div(
                                 [
                                     html.Label("Select Label"),
                                     dcc.Dropdown(
                                         id="label-dropdown",
-                                        options=label_options,
-                                        value=labels[0] if len(labels) > 0 else None,
+                                        # options=None,
                                     ),
                                 ]
                             ),
@@ -289,7 +290,7 @@ def update_comparechart(n_clicks, input_value, budget_section):
     if budget_section is None:
         logger.error("Budget section input is not defined.")
         return dash.no_update
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget)
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
     compare_chart = bdgt.display_compare_expenses_view(
@@ -332,10 +333,12 @@ def update_budget_db(n_clicks, budget_section):
 
 @callback(
     Output("expense-chart", "children"),
-    Input("label-dropdown", "value"),
+    Output("label-dropdown", "options"),
+    [Input("label-chart-button", "n_clicks"), Input("label-dropdown", "value")],
     State("budget-section-input", "value"),
+    prevent_initial_call=True,
 )
-def update_category_chart(selected_label, budget_section):
+def update_category_chart(n_clicks, selected_label, budget_section):
     """Display category chart."""
     if budget_section is None:
         logger.error("Budget section input is not defined.")
@@ -344,9 +347,15 @@ def update_category_chart(selected_label, budget_section):
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
 
+    labels = budget_df["label"].dropna().unique()
+    labels.sort()
+    label_options = [{"label": label, "value": label} for label in labels]
+    if selected_label is None:
+        selected_label = labels[0]
+
     expense_chart = bdgt.display_category_trend(budget_df, selected_label)
 
-    return dcc.Graph(figure=expense_chart, id="expense-chart-fig")
+    return dcc.Graph(figure=expense_chart, id="expense-chart-fig"), label_options
 
 
 @callback(

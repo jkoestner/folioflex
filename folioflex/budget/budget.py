@@ -632,6 +632,9 @@ class Budget:
         # filter data for category
         category_df = tx_df[tx_df["label"] == category]
         category_df = category_df.groupby(["month"])["amount"].sum().reset_index()
+        if len(category_df) == 0:
+            logger.warning(f"No transactions found for category: {category}")
+            return None
 
         # budgets
         category_budget = self.budgets.get(category, 0)

@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.3.0](https://github.com/jkoestner/folioflex/tree/v1.3.0)
+
+[Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.2.3...v1.3.0)
+
+**Enhancements**
+- add multiple users for budget
+
 ## [v1.2.3](https://github.com/jkoestner/folioflex/tree/v1.2.3)
 
 [Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.2.2...v1.2.3)
