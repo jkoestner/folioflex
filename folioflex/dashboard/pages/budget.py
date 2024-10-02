@@ -56,6 +56,18 @@ def layout():
                         width="auto",
                     ),
                     dbc.Col(
+                        html.Label("Budget Name"),
+                        width="auto",
+                    ),
+                    dbc.Col(
+                        dcc.Input(
+                            id="budget-section-input",
+                            placeholder="budget section in config",
+                            type="text",
+                        ),
+                        width="auto",
+                    ),
+                    dbc.Col(
                         html.Button(
                             "Update Budget Database",
                             id="budget-update-db-button",
@@ -222,12 +234,15 @@ def layout():
         Output("budget-chart-labels", "children"),
     ],
     [Input("budget-chart-button", "n_clicks")],
-    [State("budget-chart-input", "value")],
+    [State("budget-chart-input", "value"), State("budget-section-input", "value")],
     prevent_initial_call=True,
 )
-def update_budgetchart(n_clicks, input_value):
+def update_budgetchart(n_clicks, input_value, budget_section):
     """Provide budget info chart."""
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash.no_update
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
     budget_view = bdgt.budget_view(
@@ -246,12 +261,15 @@ def update_budgetchart(n_clicks, input_value):
 @callback(
     Output("income-chart", "children"),
     [Input("income-chart-button", "n_clicks")],
-    [State("budget-chart-input", "value")],
+    [State("budget-chart-input", "value"), State("budget-section-input", "value")],
     prevent_initial_call=True,
 )
-def update_incomeview(n_clicks, input_value):
+def update_incomeview(n_clicks, input_value, budget_section):
     """Provide income info chart."""
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
     income_chart = bdgt.display_income_view(budget_df)
@@ -263,12 +281,15 @@ def update_incomeview(n_clicks, input_value):
 @callback(
     Output("compare-chart", "children"),
     [Input("budget-compare-button", "n_clicks")],
-    [State("budget-chart-input", "value")],
+    [State("budget-chart-input", "value"), State("budget-section-input", "value")],
     prevent_initial_call=True,
 )
-def update_comparechart(n_clicks, input_value):
+def update_comparechart(n_clicks, input_value, budget_section):
     """Provide budget compare info chart."""
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash.no_update
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
     compare_chart = bdgt.display_compare_expenses_view(
@@ -282,19 +303,23 @@ def update_comparechart(n_clicks, input_value):
 @callback(
     Output("toast-update-db", "is_open"),
     [Input("budget-update-db-button", "n_clicks")],
+    State("budget-section-input", "value"),
     prevent_initial_call=True,
 )
-def update_budget_db(n_clicks):
+def update_budget_db(n_clicks, budget_section):
     """Provide budget compare info chart."""
     # get the unlabeled transactions
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash.no_update
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget_section)
     budget_df = bdgt.get_transactions()
     train_df = budget_df[~budget_df["label"].isna()]
     unlabeled_df = budget_df[budget_df["label"].isna()]
 
     # use trained model to predict labels
     model = models.Classifier(train_df=train_df)
-    model.load_model(model_name="components.pkl")
+    model.load_model(model_name=bdgt.model)
     predict_df = model.predict_labels(
         unlabeled_df=unlabeled_df, components=model.components
     )
@@ -308,10 +333,14 @@ def update_budget_db(n_clicks):
 @callback(
     Output("expense-chart", "children"),
     Input("label-dropdown", "value"),
+    State("budget-section-input", "value"),
 )
-def update_category_chart(selected_label):
+def update_category_chart(selected_label, budget_section):
     """Display category chart."""
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash.no_update
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
 
@@ -323,18 +352,22 @@ def update_category_chart(selected_label):
 @callback(
     Output("expense-table", "children"),
     [Input("expense-chart-fig", "clickData"), Input("label-dropdown", "value")],
+    State("budget-section-input", "value"),
     prevent_initial_call=True,
 )
-def update_expenses_table(clickData, selected_label):
+def update_expenses_table(clickData, selected_label, budget_section):
     """Update the table with expenses for the selected label and month."""
     if clickData is None:
+        return dash.no_update
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
         return dash.no_update
 
     clicked_month = clickData["points"][0]["x"]
     clicked_month = pd.to_datetime(clicked_month).strftime("%Y-%m")
     logger.info(f"Selected month: {clicked_month}")
 
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
 
@@ -359,14 +392,18 @@ def update_expenses_table(clickData, selected_label):
 @callback(
     Output("subscription-table", "children"),
     [Input("subscription-button", "n_clicks")],
+    State("budget-section-input", "value"),
     prevent_initial_call=True,
 )
-def update_subscription_table(clickData):
+def update_subscription_table(clickData, budget_section):
     """Update the table with possible subscriptions."""
     if clickData is None:
         return dash.no_update
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash.no_update
 
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
 

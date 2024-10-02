@@ -48,8 +48,10 @@ class Budget:
         self.config_dict = config_helper.get_config_options(config_path, budget)
         self.budgets = self.config_dict["budgets"]
         self.default = self.config_dict["default"]
+        self.budget = budget
+        self.model = self.config_dict.get("model", None)
 
-    def get_transactions(self, engine=None):
+    def get_transactions(self, engine=None, user=None):
         """
         Get the transactions for the budget.
 
@@ -59,6 +61,8 @@ class Budget:
         ----------
         engine : SQLAlchemy engine
             The engine to connect to the database.
+        user : str, optional
+            The user to get the transactions for.
 
         Returns
         -------
@@ -80,6 +84,8 @@ class Budget:
         """
         if engine is None:
             engine = self._create_engine()
+        if user is None:
+            user = self.config_dict.get("user", None)
         logger.info("Getting transactions.")
         # creating a dataframe of transactions that include
         # the account name, item name, and transaction name
@@ -89,6 +95,8 @@ class Budget:
             item_df = pd.read_sql_table("items_table", conn)
         with engine.connect() as conn, conn.begin():
             account_df = pd.read_sql_table("accounts_table", conn)
+        with engine.connect() as conn, conn.begin():
+            user_df = pd.read_sql_table("users_table", conn)
         # creating a grouped dataset
         tx_df = pd.merge(
             tx_df,
@@ -100,12 +108,22 @@ class Budget:
         )
         tx_df = pd.merge(
             tx_df,
-            item_df[["id", "plaid_institution_id"]],
+            item_df[["id", "plaid_institution_id", "user_id"]],
             left_on="item_id",
             right_on="id",
             how="left",
             suffixes=[None, "_tmp"],
         )
+        tx_df = pd.merge(
+            tx_df,
+            user_df[["id", "username"]],
+            left_on="user_id",
+            right_on="id",
+            how="left",
+            suffixes=[None, "_tmp"],
+        )
+        if user is not None:
+            tx_df = tx_df[tx_df["username"] == user]
         tx_df = tx_df[
             [
                 "id",
