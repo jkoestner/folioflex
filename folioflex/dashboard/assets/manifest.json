@@ -4,17 +4,17 @@
     "icons": [
       {
         "src": "/assets/folioflex_192x192.png",
-        "sizes": "16x16",
+        "sizes": "192x192",
         "type": "image/png"
       },
       {
         "src": "/assets/folioflex_256x256.png",
-        "sizes": "32x32",
+        "sizes": "256x256",
         "type": "image/png"
       },
       {
         "src": "/assets/folioflex_512x512.png",
-        "sizes": "64x64",
+        "sizes": "512x512",
         "type": "image/png"
       }
     ],
