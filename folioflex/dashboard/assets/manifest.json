@@ -3,22 +3,17 @@
     "name": "FolioFlex",
     "icons": [
       {
-        "src": "/assets/folioflex_16x16.png",
+        "src": "/assets/folioflex_192x192.png",
         "sizes": "16x16",
         "type": "image/png"
       },
       {
-        "src": "/assets/folioflex_32x32.png",
+        "src": "/assets/folioflex_256x256.png",
         "sizes": "32x32",
         "type": "image/png"
       },
       {
-        "src": "/assets/folioflex_48x48.png",
-        "sizes": "48x48",
-        "type": "image/png"
-      },
-      {
-        "src": "/assets/folioflex_64x64.png",
+        "src": "/assets/folioflex_512x512.png",
         "sizes": "64x64",
         "type": "image/png"
       }
