@@ -11,7 +11,7 @@ from folioflex.utils import custom_logger
 
 logger = custom_logger.setup_logging(__name__)
 
-dash.register_page(__name__, path="/", title="FolioFlex", order=0)
+dash.register_page(__name__, path="/", title="folioflex", order=0)
 
 #   _                            _
 #  | |    __ _ _   _  ___  _   _| |_
