@@ -1,4 +1,5 @@
 """Tests the portfolio tracker."""
+
 from datetime import timedelta
 
 import numpy as np
@@ -10,10 +11,10 @@ from folioflex.portfolio import portfolio
 from folioflex.utils import config_helper
 
 date = "05-02-2022"  # date to test for performance
-config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_portfolio.ini"
+config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_config.yml"
 
 pf = portfolio.Portfolio(config_path=config_path, portfolio="test")
-config_dict = config_helper.get_config_options(config_path, "test")
+config_dict = config_helper.get_config_options(config_path, "investments", "test")
 
 
 def test_portfolio_load():

@@ -164,7 +164,7 @@ When using the portfolio class, the following code can be used to get the return
 
 ```python
 from folioflex.portfolio.portfolio import Portfolio
-config_path = "portfolio_demo.ini"
+config_path = "portfolio_demo.yml"
 pf = Portfolio(
     config_path=config_path, 
     portfolio='company_a'

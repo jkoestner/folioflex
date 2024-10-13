@@ -53,7 +53,7 @@ def _create_argparser():
         "-c",
         "--config_path",
         type=str,
-        default="portfolio_personal.ini",
+        default="config.yml",
         help="The path that has portfolio configuration",
     )
 
@@ -93,7 +93,7 @@ def _create_argparser():
         "-c",
         "--config_path",
         type=str,
-        default="portfolio_personal.ini",
+        default="config.yml",
         help="The path that has portfolio configuration",
     )
 

@@ -6,10 +6,12 @@ from the larger portfolio project, and allows easier integration.
 
 """
 
+import re
 import ssl
 from datetime import datetime, time, timedelta
 from io import StringIO
 from urllib import request
+from urllib.parse import urlencode
 
 import fredapi
 import pandas as pd
@@ -747,3 +749,68 @@ class Yahoo:
         clean_df.columns = clean_df.columns.set_levels(idx, level=lvl)
 
         return clean_df
+
+
+class KBB:
+    """
+    Wrapper for kelley blue book.
+
+    Class that provides functions that use data from kelley blue book.
+    https://www.kbb.com/
+    """
+
+    def __init__(self):
+        self.value = None
+
+    def get_value(self, params):
+        """
+        Get the value for car.
+
+        supported intents are 'trade-in-sell' and 'buy-new'
+
+        Parameters
+        ----------
+        params : dict
+            dictionary of car parameters
+
+        Returns
+        -------
+        value : float
+            value of car
+
+        """
+        value = None
+
+        # creating the url
+        base_keys = ["make", "model", "year", "style"]
+        options = {key: value for key, value in params.items() if key not in base_keys}
+        url = (
+            f"https://www.kbb.com/"
+            f"{params['make']}/"
+            f"{params['model']}/"
+            f"{params['year']}/"
+            f"{params['style']}/"
+            f"?{urlencode(options)}"
+        )
+
+        # get the value
+        response = requests.get(url)
+        if params["intent"] == "trade-in-sell":
+            match = re.search(r',"value":(\d+)', response.text)
+        elif params["intent"] == "buy-new":
+            match = re.search(r'"price":(\d+)', response.text)
+        else:
+            logger.warning("Only 'trade-in-sell' and 'buy-new' intents are supported")
+            return None
+        try:
+            value = int(match.group(1))
+            logger.info(f"url: {url}")
+            logger.info(f"Trade-in value: {value}")
+        except Exception as e:
+            logger.warning(f"Error: {e}")
+            logger.warning(
+                f"value not found try different parameters and check url: {url}"
+            )
+        self.value = value
+
+        return value

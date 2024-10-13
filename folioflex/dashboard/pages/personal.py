@@ -26,7 +26,9 @@ dash.register_page(__name__, path="/personal", title="folioflex - Personal", ord
 #              |___/
 
 
-portfolio_list = config_helper.get_config("portfolio_personal.ini").sections()
+portfolio_list = list(
+    config_helper.get_config_options("config.yml", "investments").keys()
+)
 value = "static"
 if value in portfolio_list:
     portfolio_list.remove(value)
@@ -165,7 +167,7 @@ def initialize_PersonalGraph(n_clicks, dropdown, lookback):
     if n_clicks == 0:
         personal_task_id = "none"
     else:
-        config_file = "portfolio_personal.ini"
+        config_file = "config.yml"
 
         personal_task = cq.portfolio_query.delay(
             config_file=config_file, broker=dropdown, lookback=lookback
@@ -345,7 +347,7 @@ def initialize_ManagerTable(n_clicks, lookback):
     if n_clicks == 0:
         manager_task_id = "none"
     else:
-        config_file = "portfolio_personal.ini"
+        config_file = "config.yml"
         task = cq.manager_query.delay(config_file, lookback)
         manager_task_id = task.id
         print(f"initializing manager table - {manager_task_id}")

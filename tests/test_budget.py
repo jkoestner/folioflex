@@ -8,7 +8,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from folioflex.budget import budget, models
 from folioflex.utils import config_helper
 
-config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_budget.ini"
+config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_config.yml"
 test_csv = config_helper.ROOT_PATH / "tests" / "files" / "test_budget.csv"
 
 df = pd.read_csv(test_csv)
@@ -92,7 +92,7 @@ def test_feature_embedding():
 def test_subscription():
     """Checks if the subscription identification is correct."""
     df["date"] = pd.to_datetime(df["date"]).dt.date
-    bdgt = budget.Budget(config_path="test_budget.ini", budget="test")
+    bdgt = budget.Budget(config_path="test_config.yml", budget="test")
     subscription_tbl = bdgt.identify_subscriptions(tx_df=df)
     utils_occurs = subscription_tbl[subscription_tbl["Description"] == "utils"][
         "Occurrences"
@@ -104,6 +104,6 @@ def test_subscription():
 def test_preprocess_emoji():
     """Checks if emojis are removed from text."""
     test_text = "I love 🐶"
-    bdgt = budget.Budget(config_path="test_budget.ini", budget="test")
+    bdgt = budget.Budget(config_path="test_config.yml", budget="test")
     clean_text = bdgt.modify_preprocess_emoji(test_text)
     assert clean_text == "I love  dog_face ", "Emoji was not removed from text"

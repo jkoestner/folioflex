@@ -54,7 +54,7 @@ def layout():
                     dbc.Col(
                         dcc.Input(
                             id="budget-section-input",
-                            placeholder="budget section in config",
+                            placeholder="budget name",
                             type="text",
                         ),
                         width="auto",
@@ -243,7 +243,7 @@ def update_budgetchart(n_clicks, input_value, budget_section):
     if budget_section is None:
         logger.error("Budget section input is not defined.")
         return dash.no_update
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget_section)
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
     budget_view = bdgt.budget_view(
@@ -270,7 +270,7 @@ def update_incomeview(n_clicks, input_value, budget_section):
     if budget_section is None:
         logger.error("Budget section input is not defined.")
         return dash
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget_section)
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
     income_chart = bdgt.display_income_view(budget_df)
@@ -290,7 +290,7 @@ def update_comparechart(n_clicks, input_value, budget_section):
     if budget_section is None:
         logger.error("Budget section input is not defined.")
         return dash.no_update
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget_section)
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
     compare_chart = bdgt.display_compare_expenses_view(
@@ -313,7 +313,7 @@ def update_budget_db(n_clicks, budget_section):
     if budget_section is None:
         logger.error("Budget section input is not defined.")
         return dash.no_update
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget_section)
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     train_df = budget_df[~budget_df["label"].isna()]
     unlabeled_df = budget_df[budget_df["label"].isna()]
@@ -343,7 +343,7 @@ def update_category_chart(n_clicks, selected_label, budget_section):
     if budget_section is None:
         logger.error("Budget section input is not defined.")
         return dash.no_update
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget_section)
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
 
@@ -376,7 +376,7 @@ def update_expenses_table(clickData, selected_label, budget_section):
     clicked_month = pd.to_datetime(clicked_month).strftime("%Y-%m")
     logger.info(f"Selected month: {clicked_month}")
 
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget_section)
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
 
@@ -412,7 +412,7 @@ def update_subscription_table(clickData, budget_section):
         logger.error("Budget section input is not defined.")
         return dash.no_update
 
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget=budget_section)
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
 

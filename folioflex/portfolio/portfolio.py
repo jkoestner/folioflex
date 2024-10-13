@@ -72,7 +72,9 @@ class Portfolio:
         portfolio,
     ):
         """Initialize the Portfolio class."""
-        config_dict = config_helper.get_config_options(config_path, portfolio)
+        config_dict = config_helper.get_config_options(
+            config_path, "investments", portfolio
+        )
         self.file = self.load_filename(config_dict["tx_file"])
         logger.info(f"retrieved filename {self.file}")
         self.username = config_dict.get("username", None)
