@@ -137,7 +137,6 @@ def get_asset_df(engine, user=None, current=True):
 
     # sort
     asset_df = asset_df[["date", "asset", "value"]]
-    asset_df = asset_df.sort_values(by="date", ascending=False)
 
     # only get the current value of the assets
     if current:
@@ -148,6 +147,7 @@ def get_asset_df(engine, user=None, current=True):
             .reset_index()
         )
 
+    asset_df = asset_df.sort_values(by="date", ascending=False)
     asset_df.loc["total"] = asset_df.select_dtypes("number").sum()
 
     return asset_df

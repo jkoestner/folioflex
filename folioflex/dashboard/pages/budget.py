@@ -216,12 +216,23 @@ def layout():
                     dbc.AccordionItem(
                         [
                             # Assets table
-                            dbc.Col(
-                                html.Button(
-                                    "Assets Table",
-                                    id="assets-button",
-                                    n_clicks=0,
-                                ),
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        html.Button(
+                                            "Assets Table",
+                                            id="assets-button",
+                                            n_clicks=0,
+                                        ),
+                                    ),
+                                    dbc.Col(
+                                        html.Button(
+                                            "Update Assets Values",
+                                            id="assets-retrieve-button",
+                                            n_clicks=0,
+                                        ),
+                                    ),
+                                ],
                             ),
                             dbc.Col(
                                 dcc.Loading(
@@ -539,3 +550,15 @@ def update_loans_table(clickData, budget_section):
     )
 
     return loans_tbl_div
+
+
+@callback(
+    [Input("assets-retrieve-button", "n_clicks")],
+    prevent_initial_call=True,
+)
+def retrieve_asset_values(clickData):
+    """Get new asset values."""
+    if clickData is None:
+        return dash.no_update
+    assets.update_asset_info(config_path="config.yml", db_write=True)
+    return dash.no_update

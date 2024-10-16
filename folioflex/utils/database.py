@@ -149,9 +149,13 @@ class Engine:
         new_df = df
         if avoid_dups:
             existing_df = pd.read_sql_table(table_name, self.engine)
-            combined_df = pd.concat([existing_df, df], ignore_index=True)
-            new_df = combined_df.drop_duplicates(subset=avoid_dups, keep=False)
-
+            existing_df["date"] = existing_df["date"].dt.date
+            merged_df = df.merge(
+                existing_df[avoid_dups], on=avoid_dups, how="left", indicator=True
+            )
+            new_df = merged_df[merged_df["_merge"] == "left_only"].drop(
+                columns=["_merge"]
+            )
         if not new_df.empty:
             new_df.to_sql(
                 table_name, self.engine, if_exists=if_exists, index=False, **kwargs
