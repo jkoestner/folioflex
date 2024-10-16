@@ -13,7 +13,8 @@ from flask_login import current_user
 from folioflex.budget import budget, models
 from folioflex.dashboard.components import dash_formats
 from folioflex.dashboard.utils import dashboard_helper
-from folioflex.utils import custom_logger
+from folioflex.portfolio import assets, loans
+from folioflex.utils import custom_logger, database
 
 logger = custom_logger.setup_logging(__name__)
 
@@ -211,6 +212,48 @@ def layout():
                             ),
                         ],
                         title="Subscription Table",
+                    ),
+                    dbc.AccordionItem(
+                        [
+                            # Assets table
+                            dbc.Col(
+                                html.Button(
+                                    "Assets Table",
+                                    id="assets-button",
+                                    n_clicks=0,
+                                ),
+                            ),
+                            dbc.Col(
+                                dcc.Loading(
+                                    id="loading-assets-table",
+                                    type="dot",
+                                    children=html.Div(id="assets-table"),
+                                ),
+                                style={"overflow": "auto"},
+                            ),
+                        ],
+                        title="Assets Table",
+                    ),
+                    dbc.AccordionItem(
+                        [
+                            # Loans table
+                            dbc.Col(
+                                html.Button(
+                                    "Loans Table",
+                                    id="loans-button",
+                                    n_clicks=0,
+                                ),
+                            ),
+                            dbc.Col(
+                                dcc.Loading(
+                                    id="loading-loans-table",
+                                    type="dot",
+                                    children=html.Div(id="loans-table"),
+                                ),
+                                style={"overflow": "auto"},
+                            ),
+                        ],
+                        title="Loans Table",
                     ),
                 ],
                 start_collapsed=True,
@@ -430,3 +473,69 @@ def update_subscription_table(clickData, budget_section):
     )
 
     return subscription_tbl_div
+
+
+@callback(
+    Output("assets-table", "children"),
+    [Input("assets-button", "n_clicks")],
+    State("budget-section-input", "value"),
+    prevent_initial_call=True,
+)
+def update_assets_table(clickData, budget_section):
+    """Update the table with assets."""
+    if clickData is None:
+        return dash.no_update
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash.no_update
+
+    engine = database.Engine(config_path="config.yml")
+    # get asset_df
+    asset_df = assets.get_asset_df(engine=engine, user=budget_section, current=True)
+
+    # create the table
+    assets_tbl_div = html.Div(
+        [
+            dag.AgGrid(
+                id="grid-assets",
+                rowData=asset_df.to_dict("records"),
+                columnDefs=dash_formats.get_column_defs(asset_df),
+            )
+        ]
+    )
+
+    return assets_tbl_div
+
+
+@callback(
+    Output("loans-table", "children"),
+    [Input("loans-button", "n_clicks")],
+    State("budget-section-input", "value"),
+    prevent_initial_call=True,
+)
+def update_loans_table(clickData, budget_section):
+    """Update the table with loans."""
+    if clickData is None:
+        return dash.no_update
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash.no_update
+
+    engine = database.Engine(config_path="config.yml")
+    # get loans in config
+    loans_df = loans.get_loan_df(
+        config_path="config.yml", engine=engine, user=budget_section
+    )
+
+    # create the table
+    loans_tbl_div = html.Div(
+        [
+            dag.AgGrid(
+                id="grid-assets",
+                rowData=loans_df.to_dict("records"),
+                columnDefs=dash_formats.get_column_defs(loans_df),
+            )
+        ]
+    )
+
+    return loans_tbl_div

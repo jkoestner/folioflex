@@ -91,10 +91,10 @@ class Budget:
         logger.info("Getting transactions.")
         # creating a dataframe of transactions that include
         # the account name, item name, and transaction name
-        tx_df = engine.read_table("transactions_table")
+        user_df = engine.read_table("users_table")
         item_df = engine.read_table("items_table")
         account_df = engine.read_table("accounts_table")
-        user_df = engine.read_table("users_table")
+        tx_df = engine.read_table("transactions_table")
         # creating a grouped dataset
         tx_df = pd.merge(
             tx_df,

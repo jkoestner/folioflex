@@ -11,9 +11,11 @@ pd.options.display.float_format = "{:,.2f}".format
 logger = custom_logger.setup_logging(__name__)
 
 
-def get_asset_value(config_path, asset=None, asset_group=None, db_write=False):
+def update_asset_info(
+    config_path, asset=None, asset_group=None, db_write=False, proxy=None
+):
     """
-    Get the value of asset/s.
+    Update the value of asset/s.
 
     Parameters
     ----------
@@ -25,6 +27,8 @@ def get_asset_value(config_path, asset=None, asset_group=None, db_write=False):
         The name of the asset group.
     db_write : bool, optional
         Whether to write the data to the database.
+    proxy : str, optional
+        The proxy to use for the request.
 
     Returns
     -------
@@ -59,34 +63,139 @@ def get_asset_value(config_path, asset=None, asset_group=None, db_write=False):
         for section in sections:
             if item in config_helper.get_config_options(config_path, "assets", section):
                 asset_group = section
+                break
         if asset_group == "cars":
             params = config_helper.get_config_options(
                 config_path, "assets", "cars", item
             )
-            value = wrappers.KBB().get_value(params)
-            rows.append(
-                {
-                    "date": pd.Timestamp.now().date(),
-                    "asset": item,
-                    "value": value,
-                    "params": params,
-                }
-            )
-
+            value = wrappers.KBB().get_value(params, proxy=proxy)
         elif asset_group == "houses":
-            pass
+            params = config_helper.get_config_options(
+                config_path, "assets", "houses", item
+            )
+            value = wrappers.Zillow().get_value(params, proxy=proxy)
         else:
             logger.error(f"Asset group '{asset_group}' not found.")
             return
+        rows.append(
+            {
+                "date": pd.Timestamp.now().date(),
+                "asset": item,
+                "value": value,
+                "params": params,
+            }
+        )
 
     asset_df = pd.DataFrame(rows)
+    asset_df = asset_df.dropna(subset=["value"])  # drop rows with missing values
+    logger.info(f"found {len(asset_df)} assets")
     if db_write:
         engine = database.Engine(config_path)
         engine.write_table(
-            table_name="ffx_assets", df=asset_df, dtype={"params": sa.types.JSON}
+            table_name="ffx_assets",
+            df=asset_df,
+            avoid_dups=["date", "asset"],
+            dtype={"params": sa.types.JSON},
         )
 
     return asset_df
+
+
+def get_asset_df(engine, user=None, current=True):
+    """
+    Get the asset df.
+
+    Parameters
+    ----------
+    engine : SQLAlchemy engine
+        The engine to connect to the database.
+    user : str, optional
+        The name of the user.
+    current : bool, optional
+        Whether to get the current value of the assets.
+
+    Returns
+    -------
+    asset_df : dict
+        A dictionary with the asset info.
+
+    """
+    # read in the asset table
+    asset_df = engine.read_table("ffx_assets")
+    asset_df["date"] = asset_df["date"].dt.date
+
+    # add in the checking account
+    checking_value = get_checking_value(engine, user=user)
+    checking_df = pd.DataFrame(
+        {
+            "date": [pd.Timestamp.now().date()],
+            "asset": ["checking"],
+            "value": [checking_value],
+        }
+    ).dropna(axis=1, how="all")
+    asset_df = pd.concat([asset_df, checking_df], ignore_index=True)
+
+    # sort
+    asset_df = asset_df[["date", "asset", "value"]]
+    asset_df = asset_df.sort_values(by="date", ascending=False)
+
+    # only get the current value of the assets
+    if current:
+        asset_df = (
+            asset_df.sort_values(by="date", ascending=False)
+            .groupby("asset")
+            .first()
+            .reset_index()
+        )
+
+    asset_df.loc["total"] = asset_df.select_dtypes("number").sum()
+
+    return asset_df
+
+
+def get_checking_value(engine, user=None):
+    """
+    Get the value of the checking account.
+
+    Parameters
+    ----------
+    engine : SQLAlchemy engine
+        The engine to connect to the database.
+    user : str, optional
+        The name of the user.
+
+    Returns
+    -------
+    checking_value : float
+        The value of the checking account.
+
+    """
+    # get the accounts from database
+    user_df = engine.read_table("users_table")
+    item_df = engine.read_table("items_table")
+    account_df = engine.read_table("accounts_table")
+    account_df = pd.merge(
+        account_df,
+        item_df[["id", "plaid_institution_id", "user_id"]],
+        left_on="item_id",
+        right_on="id",
+        how="left",
+        suffixes=[None, "_tmp"],
+    )
+    account_df = pd.merge(
+        account_df,
+        user_df[["id", "username"]],
+        left_on="user_id",
+        right_on="id",
+        how="left",
+        suffixes=[None, "_tmp"],
+    )
+    if user is not None:
+        account_df = account_df[account_df["username"] == user]
+    account_df = account_df[account_df["subtype"] == "checking"]
+    checking_value = account_df["current_balance"].sum()
+
+    return checking_value
 
 
 def create_asset_table(engine):
@@ -107,5 +216,6 @@ def create_asset_table(engine):
         sa.Column("asset", sa.String),
         sa.Column("value", sa.Float),
         sa.Column("params", sa.String),
+        sa.UniqueConstraint("date", "asset", name="uix_date_asset"),
     ]
     engine.create_table(table_name, columns)

@@ -1,0 +1,250 @@
+"""Module for handling loans."""
+
+import math
+
+import pandas as pd
+
+from folioflex.utils import config_helper, custom_logger
+
+pd.options.display.float_format = "{:,.2f}".format
+
+logger = custom_logger.setup_logging(__name__)
+
+
+def get_loan_df(config_path, loan=None, engine=None, user=None):
+    """
+    Get loan df.
+
+    Parameters
+    ----------
+    config_path : str
+        The location of the config file.
+    loan : str, optional
+        The name of the loan.
+    engine : SQLAlchemy engine
+        The engine to connect to the database.
+    user : str, optional
+        The name of the user.
+
+    Returns
+    -------
+    loan_df : dict
+        A dictionary with the loan info.
+
+    """
+    items = []
+    rows = []
+    # get the list of loans to use for the calculations
+    if loan is None:
+        items += list(config_helper.get_config_options(config_path, "loans").keys())
+    elif loan is not None:
+        items.append(loan)
+    for item in items:
+        params = config_helper.get_config_options(config_path, "loans", item)
+        payments_left = get_payments_left(config_path, loan=item)
+        interest_left = get_interest(
+            current_loan=params["current_loan"],
+            payments_left=payments_left,
+            payment_amount=params["monthly_payment"],
+        )
+        rows.append(
+            {
+                "loan": item,
+                "original loan": float(params["original_loan"]),
+                "nominal_annual_interest": params["nominal_annual_interest"],
+                "monthly_payment": float(params["monthly_payment"]),
+                "current_loan": float(params["current_loan"]),
+                "payments_left": payments_left,
+                "interest_left": interest_left,
+            }
+        )
+
+    # add in the credit card value
+    if engine:
+        credit_card_value = get_credit_card_value(engine, user=user)
+        rows.append(
+            {
+                "loan": "credit card",
+                "original loan": None,
+                "nominal_annual_interest": None,
+                "monthly_payment": None,
+                "current_loan": credit_card_value,
+                "payments_left": None,
+                "interest_left": None,
+            }
+        )
+
+    loan_df = pd.DataFrame(rows)
+
+    # sort and total
+    loan_df = loan_df.sort_values(by="loan", ascending=False)
+    loan_df.loc["total"] = loan_df.select_dtypes("number").sum()
+
+    return loan_df
+
+
+def get_payments_left(
+    config_path=None, loan=None, current_loan=None, payment_amount=None, interest=None
+):
+    """
+    Get the info of a loan.
+
+    We use the nominal interest rate to calculate the payments left.
+      - nominal interest is the interest rate without the effect of compounding
+      - effective interest rate is the interest rate with the effect of compounding
+      - real interest rate is the interest rate with the effect of inflation
+
+    Parameters
+    ----------
+    config_path : str
+        The location of the config file.
+    loan : str, optional
+        The name of the loan.
+    current_loan : float, optional
+        The current loan amount.
+    payment_amount : float, optional
+        The payment amount.
+    interest : float, optional
+        The interest rate.
+
+    Returns
+    -------
+    payments_left : float
+        The number of payments left on the loan.
+
+    References
+    ----------
+    - https://brownmath.com/bsci/loan.htm
+
+    """
+    if config_path:
+        params = config_helper.get_config_options(config_path, "loans", loan)
+        current_loan = params["current_loan"]
+        payment_amount = params["monthly_payment"]
+        interest = params["nominal_annual_interest"] / 12 / 100
+
+    # checks
+    if interest >= 1:
+        logger.error(
+            "The interest rate should be less than 1 and be written as "
+            "as percentage."
+        )
+        return None
+
+    # get the payments left
+    payments_left = math.log10(
+        1 / (1 - (current_loan * interest) / payment_amount)
+    ) / math.log10(1 + interest)
+
+    return payments_left
+
+
+def get_payment_amount(current_loan=None, payments_left=None, interest=None):
+    """
+    Get the info of a loan.
+
+    We use the nominal interest rate to calculate the payments left.
+      - nominal interest is the interest rate without the effect of compounding
+      - effective interest rate is the interest rate with the effect of compounding
+      - real interest rate is the interest rate with the effect of inflation
+
+    Parameters
+    ----------
+    current_loan : float, optional
+        The current loan amount.
+    payments_left : float, optional
+        The monthly payment.
+    interest : float, optional
+        The interest rate.
+
+    Returns
+    -------
+    payment_amount : float
+        The amount of the payments
+
+    References
+    ----------
+    - https://brownmath.com/bsci/loan.htm
+
+    """
+    # checks
+    if interest >= 1:
+        logger.error(
+            "The interest rate should be less than 1 and be written as "
+            "as percentage."
+        )
+        return None
+
+    # get the payments left
+    payment_amount = (current_loan * interest) / (1 - (1 + interest) ** -payments_left)
+
+    return payment_amount
+
+
+def get_interest(current_loan=None, payments_left=None, payment_amount=None):
+    """
+    Get the interest that will be paid.
+
+    Parameters
+    ----------
+    current_loan : float, optional
+        The current loan amount.
+    payments_left : float, optional
+        The amount of payments left.
+    payment_amount : float, optional
+        The monthly payment.
+
+    Returns
+    -------
+    interest : float
+        The amount of interest that will be paid.
+
+    """
+    interest = (payments_left * payment_amount) - current_loan
+
+    return interest
+
+
+def get_credit_card_value(engine, user=None):
+    """
+    Get the value of the loan account.
+
+    Parameters
+    ----------
+    engine : SQLAlchemy engine
+        The engine to connect to the database.
+    user : str, optional
+        The name of the user.
+
+    Returns
+    -------
+    loan_value : float
+        The value of the loan accounts.
+
+    """
+    # get the accounts from database
+    user_df = engine.read_table("users_table")
+    item_df = engine.read_table("items_table")
+    account_df = engine.read_table("accounts_table")
+    account_df = pd.merge(
+        account_df,
+        item_df[["id", "plaid_institution_id", "user_id"]],
+        left_on="item_id",
+        right_on="id",
+        how="left",
+        suffixes=[None, "_tmp"],
+    )
+    account_df = pd.merge(
+        account_df,
+        user_df[["id", "username"]],
+        left_on="user_id",
+        right_on="id",
+        how="left",
+        suffixes=[None, "_tmp"],
+    )
+    if user is not None:
+        account_df = account_df[account_df["username"] == user]
+    account_df = account_df[account_df["subtype"] == "credit card"]
+    loan_value = account_df["current_balance"].sum()
+
+    return loan_value

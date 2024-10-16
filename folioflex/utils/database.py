@@ -124,7 +124,9 @@ class Engine:
             logger.error(f"Table '{table_name}' does not exist.")
             return pd.DataFrame()
 
-    def write_table(self, df, table_name, if_exists="append", **kwargs):
+    def write_table(
+        self, df, table_name, if_exists="append", avoid_dups=None, **kwargs
+    ):
         """
         Write a DataFrame to a table in the database.
 
@@ -137,13 +139,26 @@ class Engine:
         if_exists : str, default 'replace'
             What to do if the table already exists.
             Options are: 'fail', 'replace', 'append'.
+        avoid_dups : list, optional
+            A list of columns to check for duplicates before inserting.
         kwargs : dict
             Additional keyword arguments to pass to the DataFrame.to_sql method.
 
 
         """
-        df.to_sql(table_name, self.engine, if_exists=if_exists, index=False, **kwargs)
-        logger.info(f"DataFrame written to table '{table_name}'.")
+        new_df = df
+        if avoid_dups:
+            existing_df = pd.read_sql_table(table_name, self.engine)
+            combined_df = pd.concat([existing_df, df], ignore_index=True)
+            new_df = combined_df.drop_duplicates(subset=avoid_dups, keep=False)
+
+        if not new_df.empty:
+            new_df.to_sql(
+                table_name, self.engine, if_exists=if_exists, index=False, **kwargs
+            )
+            logger.info(f"Inserted {len(new_df)} new rows into table '{table_name}'.")
+        else:
+            logger.info("No new rows to insert; all rows already exist in the table.")
 
     def bulk_update(self, tx_df, table_name, where_column):
         """

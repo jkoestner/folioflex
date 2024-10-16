@@ -762,7 +762,7 @@ class KBB:
     def __init__(self):
         self.value = None
 
-    def get_value(self, params):
+    def get_value(self, params, proxy=None):
         """
         Get the value for car.
 
@@ -772,6 +772,8 @@ class KBB:
         ----------
         params : dict
             dictionary of car parameters
+        proxy : str, optional
+            proxy to use for requests
 
         Returns
         -------
@@ -780,6 +782,21 @@ class KBB:
 
         """
         value = None
+        headers = {
+            "authority": "www.kbb.com",
+            "accept": "*/*",
+            "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+            "content-type": "application/json",
+            "origin": "https://www.kbb.com",
+            "referer": "https://www.kbb.com/",
+            "sec-ch-ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',  # noqa: E501
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",  # noqa: E501
+        }
 
         # creating the url
         base_keys = ["make", "model", "year", "style"]
@@ -793,8 +810,20 @@ class KBB:
             f"?{urlencode(options)}"
         )
 
+        # set the proxy
+        proxies = None
+        if proxy:
+            proxies = {"http": proxy, "https": proxy}
+
+        # set the cookies
+        cookies = None
+        if params.get("zipcd"):
+            cookies = {
+                "x-coxauto-aka-data": f"US|VA|{params.get('zipcd')}|VA|||0|0|800|1280|Windows NT|Chrome"  # noqa: E501
+            }
+
         # get the value
-        response = requests.get(url)
+        response = requests.get(url, headers=headers, proxies=proxies, cookies=cookies)
         if params["intent"] == "trade-in-sell":
             match = re.search(r',"value":(\d+)', response.text)
         elif params["intent"] == "buy-new":
@@ -811,6 +840,76 @@ class KBB:
             logger.warning(
                 f"value not found try different parameters and check url: {url}"
             )
+        self.value = value
+
+        return value
+
+
+class Zillow:
+    """
+    Wrapper for Zillow data.
+
+    Class that provides functions that use data from Zillow data.
+
+    """
+
+    def __init__(self):
+        self.value = None
+
+    def get_value(self, params, proxy=None):
+        """
+        Get the value of a home.
+
+        Parameters
+        ----------
+        params : dict
+            dictionary of home parameters
+        proxy : str, optional
+            proxy to use for requests
+
+        Returns
+        -------
+        value : float
+            value of home
+
+        """
+        # headers
+        headers = {
+            "authority": "www.zillow.com",
+            "accept": "*/*",
+            "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+            "content-type": "application/json",
+            "origin": "https://www.zillow.com",
+            "referer": "https://www.zillow.com/",
+            "sec-ch-ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',  # noqa: E501
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",  # noqa: E501
+        }
+        # creating the url
+        url = f"https://www.zillow.com/homes/{params['street']}-{params['city']}-{params['zipcd']}"
+
+        # set the proxy
+        proxies = None
+        if proxy:
+            proxies = {"http": proxy, "https": proxy}
+
+        # get the value
+        response = requests.get(url, headers=headers, proxies=proxies)
+        match = re.search(r'\\"price\\":(\d+)', response.text)
+        try:
+            value = int(match.group(1))
+            logger.info(f"url: {url}")
+            logger.info(f"Home value: {value}")
+        except Exception as e:
+            logger.warning(f"Error: {e}")
+            logger.warning(
+                f"value not found try different parameters and check url: {url}"
+            )
+            value = None
         self.value = value
 
         return value
