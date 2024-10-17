@@ -162,7 +162,9 @@ class Engine:
             )
             logger.info(f"Inserted {len(new_df)} new rows into table '{table_name}'.")
         else:
-            logger.info("No new rows to insert; all rows already exist in the table.")
+            logger.warning(
+                "No new rows to insert; all rows already exist in the table."
+            )
 
     def bulk_update(self, tx_df, table_name, where_column):
         """

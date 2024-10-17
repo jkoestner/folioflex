@@ -123,3 +123,49 @@ budgets:
     db_host: None
     db_port: None
     
+#                         _       
+#      /\                | |      
+#     /  \   ___ ___  ___| |_ ___ 
+#    / /\ \ / __/ __|/ _ \ __/ __|
+#   / ____ \\__ \__ \  __/ |_\__ \
+#  /_/    \_\___/___/\___|\__|___/
+#
+# These values are used to track assets
+
+assets:
+  users:
+    user1: ['toyota']
+  cars:
+    toyota:
+      make: toyota
+      model: rav4-hybrid
+      year: 2021
+      style: le-sport-utility-4d
+      mileage: 45000
+      intent: trade-in-sell
+      condition: verygood
+
+#   _                           
+#  | |                          
+#  | |     ___   __ _ _ __  ___ 
+#  | |    / _ \ / _` | '_ \/ __|
+#  | |___| (_) | (_| | | | \__ \
+#  |______\___/ \__,_|_| |_|___/
+#
+# These values are used to track loans
+                              
+loans:
+  users:
+    user1: ['house', 'school']
+  house:
+    original_loan: 500000
+    nominal_annual_interest: 5.00
+    monthly_payment: 2000
+    current_loan: 400000
+    total_paid: 200000
+  school:
+    original_loan: 45000
+    nominal_annual_interest: 5.75
+    monthly_payment: 350
+    current_loan: 25000
+    total_paid: 35000

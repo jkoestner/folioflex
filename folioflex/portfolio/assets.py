@@ -1,6 +1,7 @@
 """Module for handling assets."""
 
 import pandas as pd
+import plotly.express as px
 import sqlalchemy as sa
 
 from folioflex.portfolio import wrappers
@@ -47,18 +48,19 @@ def update_asset_info(
             items += list(
                 config_helper.get_config_options(config_path, "assets", section).keys()
             )
-    elif asset is not None and asset_group is None:
+    elif asset and asset_group is None:
         items.append(asset)
-    elif asset is None and asset_group is not None:
+    elif asset is None and asset_group:
         items = list(
             config_helper.get_config_options(config_path, "assets", asset_group).keys()
         )
     else:
         logger.error("Please provide either an asset or an asset group.")
         return
+    items = [item for item in items if item != "users"]
     logger.info(f"Getting the value of assets: {', '.join(items)}")
 
-    # get the value of assets
+    # process each asset
     for item in items:
         for section in sections:
             if item in config_helper.get_config_options(config_path, "assets", section):
@@ -101,18 +103,21 @@ def update_asset_info(
     return asset_df
 
 
-def get_asset_df(engine, user=None, current=True):
+def get_asset_df(engine, current=True, user=None, config_path="config.yml"):
     """
     Get the asset df.
 
     Parameters
     ----------
     engine : SQLAlchemy engine
-        The engine to connect to the database.
-    user : str, optional
-        The name of the user.
+        The engine to connect to the database. Used for reading the asset table.
     current : bool, optional
-        Whether to get the current value of the assets.
+        Whether to get only the most recent value of the asset instead of all values.
+    user : str, optional
+        The name of the user. Used to only get assets related to the user.
+    config_path : str, optional
+        The location of the config file. Used if the user is provided.
+
 
     Returns
     -------
@@ -123,6 +128,13 @@ def get_asset_df(engine, user=None, current=True):
     # read in the asset table
     asset_df = engine.read_table("ffx_assets")
     asset_df["date"] = asset_df["date"].dt.date
+
+    # filter by user
+    if user:
+        user_assets = config_helper.get_config_options(
+            config_path, "assets", "users"
+        ).get(user, None)
+        asset_df = asset_df[asset_df["asset"].isin(user_assets)]
 
     # add in the checking account
     checking_value = get_checking_value(engine, user=user)
@@ -219,3 +231,31 @@ def create_asset_table(engine):
         sa.UniqueConstraint("date", "asset", name="uix_date_asset"),
     ]
     engine.create_table(table_name, columns)
+
+
+def display_asset_trend(asset_df):
+    """
+    Display the asset trend.
+
+    Parameters
+    ----------
+    asset_df : DataFrame
+        The asset DataFrame.
+
+    Returns
+    -------
+    fig : Figure
+        The asset trend figure.
+
+    """
+    # create line chart
+    fig = px.line(
+        asset_df,
+        x="date",
+        y="value",
+        color="asset",
+        title="Asset Trend",
+        labels={"date": "Date", "value": "Value"},
+    )
+
+    return fig

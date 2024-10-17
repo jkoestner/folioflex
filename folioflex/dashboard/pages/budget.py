@@ -234,13 +234,25 @@ def layout():
                                     ),
                                 ],
                             ),
-                            dbc.Col(
-                                dcc.Loading(
-                                    id="loading-assets-table",
-                                    type="dot",
-                                    children=html.Div(id="assets-table"),
-                                ),
-                                style={"overflow": "auto"},
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        dcc.Loading(
+                                            id="loading-assets-table",
+                                            type="dot",
+                                            children=html.Div(id="assets-table"),
+                                        ),
+                                        style={"overflow": "auto"},
+                                    ),
+                                    dbc.Col(
+                                        dcc.Loading(
+                                            id="loading-assets-chart",
+                                            type="dot",
+                                            children=html.Div(id="assets-chart"),
+                                        ),
+                                        style={"overflow": "auto"},
+                                    ),
+                                ]
                             ),
                         ],
                         title="Assets Table",
@@ -487,7 +499,7 @@ def update_subscription_table(clickData, budget_section):
 
 
 @callback(
-    Output("assets-table", "children"),
+    [Output("assets-table", "children"), Output("assets-chart", "children")],
     [Input("assets-button", "n_clicks")],
     State("budget-section-input", "value"),
     prevent_initial_call=True,
@@ -515,7 +527,13 @@ def update_assets_table(clickData, budget_section):
         ]
     )
 
-    return assets_tbl_div
+    # create the chart
+    unfiltered_asset_df = assets.get_asset_df(
+        engine=engine, user=budget_section, current=False
+    )
+    asset_chart = assets.display_asset_trend(unfiltered_asset_df)
+
+    return assets_tbl_div, dcc.Graph(figure=asset_chart)
 
 
 @callback(

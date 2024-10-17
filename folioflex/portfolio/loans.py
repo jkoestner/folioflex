@@ -22,9 +22,10 @@ def get_loan_df(config_path, loan=None, engine=None, user=None):
     loan : str, optional
         The name of the loan.
     engine : SQLAlchemy engine
-        The engine to connect to the database.
+        The engine to connect to the database. Used to get the credit card value.
     user : str, optional
-        The name of the user.
+        The name of the user. Used if engine is provided to get the credit card value.
+        Also used to filter the loans of a specific user.
 
     Returns
     -------
@@ -34,11 +35,15 @@ def get_loan_df(config_path, loan=None, engine=None, user=None):
     """
     items = []
     rows = []
+
     # get the list of loans to use for the calculations
-    if loan is None:
-        items += list(config_helper.get_config_options(config_path, "loans").keys())
-    elif loan is not None:
+    if loan:
         items.append(loan)
+    else:
+        items += list(config_helper.get_config_options(config_path, "loans").keys())
+    items = [item for item in items if item != "users"]
+
+    # process each loan
     for item in items:
         params = config_helper.get_config_options(config_path, "loans", item)
         payments_left = get_payments_left(config_path, loan=item)
@@ -73,8 +78,14 @@ def get_loan_df(config_path, loan=None, engine=None, user=None):
                 "interest_left": None,
             }
         )
-
     loan_df = pd.DataFrame(rows)
+
+    # filter by user
+    if user:
+        user_loans = config_helper.get_config_options(
+            config_path, "loans", "users"
+        ).get(user, None)
+        loan_df = loan_df[loan_df["loan"].isin([*user_loans, "credit card"])]
 
     # sort and total
     loan_df = loan_df.sort_values(by="loan", ascending=False)
@@ -119,6 +130,14 @@ def get_payments_left(
     """
     if config_path:
         params = config_helper.get_config_options(config_path, "loans", loan)
+        required_keys = ["current_loan", "monthly_payment", "nominal_annual_interest"]
+        if not all(key in params for key in required_keys):
+            missing_keys = [key for key in required_keys if key not in params]
+            logger.error(
+                f"The keys {missing_keys} should be in the config file and were not "
+                f"found in the loan '{loan}'."
+            )
+            return None
         current_loan = params["current_loan"]
         payment_amount = params["monthly_payment"]
         interest = params["nominal_annual_interest"] / 12 / 100
@@ -141,7 +160,7 @@ def get_payments_left(
 
 def get_payment_amount(current_loan=None, payments_left=None, interest=None):
     """
-    Get the info of a loan.
+    Get the amount of the payment.
 
     We use the nominal interest rate to calculate the payments left.
       - nominal interest is the interest rate without the effect of compounding
