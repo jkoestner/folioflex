@@ -41,6 +41,7 @@ def update_asset_info(
     items = []
     rows = []
     sections = list(config_helper.get_config_options(config_path, "assets").keys())
+    sections.remove("users")
 
     # get list of items
     if asset is None and asset_group is None:
@@ -57,7 +58,6 @@ def update_asset_info(
     else:
         logger.error("Please provide either an asset or an asset group.")
         return
-    items = [item for item in items if item != "users"]
     logger.info(f"Getting the value of assets: {', '.join(items)}")
 
     # process each asset

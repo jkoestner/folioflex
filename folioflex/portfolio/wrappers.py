@@ -833,8 +833,8 @@ class KBB:
             return None
         try:
             value = int(match.group(1))
-            logger.info(f"url: {url}")
-            logger.info(f"Trade-in value: {value}")
+            logger.debug(f"url: {url}")
+            logger.debug(f"Trade-in value: {value}")
         except Exception as e:
             logger.warning(f"Error: {e}")
             logger.warning(
@@ -902,8 +902,8 @@ class Zillow:
         match = re.search(r'\\"price\\":(\d+)', response.text)
         try:
             value = int(match.group(1))
-            logger.info(f"url: {url}")
-            logger.info(f"Home value: {value}")
+            logger.debug(f"url: {url}")
+            logger.debug(f"Home value: {value}")
         except Exception as e:
             logger.warning(f"Error: {e}")
             logger.warning(
