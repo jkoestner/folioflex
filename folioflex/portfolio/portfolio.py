@@ -1721,7 +1721,9 @@ class Manager:
         """Initialize the Manager class."""
         # create list of portfolios in configuration
         if portfolios is None:
-            sections = config_helper.get_config(config_path).sections()
+            sections = config_helper.get_config_options(
+                config_path, "investments"
+            ).keys()
             portfolios = [item for item in sections if item != "static"]
 
         self.portfolios = [
