@@ -51,7 +51,7 @@ def send_email(message, subject, email_list, image_list=None):
     email = MIMEMultipart()
     email["Subject"] = subject
     email["From"] = config_helper.SMTP_USERNAME
-    email["To"] = ";".join(email_list)
+    email["To"] = ",".join(email_list)
 
     message = MIMEText(message, "html")
     email.attach(message)
@@ -67,7 +67,7 @@ def send_email(message, subject, email_list, image_list=None):
 
     # Send the email
     smtp_port = config_helper.SMTP_PORT
-    smtp_ssl = "465"
+    smtp_ssl = 465
     smtp_class = smtplib.SMTP_SSL if smtp_port == smtp_ssl else smtplib.SMTP
 
     try:
