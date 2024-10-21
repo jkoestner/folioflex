@@ -11,6 +11,10 @@ import plotly.graph_objs as go
 from dash import dcc, html
 from dateutil.relativedelta import relativedelta
 
+from folioflex.utils import custom_logger
+
+logger = custom_logger.setup_logging(__name__)
+
 
 def get_defaults():
     """Provide default initializations for pages."""
@@ -137,7 +141,7 @@ def update_graph(slide_value, view_return, view_cost, view_market, graph_type="c
     view_market : portfolio object
          the market value portfolio DataFrame to create figure on
     graph_type : str
-        the measure to graph ("change", "market", "cost", "return")
+        the measure to graph ("change", "market_value", "cost", "return")
 
     Returns
     -------
@@ -167,13 +171,14 @@ def update_graph(slide_value, view_return, view_cost, view_market, graph_type="c
 
     if graph_type == "change":
         fig_df = return_grph
-    elif graph_type == "market":
+    elif graph_type == "market_value":
         fig_df = market_grph
     elif graph_type == "cost":
         fig_df = cost_grph
     elif graph_type == "return":
         fig_df = return_grph
     else:
+        logger.warning("no graph type selected")
         fig_df = return_grph
 
     for col in fig_df.columns:
