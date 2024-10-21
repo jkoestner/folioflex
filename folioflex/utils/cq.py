@@ -53,6 +53,7 @@ def sector_query(start="2023-01-01"):
     -------
     cq_sector_close : json
        provides the list of prices for historical prices
+
     """
     sector_close = yf.download(
         layouts.list_sector, start=start, end=datetime(2100, 1, 1)
@@ -80,6 +81,7 @@ def portfolio_query(config_file, broker="all", lookback=None):
     -------
     cq_portfolio_dict : dict
        provides a dict of portfolio objects
+
     """
     config_path = config_helper.CONFIG_PATH / config_file
     personal_portfolio = portfolio.Portfolio(config_path=config_path, portfolio=broker)
@@ -127,6 +129,7 @@ def manager_query(config_file, lookbacks=None):
     -------
     cq_pm : json
        provides the portfolio manager performance
+
     """
     config_path = config_helper.CONFIG_PATH / config_file
 

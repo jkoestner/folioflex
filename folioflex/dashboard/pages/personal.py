@@ -86,17 +86,46 @@ def layout():
                 [
                     # initializing the portfolio
                     dbc.Col(
-                        [
-                            html.Button(
-                                "Portfolio", id="personal-initialize", n_clicks=0
-                            ),
-                            dcc.Dropdown(
-                                portfolio_list,
-                                id="personal-dropdown",
-                            ),
-                            html.Div(id="personal_refresh_text", children=""),
-                        ]
+                        html.Button("Portfolio", id="personal-initialize", n_clicks=0),
+                        width="auto",
                     ),
+                    dbc.Row(
+                        [
+                            dbc.Col(
+                                html.Label(
+                                    "Portfolio",
+                                ),
+                                width="auto",
+                            ),
+                            dbc.Col(
+                                dcc.Dropdown(
+                                    portfolio_list,
+                                    placeholder="Select Portfolio",
+                                    id="personal-dropdown",
+                                ),
+                                width=3,
+                            ),
+                        ],
+                    ),
+                    dbc.Row(
+                        [
+                            dbc.Col(
+                                html.Label(
+                                    "Graph Type", style={"margin-right": "10px"}
+                                ),
+                                width="auto",
+                            ),
+                            dbc.Col(
+                                dcc.Dropdown(
+                                    ["change", "return", "cost", "market_value"],
+                                    value="change",
+                                    id="personal-view-type",
+                                ),
+                                width=3,
+                            ),
+                        ],
+                    ),
+                    html.Div(id="personal_refresh_text", children=""),
                     # graph
                     dcc.Graph(
                         id="personal_graph",
@@ -238,15 +267,18 @@ def personal_get_results(personal_task_status, personal_task_id):
     [
         State("personal-status", "children"),
         State("personal-portfolio-tx", "data"),
+        State("personal-view-type", "value"),
     ],
 )
-def update_PersonalGraph(slide_value, personal_status, cq_portfolio_dict):
+def update_PersonalGraph(slide_value, personal_status, cq_portfolio_dict, graph_type):
     """Provide personal graph."""
     if personal_status == "ready":
         fig = dashboard_helper.update_graph(
             slide_value,
             pd.read_json(cq_portfolio_dict["view_return"]),
             pd.read_json(cq_portfolio_dict["view_cost"]),
+            pd.read_json(cq_portfolio_dict["view_market_value"]),
+            graph_type,
         )
     else:
         "could not load"

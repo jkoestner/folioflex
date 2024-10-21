@@ -122,7 +122,7 @@ def get_slider_values(daterange):
     return min, max, value, marks
 
 
-def update_graph(slide_value, view_return, view_cost):
+def update_graph(slide_value, view_return, view_cost, view_market, graph_type="change"):
     """
     Create a performance return graph.
 
@@ -134,6 +134,10 @@ def update_graph(slide_value, view_return, view_cost):
        the portfolio DataFrame to create figure on
     view_cost : portfolio object
        the transaction history portfolio DataFrame to create figure on
+    view_market : portfolio object
+         the market value portfolio DataFrame to create figure on
+    graph_type : str
+        the measure to graph ("change", "market", "cost", "return")
 
     Returns
     -------
@@ -151,18 +155,32 @@ def update_graph(slide_value, view_return, view_cost):
         & (unix_time_millis(view_return.index) <= slide_value[1])
     ].copy()
 
+    change_grph = return_grph.copy()
+
     cost_grph = view_cost[
         (unix_time_millis(view_cost.index) > slide_value[0])
         & (unix_time_millis(view_cost.index) <= slide_value[1])
     ].copy()
 
+    market_grph = view_market[
+        (unix_time_millis(view_market.index) > slide_value[0])
+        & (unix_time_millis(view_market.index) <= slide_value[1])
+    ].copy()
+
     for col in return_grph.columns:
-        # calculates return % over time
-        return_grph.loc[return_grph[col] != 0, "change"] = (
-            return_grph[col] + cost_grph[col]
-        ) / cost_grph[col] - 1
-        return_grph = return_grph.drop([col], axis=1)
-        return_grph = return_grph.rename(columns={"change": col})
+        if graph_type == "change":
+            # calculates return % over time
+            change_grph.loc[change_grph[col] != 0, "change"] = (
+                change_grph[col] + cost_grph[col]
+            ) / cost_grph[col] - 1
+            change_grph = change_grph.drop([col], axis=1)
+            change_grph = change_grph.rename(columns={"change": col})
+        elif graph_type == "market":
+            return_grph = market_grph
+        elif graph_type == "cost":
+            return_grph = cost_grph
+        else:
+            pass  # return the return graph
         res.append(
             go.Scatter(
                 x=return_grph.index, y=return_grph[col].values.tolist(), name=col
