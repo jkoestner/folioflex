@@ -23,7 +23,7 @@ dependencies = [
     "pandas-market-calendars>=4.1.4",
     "pyxirr>=0.7.2",
     "sqlalchemy>=2.0.23",
-    "yfinance>=0.2.32",
+    "yfinance>=0.2.44",
     "tzlocal>=5.2",
 
     # web

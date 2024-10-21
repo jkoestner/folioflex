@@ -155,8 +155,6 @@ def update_graph(slide_value, view_return, view_cost, view_market, graph_type="c
         & (unix_time_millis(view_return.index) <= slide_value[1])
     ].copy()
 
-    change_grph = return_grph.copy()
-
     cost_grph = view_cost[
         (unix_time_millis(view_cost.index) > slide_value[0])
         & (unix_time_millis(view_cost.index) <= slide_value[1])
@@ -167,25 +165,28 @@ def update_graph(slide_value, view_return, view_cost, view_market, graph_type="c
         & (unix_time_millis(view_market.index) <= slide_value[1])
     ].copy()
 
-    for col in return_grph.columns:
+    if graph_type == "change":
+        fig_df = return_grph
+    elif graph_type == "market":
+        fig_df = market_grph
+    elif graph_type == "cost":
+        fig_df = cost_grph
+    elif graph_type == "return":
+        fig_df = return_grph
+    else:
+        fig_df = return_grph
+
+    for col in fig_df.columns:
         if graph_type == "change":
             # calculates return % over time
-            change_grph.loc[change_grph[col] != 0, "change"] = (
-                change_grph[col] + cost_grph[col]
+            fig_df.loc[fig_df[col] != 0, "change"] = (
+                fig_df[col] + cost_grph[col]
             ) / cost_grph[col] - 1
-            change_grph = change_grph.drop([col], axis=1)
-            change_grph = change_grph.rename(columns={"change": col})
-        elif graph_type == "market":
-            return_grph = market_grph
-        elif graph_type == "cost":
-            return_grph = cost_grph
+            fig_df = fig_df.drop([col], axis=1)
+            fig_df = fig_df.rename(columns={"change": col})
         else:
-            pass  # return the return graph
-        res.append(
-            go.Scatter(
-                x=return_grph.index, y=return_grph[col].values.tolist(), name=col
-            )
-        )
+            pass
+        res.append(go.Scatter(x=fig_df.index, y=fig_df[col].values.tolist(), name=col))
 
     fig = {"data": res, "layout": layout}
 
