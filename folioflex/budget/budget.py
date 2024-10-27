@@ -746,9 +746,6 @@ class Budget:
         # filter the table
         tx_df = tx_df[[label_column, "id"]]
 
-        # rename and drop label column
-        if label_column != "label":
-            tx_df = tx_df.drop(columns=["label"])
         tx_df = tx_df.rename(columns={label_column: "label"})
         engine.bulk_update(
             tx_df=tx_df, table_name="transactions_table", where_column="id"
