@@ -743,6 +743,9 @@ class Budget:
             engine = database.Engine(self.config_path)
         logger.info("Updating labels in database.")
 
+        # filter the table
+        tx_df = tx_df[[label_column, "id"]]
+
         # rename and drop label column
         if label_column != "label":
             tx_df = tx_df.drop(columns=["label"])
