@@ -607,9 +607,7 @@ class Yahoo:
                 f"Count should be between 1 and 100 and the count was {count}"
             )
 
-        url = (
-            f"https://finance.yahoo.com/screener/predefined/most_actives?count={count}"
-        )
+        url = f"https://finance.yahoo.com/markets/stocks/most-active?count={count}"
 
         response = requests.get(url, headers=_get_header(), timeout=10)
         most_active = pd.read_html(StringIO(response.text))[0]
