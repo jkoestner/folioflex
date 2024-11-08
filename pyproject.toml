@@ -9,7 +9,7 @@ dynamic = ["version"]
 authors = [{ name = "John Koestner", email = "johnkoestner@outlook.com" }]
 readme = 'README.md'
 license = { file = 'LICENSE.md' }
-requires-python = '>=3.9'
+requires-python = '>=3.10'
 
 dependencies = [
     "ipywidgets>=8.1.5",

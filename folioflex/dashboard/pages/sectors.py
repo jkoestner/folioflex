@@ -130,9 +130,9 @@ def initialize_SectorGraph(n_clicks):
 
 @callback(
     [Output("task-status", "children"), Output("refresh_text", "children")],
-    Input("task-id", "children"),
+    [Input("task-id", "children"), Input("interval-component", "n_intervals")],
 )
-def status_check(task_id):
+def status_check(task_id, n_intervals):
     """Check the status of the sector data task."""
     if task_id != "none":
         task = AsyncResult(task_id, app=cq.celery_app)

@@ -1,5 +1,7 @@
 """Personal dashboard."""
 
+from io import StringIO
+
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -287,7 +289,7 @@ def update_ManagerTable(manager_task_status, manager_task_id):
     if manager_task_status == "SUCCESS":
         task = AsyncResult(manager_task_id, app=cq.celery_app)
         cq_pm = task.result
-        cq_pm = pd.read_json(cq_pm).reset_index()
+        cq_pm = pd.read_json(StringIO(cq_pm)).reset_index()
         cq_pm["lookback_date"] = pd.to_datetime(cq_pm["lookback_date"], unit="ms")
         columns = [
             {
