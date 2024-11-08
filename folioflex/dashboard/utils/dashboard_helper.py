@@ -8,7 +8,7 @@ import datetime
 
 import pandas as pd
 import plotly.graph_objs as go
-from dash import dcc, html
+from dash import dash_table, dcc, html
 from dateutil.relativedelta import relativedelta
 
 from folioflex.utils import custom_logger
@@ -196,3 +196,35 @@ def update_graph(slide_value, view_return, view_cost, view_market, graph_type="c
     fig = {"data": res, "layout": layout}
 
     return fig
+
+
+def create_datatable(columns, data):
+    """Help function to create a styled DataTable."""
+    return dash_table.DataTable(
+        columns=columns,
+        data=data,
+        page_action="native",
+        page_size=10,
+        style_table={"overflowX": "auto"},
+        style_cell={
+            "textAlign": "left",
+            "padding": "5px",
+            "minWidth": "100px",
+            "width": "150px",
+            "maxWidth": "300px",
+            "whiteSpace": "normal",
+        },
+        style_header={
+            "backgroundColor": "rgb(230, 230, 230)",
+            "fontWeight": "bold",
+        },
+        style_data_conditional=[
+            {
+                "if": {"row_index": "odd"},
+                "backgroundColor": "rgb(248, 248, 248)",
+            }
+        ],
+        markdown_options={"html": True},
+        sort_action="native",
+        filter_action="native",
+    )

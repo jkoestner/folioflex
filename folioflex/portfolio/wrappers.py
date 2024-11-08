@@ -541,6 +541,27 @@ class Yahoo:
 
         return info
 
+    def earnings_calendar(self, ticker, limit=6):
+        """
+        Get the earnings calendar for ticker.
+
+        Parameters
+        ----------
+        ticker : str
+            symbol to get data for
+        limit : int (default=6)
+            number of earnings to return
+
+        Returns
+        -------
+        earnings_calendar : DataFrame
+            provides earnings calendar on ticker
+
+        """
+        earnings_calendar = yf.Ticker(ticker).get_earnings_dates()
+        earnings_calendar = earnings_calendar.head(limit)
+        return earnings_calendar
+
     def fast_info(self, ticker):
         """
         Get the info for ticker.
@@ -624,23 +645,22 @@ class Yahoo:
         cols_keep = [
             "symbol",
             "name",
-            "price_intraday",
+            "price",
             "change",
-            "%_change",
+            "change_%",
             "volume",
-            "avg_vol_3_month",
+            "avg_vol_3m",
             "market_cap",
         ]
         most_active = most_active[cols_keep]
 
         # update columns
-        for var in ["%_change", "volume", "avg_vol_3_month", "market_cap"]:
+        most_active["price"] = most_active["price"].str.extract(r"^([\d.]+)")
+        for var in ["price", "change_%", "volume", "avg_vol_3m", "market_cap"]:
             most_active[var] = most_active[var].apply(_convert_to_number)
 
-        most_active["vol_delta"] = (
-            most_active["volume"] / most_active["avg_vol_3_month"]
-        )
-        most_active["vol_price"] = most_active["volume"] * most_active["price_intraday"]
+        most_active["vol_delta"] = most_active["volume"] / most_active["avg_vol_3m"]
+        most_active["vol_price"] = most_active["volume"] * most_active["price"]
         most_active = most_active.sort_values("vol_price", ascending=False)
 
         return most_active
