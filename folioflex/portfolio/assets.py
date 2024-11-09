@@ -1,5 +1,7 @@
 """Module for handling assets."""
 
+from typing import TYPE_CHECKING, Optional, Union
+
 import pandas as pd
 import plotly.express as px
 import sqlalchemy as sa
@@ -11,10 +13,17 @@ pd.options.display.float_format = "{:,.2f}".format
 
 logger = custom_logger.setup_logging(__name__)
 
+if TYPE_CHECKING:
+    import plotly.graph_objects as go
+
 
 def update_asset_info(
-    config_path, asset=None, asset_group=None, db_write=False, proxy=None
-):
+    config_path: str,
+    asset: Optional[str] = None,
+    asset_group: Optional[str] = None,
+    db_write: bool = False,
+    proxy: Optional[str] = None,
+) -> Union[pd.DataFrame, None]:
     """
     Update the value of asset/s.
 
@@ -57,7 +66,7 @@ def update_asset_info(
         )
     else:
         logger.error("Please provide either an asset or an asset group.")
-        return
+        return None
     logger.info(f"Getting the value of assets: {', '.join(items)}")
 
     # process each asset
@@ -78,7 +87,7 @@ def update_asset_info(
             value = wrappers.Zillow().get_value(params, proxy=proxy)
         else:
             logger.error(f"Asset group '{asset_group}' not found.")
-            return
+            return None
         rows.append(
             {
                 "date": pd.Timestamp.now().date(),
@@ -103,13 +112,18 @@ def update_asset_info(
     return asset_df
 
 
-def get_asset_df(engine, current=True, user=None, config_path="config.yml"):
+def get_asset_df(
+    engine: database.Engine,
+    current: bool = True,
+    user: Optional[str] = None,
+    config_path: str = "config.yml",
+) -> pd.DataFrame:
     """
     Get the asset df.
 
     Parameters
     ----------
-    engine : SQLAlchemy engine
+    engine : ffx engine
         The engine to connect to the database. Used for reading the asset table.
     current : bool, optional
         Whether to get only the most recent value of the asset instead of all values.
@@ -121,8 +135,8 @@ def get_asset_df(engine, current=True, user=None, config_path="config.yml"):
 
     Returns
     -------
-    asset_df : dict
-        A dictionary with the asset info.
+    asset_df : pd.DataFrame
+        A dataframe with the asset info.
 
     """
     # read in the asset table
@@ -165,13 +179,13 @@ def get_asset_df(engine, current=True, user=None, config_path="config.yml"):
     return asset_df
 
 
-def get_checking_value(engine, user=None):
+def get_checking_value(engine: database.Engine, user: Optional[str] = None) -> float:
     """
     Get the value of the checking account.
 
     Parameters
     ----------
-    engine : SQLAlchemy engine
+    engine : ffx engine
         The engine to connect to the database.
     user : str, optional
         The name of the user.
@@ -210,13 +224,13 @@ def get_checking_value(engine, user=None):
     return checking_value
 
 
-def create_asset_table(engine):
+def create_asset_table(engine: database.Engine) -> None:
     """
     Create a table of assets from the data source.
 
     Parameters
     ----------
-    engine : SQLAlchemy engine
+    engine : ffx engine
         The engine to connect to the database.
 
     """
@@ -233,7 +247,7 @@ def create_asset_table(engine):
     engine.create_table(table_name, columns)
 
 
-def display_asset_trend(asset_df):
+def display_asset_trend(asset_df: pd.DataFrame) -> "go.Figure":
     """
     Display the asset trend.
 

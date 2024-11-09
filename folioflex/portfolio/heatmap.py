@@ -4,14 +4,25 @@ Heatmap for app.
 Provides the heatmap
 """
 
+from typing import TYPE_CHECKING, Optional, Union
+
 import pandas as pd
 import plotly.express as px
 
 from folioflex.portfolio.portfolio import Portfolio
 from folioflex.portfolio.wrappers import Finviz, Web
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
-def get_heatmap(config_path=None, portfolio=None, lookback=None):
+    import plotly.graph_objects as go
+
+
+def get_heatmap(
+    config_path: Optional[Union[str, "Path"]] = None,
+    portfolio: Optional[str] = None,
+    lookback: Optional[int] = None,
+) -> "go.Figure":
     """
     Provide figure for heatmap.
 

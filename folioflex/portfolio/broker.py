@@ -11,6 +11,7 @@ data from brokers as it is already connecting to the brokers automatically.
 
 import os
 import re
+from typing import List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -23,7 +24,9 @@ from folioflex.utils import config_helper, custom_logger
 logger = custom_logger.setup_logging(__name__)
 
 
-def ally(broker_file, output_file=None, broker="ally"):
+def ally(
+    broker_file: str, output_file: Optional[str] = None, broker: str = "ally"
+) -> Union[pd.DataFrame, None]:
     """
     Format the transactions made from Ally.
 
@@ -62,7 +65,7 @@ def ally(broker_file, output_file=None, broker="ally"):
         df = pd.read_csv(broker_file)
     except FileNotFoundError:
         logger.error("Transactions file not found")
-        return
+        return None
     start_df_len = len(df)
 
     # cleaning dataframe by formatting columns and removing whitespace
@@ -107,7 +110,9 @@ def ally(broker_file, output_file=None, broker="ally"):
     return trades
 
 
-def fidelity(broker_file, output_file=None, broker="fidelity"):
+def fidelity(
+    broker_file: str, output_file: Optional[str] = None, broker: str = "fidelity"
+) -> Union[pd.DataFrame, None]:
     """
     Format the transactions made from Fidelity.
 
@@ -165,7 +170,7 @@ def fidelity(broker_file, output_file=None, broker="fidelity"):
         df = pd.read_csv(broker_file, skiprows=skiprows)
     except FileNotFoundError:
         logger.error("Transactions file not found")
-        return
+        return None
 
     # cleaning dataframe by formatting columns and removing whitespace from strings
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
@@ -225,7 +230,13 @@ def fidelity(broker_file, output_file=None, broker="fidelity"):
     return trades
 
 
-def ib(broker_file, output_file=None, broker="ib", funds=None, delisted=None):
+def ib(
+    broker_file: str,
+    output_file: Optional[str] = None,
+    broker: str = "ib",
+    funds: Optional[List[str]] = None,
+    delisted: Optional[List[str]] = None,
+) -> Union[pd.DataFrame, None]:
     """
     Format the transactions made from Investment Bankers.
 
@@ -294,7 +305,7 @@ def ib(broker_file, output_file=None, broker="ib", funds=None, delisted=None):
         df = pd.read_csv(broker_file)
     except FileNotFoundError:
         logger.error("Transactions file not found")
-        return
+        return None
     start_df_len = len(df)
 
     # cleaning dataframe by formatting columns and removing whitespace
@@ -450,7 +461,12 @@ def ib(broker_file, output_file=None, broker="ib", funds=None, delisted=None):
     return trades
 
 
-def ybr(broker_file, output_file=None, broker="ybr", reinvest=True):
+def ybr(
+    broker_file: str,
+    output_file: Optional[str] = None,
+    broker: str = "ybr",
+    reinvest: bool = True,
+) -> Union[pd.DataFrame, None]:
     """
     Format the transactions made from ybr.
 
@@ -555,7 +571,7 @@ def ybr(broker_file, output_file=None, broker="ybr", reinvest=True):
         df = pd.read_csv(broker_file)
     except FileNotFoundError:
         logger.error("Transactions file not found")
-        return
+        return None
     start_df_len = len(df)
 
     # cleaning dataframe by formatting columns and removing whitespace
@@ -702,8 +718,8 @@ class Yodlee:
 
     def __init__(
         self,
-        yodlee_login_name,
-    ):
+        yodlee_login_name: str,
+    ) -> None:
         """Initialize the Yodlee class."""
         self.yodlee_login_name = yodlee_login_name
         self.yodlee_client_id = config_helper.YODLEE_CLIENT_ID
@@ -726,7 +742,7 @@ class Yodlee:
             "Content-Type": "application/json",
         }
 
-    def refresh_token(self):
+    def refresh_token(self) -> None:
         """
         Refresh the broker.
 
@@ -735,7 +751,7 @@ class Yodlee:
         """
         self.user_token = self.get_user_token()
 
-    def get_user_token(self):
+    def get_user_token(self) -> str:
         """
         Get the user token for the yodlee user.
 
@@ -763,7 +779,7 @@ class Yodlee:
 
         return user_token
 
-    def get_accounts(self, id=""):
+    def get_accounts(self, id: str = "") -> pd.DataFrame:
         """
         Get the accounts for the yodlee user.
 
@@ -791,7 +807,7 @@ class Yodlee:
 
         return accounts
 
-    def get_provider_accounts(self, id=""):
+    def get_provider_accounts(self, id: str = "") -> pd.DataFrame:
         """
         Get the provider accounts for the yodlee user.
 
@@ -820,7 +836,7 @@ class Yodlee:
 
         return provider_accounts
 
-    def delete_provider_accounts(self, id=""):
+    def delete_provider_accounts(self, id: str = "") -> requests.models.Response:
         """
         Delete the provider account for the yodlee user.
 
@@ -831,8 +847,8 @@ class Yodlee:
 
         Returns
         -------
-        response : json
-            response from delete request
+        response : dict
+            JSON content from the delete request response.
 
         """
         headers = self.headers_authorized
@@ -842,7 +858,7 @@ class Yodlee:
 
         return response
 
-    def get_providers(self, id=""):
+    def get_providers(self, id: str = "") -> pd.DataFrame:
         """
         Get the provider accounts for the yodlee user.
 
@@ -870,7 +886,7 @@ class Yodlee:
 
         return providers
 
-    def get_holdings(self, provider_account_id=""):
+    def get_holdings(self, provider_account_id: str = "") -> pd.DataFrame:
         """
         Get the holdings accounts for the yodlee user.
 
@@ -900,7 +916,9 @@ class Yodlee:
 
         return holdings
 
-    def get_transactions(self, account_id="", formatter=False):
+    def get_transactions(
+        self, account_id: str = "", formatter: bool = False
+    ) -> pd.DataFrame:
         """
         Get the transactions for accounts for the yodlee user.
 
@@ -955,7 +973,7 @@ class Yodlee:
         return transactions
 
 
-def append_trades(trades, output_file, broker):
+def append_trades(trades, output_file: str, broker: str) -> pd.DataFrame:
     """
     Append trades to existing trades file.
 

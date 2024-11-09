@@ -1,6 +1,7 @@
 """Module for handling loans."""
 
 import math
+from typing import TYPE_CHECKING, Optional, Union
 
 import pandas as pd
 
@@ -10,8 +11,18 @@ pd.options.display.float_format = "{:,.2f}".format
 
 logger = custom_logger.setup_logging(__name__)
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
-def get_loan_df(config_path, loan=None, engine=None, user=None):
+    from folioflex.utils.database import Engine
+
+
+def get_loan_df(
+    config_path: Union[str, "Path"],
+    loan: Optional[str] = None,
+    engine: Optional["Engine"] = None,
+    user: Optional[str] = None,
+) -> pd.DataFrame:
     """
     Get loan df.
 
@@ -29,8 +40,8 @@ def get_loan_df(config_path, loan=None, engine=None, user=None):
 
     Returns
     -------
-    loan_df : dict
-        A dictionary with the loan info.
+    loan_df : pd.DataFrame
+        A dataframe with the loan info.
 
     """
     items = []
@@ -47,11 +58,15 @@ def get_loan_df(config_path, loan=None, engine=None, user=None):
     for item in items:
         params = config_helper.get_config_options(config_path, "loans", item)
         payments_left = get_payments_left(config_path, loan=item)
-        interest_left = get_interest(
-            current_loan=params["current_loan"],
-            payments_left=payments_left,
-            payment_amount=params["monthly_payment"],
-        )
+        if payments_left is None:
+            logger.error(f"No interest as there was no payments left for {item}.")
+            interest_left = None
+        else:
+            interest_left = get_interest(
+                current_loan=params["current_loan"],
+                payments_left=payments_left,
+                payment_amount=params["monthly_payment"],
+            )
         rows.append(
             {
                 "loan": item,
@@ -95,8 +110,12 @@ def get_loan_df(config_path, loan=None, engine=None, user=None):
 
 
 def get_payments_left(
-    config_path=None, loan=None, current_loan=None, payment_amount=None, interest=None
-):
+    config_path: Optional[Union[str, "Path"]] = None,
+    loan: Optional[str] = None,
+    current_loan: Optional[float] = None,
+    payment_amount: Optional[float] = None,
+    interest: Optional[float] = None,
+) -> Union[float, None]:
     """
     Get the info of a loan.
 
@@ -142,6 +161,13 @@ def get_payments_left(
         payment_amount = params["monthly_payment"]
         interest = params["nominal_annual_interest"] / 12 / 100
 
+    if current_loan is None or payment_amount is None or interest is None:
+        logger.error(
+            "The config_path or the current_loan, payment_amount, and interest "
+            "should be provided."
+        )
+        return None
+
     # checks
     if interest >= 1:
         logger.error(
@@ -158,7 +184,11 @@ def get_payments_left(
     return payments_left
 
 
-def get_payment_amount(current_loan=None, payments_left=None, interest=None):
+def get_payment_amount(
+    current_loan: float,
+    payments_left: float,
+    interest: float,
+) -> Union[float, None]:
     """
     Get the amount of the payment.
 
@@ -169,11 +199,11 @@ def get_payment_amount(current_loan=None, payments_left=None, interest=None):
 
     Parameters
     ----------
-    current_loan : float, optional
+    current_loan : float
         The current loan amount.
-    payments_left : float, optional
+    payments_left : float
         The monthly payment.
-    interest : float, optional
+    interest : float
         The interest rate.
 
     Returns
@@ -200,17 +230,21 @@ def get_payment_amount(current_loan=None, payments_left=None, interest=None):
     return payment_amount
 
 
-def get_interest(current_loan=None, payments_left=None, payment_amount=None):
+def get_interest(
+    current_loan: float,
+    payments_left: float,
+    payment_amount: float,
+) -> float:
     """
     Get the interest that will be paid.
 
     Parameters
     ----------
-    current_loan : float, optional
+    current_loan : float
         The current loan amount.
-    payments_left : float, optional
+    payments_left : float
         The amount of payments left.
-    payment_amount : float, optional
+    payment_amount : float
         The monthly payment.
 
     Returns
@@ -224,7 +258,7 @@ def get_interest(current_loan=None, payments_left=None, payment_amount=None):
     return interest
 
 
-def get_credit_card_value(engine, user=None):
+def get_credit_card_value(engine: "Engine", user: Optional[str] = None) -> float:
     """
     Get the value of the loan account.
 

@@ -386,14 +386,14 @@ def update_PersonalContent(
         # Process graph data
         fig = dashboard_helper.update_graph(
             slider_value,
-            pd.read_json(cq_portfolio_dict["view_return"]),
-            pd.read_json(cq_portfolio_dict["view_cost"]),
-            pd.read_json(cq_portfolio_dict["view_market_value"]),
+            pd.read_json(StringIO(cq_portfolio_dict["view_return"])),
+            pd.read_json(StringIO(cq_portfolio_dict["view_cost"])),
+            pd.read_json(StringIO(cq_portfolio_dict["view_market_value"])),
             graph_type,
         )
 
         # Process performance table
-        performance = pd.read_json(cq_portfolio_dict["performance"])
+        performance = pd.read_json(StringIO(cq_portfolio_dict["performance"]))
         performance["lookback_date"] = pd.to_datetime(
             performance["lookback_date"], unit="ms"
         )
@@ -405,7 +405,7 @@ def update_PersonalContent(
         performance_table = dashboard_helper.create_datatable(columns_perf, data_perf)
 
         # Process transactions table
-        transactions = pd.read_json(cq_portfolio_dict["transactions"])
+        transactions = pd.read_json(StringIO(cq_portfolio_dict["transactions"]))
         columns_trans = layouts.transactions_fmt
         data_trans = transactions.to_dict("records")
         transactions_table = dashboard_helper.create_datatable(
@@ -433,7 +433,7 @@ def update_PersonalSlider(personal_task_status, personal_task_id):
     if personal_task_status == "SUCCESS":
         personal_task = AsyncResult(personal_task_id, app=cq.celery_app)
         cq_portfolio_dict = personal_task.result
-        return_view = pd.read_json(cq_portfolio_dict["view_return"])
+        return_view = pd.read_json(StringIO(cq_portfolio_dict["view_return"]))
         min_value, max_value, value, marks = dashboard_helper.get_slider_values(
             return_view.index
         )

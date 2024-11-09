@@ -149,7 +149,6 @@ def status_check(task_id, n_intervals):
 )
 def get_results(task_status, task_id):
     """Retrieve sector data when ready."""
-    logger.debug(f"Sector Task Status: {task_status}")
     if task_status == "SUCCESS":
         task = AsyncResult(task_id, app=cq.celery_app)
         cq_sector_close = task.result
