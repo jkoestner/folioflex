@@ -13,6 +13,7 @@ Some methods that are included are:
 """
 
 import re
+from typing import Any, Dict, List, Optional, Union
 
 import emoji
 import numpy as np
@@ -39,9 +40,9 @@ class Budget:
 
     def __init__(
         self,
-        config_path,
-        budget,
-    ):
+        config_path: str,
+        budget: str,
+    ) -> None:
         """Initialize the Portfolio class."""
         logger.info("Initializing Budget class.")
         self.config_path = config_path
@@ -53,7 +54,9 @@ class Budget:
         self.budget = budget
         self.model = self.config_dict.get("model", None)
 
-    def get_transactions(self, engine=None, user=None):
+    def get_transactions(
+        self, engine: Optional[Any] = None, user: Optional[str] = None
+    ) -> pd.DataFrame:
         """
         Get the transactions for the budget.
 

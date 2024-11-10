@@ -7,7 +7,7 @@ module.
 """
 
 from datetime import date, datetime, timedelta
-from typing import Any, Dict, Union
+from typing import Any, Dict, Optional, Union
 
 import pandas as pd
 import pandas_market_calendars as mcal
@@ -125,7 +125,7 @@ def check_stock_dates(
 
 
 def convert_date_to_timezone(
-    date_series: pd.Series, timezone: str = "local"
+    date_series: pd.Series, timezone: Optional[str] = "local"
 ) -> pd.Series:
     """
     Convert date column to a specific timezone.
