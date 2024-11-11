@@ -1,11 +1,11 @@
 """Load config."""
 
-import ast
 import configparser
 import os
 from pathlib import Path
 
 import tzlocal
+import yaml
 
 from folioflex.utils import custom_logger
 
@@ -57,12 +57,13 @@ def get_config(path):
             f"Config file not found at any of the following paths: {paths_str}"
         )
 
-    config.read(path_to_try)
+    with open(path_to_try, "r") as f:
+        config = yaml.safe_load(f)
 
     return config
 
 
-def get_config_options(path, section):
+def get_config_options(path, *sections):
     """
     Load the configuration options.
 
@@ -70,8 +71,9 @@ def get_config_options(path, section):
     ----------
     path : str
        path to the config file
-    section : str
+    *sections : str
        the section of the config file to load
+       the sections can be nested, e.g. "section", "subsections"
 
     Returns
     -------
@@ -80,9 +82,21 @@ def get_config_options(path, section):
 
     """
     config = get_config(path)
+
     options = {}
-    for option in config.options(section):
-        options[option] = _config_reference(config, section, option, fallback=[])
+
+    # traverse the sections
+    section_data = config.copy()
+    try:
+        for section in sections:
+            section_data = section_data[section]
+    except KeyError:
+        logger.warning(
+            f"Section {' > '.join(sections)} not found in the configuration."
+        )
+        return {}
+    for key, value in section_data.items():
+        options[key] = _config_reference(config, value, *sections)
 
     # the portfolio class has a tx_file option that is not in the config file
     if "tx_file" in options:
@@ -91,7 +105,7 @@ def get_config_options(path, section):
     return options
 
 
-def _config_reference(config, section, option, **kwargs):
+def _config_reference(config, value, *sections):
     """
     Get the value of references in config.
 
@@ -99,12 +113,11 @@ def _config_reference(config, section, option, **kwargs):
     ----------
     config : ConfigParser
         the config parser
-    section : str
-        the section of the config file
-    option : str
-        the option to get the value of
-    **kwargs : dict
-        additional keyword arguments to pass to the config.get() method
+    value : any
+        The value in the section
+    *sections : str
+        the section of the config file to load
+        the sections can be nested, e.g. "section", "subsections"
 
     Returns
     -------
@@ -118,89 +131,72 @@ def _config_reference(config, section, option, **kwargs):
     `$`: reference to an environment variable
 
     """
-    try:
-        raw_value = config.get(section, option, **kwargs)
-    except Exception as e:
-        logger.warning(f"Error getting config option {section}.{option}: {e}")
-        raw_value = None
-    # removing comments
-    raw_value = raw_value.split("# ", 1)[0].strip()
-    # handling complex structures such as lists, tuples, and dicts
-    value = (
-        ast.literal_eval(raw_value) if is_complex_structure(raw_value) else raw_value
-    )
-    if raw_value.startswith("static"):  # If value is a static reference
-        ref_section, ref_option = raw_value.split(".")
-        section_value = config.get(ref_section, ref_option, **kwargs)
-        section_value = section_value.split("# ", 1)[0].strip()
-        if section_value.startswith("$"):
-            return os.getenv(section_value[1:])
+    if isinstance(value, str):
+        value = value.strip()
+        # Handle 'static' references
+        if value.startswith("static."):
+            config_static = config
+            if len(sections) > 1:
+                for section in sections[:-1]:
+                    config_static = config_static[section]
+            config_static = config_static.get("static", {})
+            ref_option = value[len("static.") :]
+            ref_value = config_static.get(ref_option)
+            if ref_value is not None:
+                return ref_value
+            else:
+                logger.warning(f"Static reference `static.{ref_option}` not found.")
+                return None
+        # Handle environment variables
+        elif value.startswith("$"):
+            env_var = value[1:]
+            env_value = os.getenv(env_var)
+            if env_value is not None:
+                return env_value
+            else:
+                logger.warning(f"Environment variable {env_var} not found.")
+                return None
+        # Handle None values
+        elif value.lower() in ["", "none", "null"]:
+            return None
         else:
-            return (
-                ast.literal_eval(section_value)
-                if is_complex_structure(section_value)
-                else section_value
-            )
-    elif raw_value.startswith("$"):  # If value is an environment variable
-        return os.getenv(value[1:])
-    elif raw_value in ["", "None", "none", "null", "Null", "NULL"]:  # If value is None
-        return None
+            return value
     else:
+        # If the value is not a string, return it as is
         return value
 
 
-def is_complex_structure(s):
-    """
-    Check if string is a complex structure, such as a list, tuple, or dict.
-
-    Parameters
-    ----------
-    s : str
-        the string to check
-
-    Returns
-    -------
-    bool
-        whether the string is a complex structure
-
-    """
-    s = s.strip("'\"")
-    if s.startswith(("[", "(", "{")) and s.endswith(("]", ")", "}")):
-        return True
-    return False
-
-
-config_file = os.path.join(CONFIG_PATH, "config.ini")
+config_file = os.path.join(CONFIG_PATH, "config.yml")
 
 # credentials
-FFX_USERNAME = get_config_options(config_file, "credentials").get("ffx_username", None)
-FFX_PASSWORD = get_config_options(config_file, "credentials").get("ffx_password", None)
+_credentials_config = get_config_options(config_file, "config", "credentials")
+FFX_USERNAME = _credentials_config.get("ffx_username", None)
+FFX_PASSWORD = _credentials_config.get("ffx_password", None)
 
 # apis
-FRED_API = get_config_options(config_file, "api").get("fred_api", None)
-SCRAPINGBEE_API = get_config_options(config_file, "api").get("scrapingbee_api", None)
-YODLEE_CLIENT_ID = get_config_options(config_file, "api").get("yodlee_client_id", None)
-YODLEE_SECRET = get_config_options(config_file, "api").get("yodlee_secret", None)
-YODLEE_ENDPOINT = get_config_options(config_file, "api").get("yodlee_endpoint", None)
+_api_config = get_config_options(config_file, "config", "api")
+FRED_API = _api_config.get("fred_api", None)
+SCRAPINGBEE_API = _api_config.get("scrapingbee_api", None)
+YODLEE_CLIENT_ID = _api_config.get("yodlee_client_id", None)
+YODLEE_SECRET = _api_config.get("yodlee_secret", None)
+YODLEE_ENDPOINT = _api_config.get("yodlee_endpoint", None)
 
 # gpts
-HUGCHAT_LOGIN = get_config_options(config_file, "gpt").get("hugchat_login", None)
-HUGCHAT_PASSWORD = get_config_options(config_file, "gpt").get("hugchat_password", None)
-OPENAI_API_KEY = get_config_options(config_file, "gpt").get("openai_api_key", None)
-BROWSER_LOCATION = get_config_options(config_file, "gpt").get("browser_location", None)
-BROWSER_EXTENSION = get_config_options(config_file, "gpt").get(
-    "browser_extension", None
-)
+_gpt_config = get_config_options(config_file, "config", "gpt")
+HUGCHAT_LOGIN = _gpt_config.get("hugchat_login", None)
+HUGCHAT_PASSWORD = _gpt_config.get("hugchat_password", None)
+OPENAI_API_KEY = _gpt_config.get("openai_api_key", None)
+BROWSER_LOCATION = _gpt_config.get("browser_location", None)
+BROWSER_EXTENSION = _gpt_config.get("browser_extension", None)
 
 # other
+_other_config = get_config_options(config_file, "config", "other")
 if os.path.exists(r"/app/tests"):
-    REDIS_URL = get_config_options(config_file, "other")["redis_url"].get(
-        "redis_url", None
-    )
+    REDIS_URL = _other_config["redis_url"].get("redis_url", None)
 else:
     # if debugging locally will need a redis
-    REDIS_URL = get_config_options(config_file, "other").get("local_redis", None)
-SMTP_USERNAME = get_config_options(config_file, "other").get("smtp_username", None)
-SMTP_PASSWORD = get_config_options(config_file, "other").get("smtp_password", None)
-SMTP_SERVER = get_config_options(config_file, "other").get("smtp_server", None)
-SMTP_PORT = get_config_options(config_file, "other").get("smtp_port", None)
+    REDIS_URL = _other_config.get("local_redis", None)
+SMTP_USERNAME = _other_config.get("smtp_username", None)
+SMTP_PASSWORD = _other_config.get("smtp_password", None)
+SMTP_SERVER = _other_config.get("smtp_server", None)
+SMTP_PORT = _other_config.get("smtp_port", None)

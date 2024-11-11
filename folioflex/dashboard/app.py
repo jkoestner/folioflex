@@ -42,6 +42,27 @@ app = dash.Dash(
 app.config.suppress_callback_exceptions = True
 app.title = "FolioFlex"
 app._favicon = "folioflex_logo.ico"
+# adding shortcut icons
+app.index_string = """
+<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <title>{%title%}</title>
+        <link rel="manifest" href="/assets/manifest.json">
+        {%favicon%}
+        {%css%}
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>
+"""
 
 # creating the navbar
 page_links = [
@@ -100,6 +121,7 @@ navbar = dbc.Navbar(
 
 app.layout = html.Div(
     [
+        html.Link(rel="shortcut icon", href="/assets/folioflex.png"),
         dcc.Location(id="url", refresh=True),
         navbar,
         dash.page_container,
@@ -154,4 +176,4 @@ def toggle_interval_speed(
 
 if __name__ == "__main__":
     custom_logger.set_log_level("DEBUG", module_prefix="pages")
-    app.run_server(debug=True)
+    app.run_server(debug=True, host="0.0.0.0")

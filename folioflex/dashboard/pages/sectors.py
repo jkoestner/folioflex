@@ -27,49 +27,81 @@ dash.register_page(__name__, path="/sectors", title="folioflex - Sectors", order
 
 def layout():
     """Sectors layout."""
-    return html.Div(
+    return dbc.Container(
         [
-            # adding variables needed that are used in callbacks.
-            *dashboard_helper.get_defaults(),
-            # ---------------------------------------------------------------
-            dbc.Col(
-                html.Button("Sector initialize", id="sector-initialize", n_clicks=0),
-            ),
-            html.Div(id="refresh_text", children="none"),
-            # graph
-            dcc.Graph(
-                id="Sector-Graph",
-            ),
-            # range slider
-            html.P(
+            html.H2("Sector Analysis Dashboard", className="text-center my-4"),
+            # sector graph
+            dbc.Card(
                 [
-                    html.Label("Time Period"),
-                    dcc.RangeSlider(
-                        id="slider",
-                        tooltip={"always_visible": True, "placement": "bottom"},
-                        min=0,
-                        max=10,
-                        value=[0, 100],
-                        marks={i: str(i) for i in range(0, 101, 10)},
+                    dbc.CardHeader(html.H4("Sector Performance")),
+                    dbc.CardBody(
+                        [
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        dbc.Button(
+                                            "Initialize Sector Data",
+                                            id="sector-initialize",
+                                            n_clicks=0,
+                                            color="primary",
+                                        ),
+                                        width="auto",
+                                    ),
+                                    dbc.Col(
+                                        dcc.RangeSlider(
+                                            id="slider",
+                                            tooltip={
+                                                "always_visible": True,
+                                                "placement": "bottom",
+                                            },
+                                            min=0,
+                                            max=10,
+                                            value=[0, 100],
+                                            marks={
+                                                i: str(i) for i in range(0, 101, 10)
+                                            },
+                                        ),
+                                        className="mt-3",
+                                    ),
+                                ],
+                                align="center",
+                            ),
+                            html.Div(id="refresh_text", style={"display": "none"}),
+                            dcc.Loading(
+                                id="loading-sector-graph",
+                                type="default",
+                                children=dcc.Graph(id="Sector-Graph"),
+                            ),
+                        ]
                     ),
                 ],
-                style={
-                    "width": "80%",
-                    "fontSize": "20px",
-                    "padding-left": "100px",
-                    "display": "inline-block",
-                },
+                className="mb-4",
             ),
-            html.P(),
-            html.P(),
             # heatmap graph
-            dbc.Col(
-                html.Button("Heatmap initialize", id="heatmap-initialize", n_clicks=0),
+            dbc.Card(
+                [
+                    dbc.CardHeader(html.H4("Market Heatmap")),
+                    dbc.CardBody(
+                        [
+                            dbc.Button(
+                                "Initialize Heatmap",
+                                id="heatmap-initialize",
+                                n_clicks=0,
+                                color="primary",
+                            ),
+                            dcc.Loading(
+                                id="loading-heatmap-graph",
+                                type="default",
+                                children=dcc.Graph(id="Heatmap-Graph"),
+                            ),
+                        ]
+                    ),
+                ]
             ),
-            dcc.Graph(
-                id="Heatmap-Graph",
-            ),
-        ]
+            # adding variables needed that are used in callbacks.
+            *dashboard_helper.get_defaults(),
+        ],
+        fluid=True,
     )
 
 
@@ -80,13 +112,13 @@ def layout():
 #   \____\__,_|_|_|_.__/ \__,_|\___|_|\_\___/
 
 
-# Sector Graph
+# sector Graph
 @callback(
     Output("task-id", "children"),
-    [Input(component_id="sector-initialize", component_property="n_clicks")],
+    Input("sector-initialize", "n_clicks"),
 )
 def initialize_SectorGraph(n_clicks):
-    """Provide sector analysis graph."""
+    """Initialize sector data fetching."""
     if n_clicks == 0:
         task_id = "none"
     else:
@@ -98,11 +130,10 @@ def initialize_SectorGraph(n_clicks):
 
 @callback(
     [Output("task-status", "children"), Output("refresh_text", "children")],
-    [Input("interval-component", "n_intervals")],
-    [State("task-id", "children"), State("task-status", "children")],
+    [Input("task-id", "children"), Input("interval-component", "n_intervals")],
 )
-def status_check(n_intervals, task_id, task_status):
-    """Provide status check."""
+def status_check(task_id, n_intervals):
+    """Check the status of the sector data task."""
     if task_id != "none":
         task = AsyncResult(task_id, app=cq.celery_app)
         task_status = task.status
@@ -113,11 +144,11 @@ def status_check(n_intervals, task_id, task_status):
 
 @callback(
     [Output("yf-data", "children"), Output("sector-status", "children")],
-    [Input("task-status", "children")],
-    [State("task-id", "children")],
+    Input("task-status", "children"),
+    State("task-id", "children"),
 )
 def get_results(task_status, task_id):
-    """Provide status results."""
+    """Retrieve sector data when ready."""
     if task_status == "SUCCESS":
         task = AsyncResult(task_id, app=cq.celery_app)
         cq_sector_close = task.result
@@ -135,71 +166,72 @@ def get_results(task_status, task_id):
         Output("slider", "value"),
         Output("slider", "marks"),
     ],
-    [Input("sector-status", "children")],
-    [State("yf-data", "children")],
+    Input("sector-status", "children"),
+    State("yf-data", "children"),
 )
 def update_SectorData(sector_status, yf_data):
-    """Provide sector data table."""
+    """Update the range slider based on sector data."""
     if sector_status == "ready":
         cq_sector_close = pd.read_json(StringIO(yf_data))
-        min, max, value, marks = dashboard_helper.get_slider_values(
+        min_value, max_value, value, marks = dashboard_helper.get_slider_values(
             cq_sector_close.index
         )
     else:
-        min = 0
-        max = 100
+        min_value = 0
+        max_value = 100
         value = [0, 100]
         marks = {i: str(i) for i in range(0, 101, 10)}
 
-    return min, max, value, marks
+    return min_value, max_value, value, marks
 
 
 @callback(
     Output("Sector-Graph", "figure"),
-    [Input("slider", "value")],
-    [State("yf-data", "children"), State("sector-status", "children")],
+    [Input("slider", "value"), Input("sector-status", "children")],
+    State("yf-data", "children"),
 )
-def update_SectorGraph(slide_value, yf_data, sector_status):
-    """Provide sector graph."""
+def update_SectorGraph(slider_value, sector_status, yf_data):
+    """Update the sector performance graph based on slider."""
     res = []
     layout = go.Layout(hovermode="closest")
 
-    if sector_status == "ready" and slide_value != 0:
+    if sector_status == "ready" and slider_value != [0, 0]:
         cq_sector_close = pd.read_json(StringIO(yf_data))
         sector_data = cq_sector_close[
-            (dashboard_helper.unix_time_millis(cq_sector_close.index) > slide_value[0])
+            (dashboard_helper.unix_time_millis(cq_sector_close.index) > slider_value[0])
             & (
                 dashboard_helper.unix_time_millis(cq_sector_close.index)
-                <= slide_value[1]
+                <= slider_value[1]
             )
         ].copy()
+
         for col in sector_data.columns:
-            sector_data["change"] = sector_data[col] / sector_data[col].iat[0] - 1
-            sector_data = sector_data.drop([col], axis=1)
-            sector_data["change"] = sector_data["change"].map("{0:.1%}".format)
-            sector_data = sector_data.rename(columns={"change": col})
+            change = sector_data[col] / sector_data[col].iloc[0] - 1
+            change_percentage = change * 100
             res.append(
                 go.Scatter(
-                    x=sector_data.index, y=sector_data[col].values.tolist(), name=col
+                    x=sector_data.index,
+                    y=change_percentage,
+                    name=col,
+                    mode="lines",
                 )
             )
     else:
-        "could not load"
+        res = []
 
-    fig = {"data": res, "layout": layout}
-
+    fig = go.Figure(data=res, layout=layout)
     return fig
 
 
-# Heatmap Graph
+# heatmap Graph
 @callback(
     Output("Heatmap-Graph", "figure"),
-    [Input(component_id="heatmap-initialize", component_property="n_clicks")],
+    Input("heatmap-initialize", "n_clicks"),
 )
 def initialize_HeatmapGraph(n_clicks):
     """Provide heatmap graph."""
     if n_clicks == 0:
-        fig = {"data": [], "layout": go.Layout(hovermode="closest")}
+        fig = go.Figure()
     else:
         fig = heatmap.get_heatmap()
 

@@ -3,6 +3,7 @@ Layout lookups.
 
 List of lookups for reference to dashapp
 """
+
 from dash.dash_table.Format import Format, Scheme
 
 # set up lists
@@ -196,8 +197,8 @@ active_fmt = [
     {"id": "symbol", "name": "symbol"},
     {"id": "name", "name": "name"},
     {
-        "id": "price_intraday",
-        "name": "price_intraday",
+        "id": "price",
+        "name": "price",
         "type": "numeric",
         "format": Format(precision=2, scheme=Scheme.fixed).group(True),
     },
@@ -208,8 +209,8 @@ active_fmt = [
         "format": Format(precision=2, scheme=Scheme.fixed).group(True),
     },
     {
-        "id": "%_change",
-        "name": "%_change",
+        "id": "change_%",
+        "name": "change_%",
         "type": "numeric",
         "format": Format(precision=2, scheme=Scheme.percentage),
     },
@@ -220,8 +221,8 @@ active_fmt = [
         "format": Format(precision=0, scheme=Scheme.fixed).group(True),
     },
     {
-        "id": "avg_vol_3_month",
-        "name": "avg_vol_3_month",
+        "id": "avg_vol_3m",
+        "name": "avg_vol_3m",
         "type": "numeric",
         "format": Format(precision=0, scheme=Scheme.fixed).group(True),
     },

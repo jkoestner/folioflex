@@ -8,8 +8,12 @@ import datetime
 
 import pandas as pd
 import plotly.graph_objs as go
-from dash import dcc, html
+from dash import dash_table, dcc, html
 from dateutil.relativedelta import relativedelta
+
+from folioflex.utils import custom_logger
+
+logger = custom_logger.setup_logging(__name__)
 
 
 def get_defaults():
@@ -122,7 +126,7 @@ def get_slider_values(daterange):
     return min, max, value, marks
 
 
-def update_graph(slide_value, view_return, view_cost):
+def update_graph(slide_value, view_return, view_cost, view_market, graph_type="change"):
     """
     Create a performance return graph.
 
@@ -134,6 +138,10 @@ def update_graph(slide_value, view_return, view_cost):
        the portfolio DataFrame to create figure on
     view_cost : portfolio object
        the transaction history portfolio DataFrame to create figure on
+    view_market : portfolio object
+         the market value portfolio DataFrame to create figure on
+    graph_type : str
+        the measure to graph ("change", "market_value", "cost", "return")
 
     Returns
     -------
@@ -156,19 +164,67 @@ def update_graph(slide_value, view_return, view_cost):
         & (unix_time_millis(view_cost.index) <= slide_value[1])
     ].copy()
 
-    for col in return_grph.columns:
-        # calculates return % over time
-        return_grph.loc[return_grph[col] != 0, "change"] = (
-            return_grph[col] + cost_grph[col]
-        ) / cost_grph[col] - 1
-        return_grph = return_grph.drop([col], axis=1)
-        return_grph = return_grph.rename(columns={"change": col})
-        res.append(
-            go.Scatter(
-                x=return_grph.index, y=return_grph[col].values.tolist(), name=col
-            )
-        )
+    market_grph = view_market[
+        (unix_time_millis(view_market.index) > slide_value[0])
+        & (unix_time_millis(view_market.index) <= slide_value[1])
+    ].copy()
+
+    if graph_type == "change":
+        fig_df = return_grph
+    elif graph_type == "market_value":
+        fig_df = market_grph
+    elif graph_type == "cost":
+        fig_df = cost_grph
+    elif graph_type == "return":
+        fig_df = return_grph
+    else:
+        logger.warning("no graph type selected")
+        fig_df = return_grph
+
+    for col in fig_df.columns:
+        if graph_type == "change":
+            # calculates return % over time
+            fig_df.loc[fig_df[col] != 0, "change"] = (
+                fig_df[col] + cost_grph[col]
+            ) / cost_grph[col] - 1
+            fig_df = fig_df.drop([col], axis=1)
+            fig_df = fig_df.rename(columns={"change": col})
+        else:
+            pass
+        res.append(go.Scatter(x=fig_df.index, y=fig_df[col].values.tolist(), name=col))
 
     fig = {"data": res, "layout": layout}
 
     return fig
+
+
+def create_datatable(columns, data):
+    """Help function to create a styled DataTable."""
+    return dash_table.DataTable(
+        columns=columns,
+        data=data,
+        page_action="native",
+        page_size=10,
+        style_table={"overflowX": "auto"},
+        style_cell={
+            "textAlign": "left",
+            "padding": "5px",
+            "minWidth": "100px",
+            "width": "150px",
+            "maxWidth": "300px",
+            "whiteSpace": "normal",
+        },
+        style_header={
+            "backgroundColor": "rgb(230, 230, 230)",
+            "fontWeight": "bold",
+        },
+        style_data_conditional=[
+            {
+                "if": {"row_index": "odd"},
+                "backgroundColor": "rgb(248, 248, 248)",
+            }
+        ],
+        markdown_options={"html": True},
+        sort_action="native",
+        filter_action="native",
+    )

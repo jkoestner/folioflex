@@ -5,8 +5,8 @@ from datetime import datetime
 from folioflex.dashboard.utils import dashboard_helper
 from folioflex.utils import config_helper
 
-config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_portfolio.ini"
-config_dict = config_helper.get_config_options(config_path, "test")
+config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_config.yml"
+config_dict = config_helper.get_config_options(config_path, "investments", "test")
 
 
 def test_config_load():

@@ -19,9 +19,10 @@ The Manager class has a number of objects, such as:
 
 """
 
+import datetime
 import os
-from datetime import timedelta
 from io import StringIO
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -41,6 +42,9 @@ from folioflex.utils import config_helper, custom_logger
 pd.options.display.float_format = "{:,.2f}".format
 
 logger = custom_logger.setup_logging(__name__)
+
+if TYPE_CHECKING:
+    import plotly.graph_objects as go
 
 
 class Portfolio:
@@ -68,12 +72,14 @@ class Portfolio:
 
     def __init__(
         self,
-        config_path,
-        portfolio,
-    ):
+        config_path: str,
+        portfolio: str,
+    ) -> None:
         """Initialize the Portfolio class."""
-        config_dict = config_helper.get_config_options(config_path, portfolio)
-        self.file = self.load_filename(config_dict["tx_file"])
+        config_dict = config_helper.get_config_options(
+            config_path, "investments", portfolio
+        )
+        self.file = self.load_transaction_file(config_dict["tx_file"])
         logger.info(f"retrieved filename {self.file}")
         self.username = config_dict.get("username", None)
         self.password = config_dict.get("password", None)
@@ -110,7 +116,13 @@ class Portfolio:
         self.return_view = self.get_view(view="return")
         self.cost_view = self.get_view(view="cumulative_cost")
 
-    def get_performance(self, date=None, tx_hist_df=None, lookback=None, prettify=True):
+    def get_performance(
+        self,
+        date: Optional[datetime.date] = None,
+        tx_hist_df: Optional[pd.DataFrame] = None,
+        lookback: Optional[int] = None,
+        prettify: bool = True,
+    ) -> pd.DataFrame:
         """
         Get performance of portfolio and stocks traded at certain point of time.
 
@@ -165,6 +177,8 @@ class Portfolio:
             tx_hist_df = self._filter_lookback(
                 lookback=lookback, adjust_vars=True, tx_hist_df=tx_hist_df
             )
+        if not isinstance(tx_hist_df, pd.DataFrame):
+            raise ValueError("tx_hist_df should be a DataFrame")
         lookback_date = tx_hist_df["date"].min()
 
         return_pcts = self._get_return_pcts(date=date, tx_hist_df=tx_hist_df)
@@ -240,7 +254,10 @@ class Portfolio:
 
         return performance
 
-    def load_filename(self, tx_file):
+    def load_transaction_file(
+        self,
+        tx_file: str,
+    ) -> str:
         """
         Load transaction file.
 
@@ -265,12 +282,12 @@ class Portfolio:
 
     def get_transactions(
         self,
-        filter_type=None,
-        filter_broker=None,
-        other_fields=None,
-        username=None,
-        password=None,
-    ):
+        filter_type: Optional[List[str]] = None,
+        filter_broker: Optional[List[str]] = None,
+        other_fields: Optional[List[str]] = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+    ) -> pd.DataFrame:
         """
         Get the transactions made.
 
@@ -377,8 +394,12 @@ class Portfolio:
         return transactions
 
     def get_transactions_history(
-        self, tx_df, price_history=None, other_fields=None, benchmarks=None
-    ):
+        self,
+        tx_df: pd.DataFrame,
+        price_history: Optional[pd.DataFrame] = None,
+        other_fields: Optional[List[str]] = None,
+        benchmarks: Optional[List[str]] = None,
+    ) -> pd.DataFrame:
         """
         Get the history of stock transcations by merging transaction and price history.
 
@@ -438,7 +459,12 @@ class Portfolio:
 
         return transactions_history
 
-    def get_view(self, view="market_value", tx_hist_df=None, lookback=None):
+    def get_view(
+        self,
+        view: str = "market_value",
+        tx_hist_df: Optional[pd.DataFrame] = None,
+        lookback: Optional[int] = None,
+    ) -> pd.DataFrame:
         """
         Get the a specific view of the portfolio.
 
@@ -449,7 +475,7 @@ class Portfolio:
         view : str
             column to sum over on the portfolio dataframe
                - e.g. "market_value", "return", "cumulative_cost", "realized"
-        tx_hist_df : DataFrame
+        tx_hist_df : DataFrame (default is self.transactions_history)
             dataframe to get return percent from
         lookback : int (default is None)
             the number of days to look back (uses a calendar day and not stock)
@@ -466,6 +492,8 @@ class Portfolio:
             tx_hist_df = self._filter_lookback(
                 lookback=lookback, adjust_vars=True, tx_hist_df=tx_hist_df
             )
+        if not isinstance(tx_hist_df, pd.DataFrame):
+            raise ValueError("tx_hist_df should be a DataFrame")
         cols = ["ticker", "date", view]
         view_df = tx_hist_df[cols]
         view_df = view_df.pivot_table(
@@ -477,13 +505,16 @@ class Portfolio:
 
         return view_df
 
-    def check_tx(self, tx_df=None):
+    def check_tx(
+        self,
+        tx_df: Optional[pd.DataFrame] = None,
+    ) -> int:
         """
         Check that transactions have correct data.
 
         Parameters
         ----------
-        tx_df : DataFrame
+        tx_df : DataFrame (default is self.transactions)
             dataframe to performe checks on
 
         Returns
@@ -503,7 +534,24 @@ class Portfolio:
         #    |_| /_/\_\
         #
         # Helper function to check conditions and log warnings
-        def check_condition(condition, message_template, filtered_df=None):
+        def check_condition(
+            condition: bool,
+            message_template: str,
+            filtered_df: Optional[pd.DataFrame] = None,
+        ) -> None:
+            """
+            Check condition and log warning if condition is met.
+
+            Parameters
+            ----------
+            condition : bool
+                condition to check
+            message_template : str
+                message to log if condition is met
+            filtered_df : DataFrame (optional)
+                DataFrame to use in message template
+
+            """
             nonlocal portfolio_checks_failed
             if condition:
                 if filtered_df:
@@ -660,15 +708,12 @@ class Portfolio:
 
         return portfolio_checks_failed
 
-    def _get_price_history(self, history_offline=None):
+    def _get_price_history(self, history_offline: Optional[str] = None) -> pd.DataFrame:
         """
         Get the history of prices.
 
         Parameters
         ----------
-        offline_location : str (optional)
-            location of the csv price history. This is useful when not connected
-            to internet and the price history is already available.
         history_offline : str (optional)
             location of the csv price history. This is useful when not connected
             to internet and the price history is already available.
@@ -786,7 +831,12 @@ class Portfolio:
 
         return price_history
 
-    def _add_price_history(self, tx_df, price_history=None, other_fields=None):
+    def _add_price_history(
+        self,
+        tx_df: pd.DataFrame,
+        price_history: pd.DataFrame,
+        other_fields: Optional[List[str]] = None,
+    ) -> pd.DataFrame:
         """
         Add price history to transactions DataFrame.
 
@@ -853,7 +903,9 @@ class Portfolio:
 
         return tx_hist_df
 
-    def _add_cash_tx(self, tx_df, other_fields=None):
+    def _add_cash_tx(
+        self, tx_df: pd.DataFrame, other_fields: Optional[List[str]] = None
+    ) -> pd.DataFrame:
         """
         Add cash transactions to transactions DataFrame.
 
@@ -901,7 +953,9 @@ class Portfolio:
 
         return tx_df
 
-    def _add_stock_splits(self, tx_df, price_history=None):
+    def _add_stock_splits(
+        self, tx_df: pd.DataFrame, price_history: Optional[pd.DataFrame] = None
+    ) -> pd.DataFrame:
         """
         Add stock splits to transactions.
 
@@ -947,7 +1001,12 @@ class Portfolio:
 
         return tx_df
 
-    def _add_dividend(self, tx_df, tx_hist_df, other_fields=None):
+    def _add_dividend(
+        self,
+        tx_df: pd.DataFrame,
+        tx_hist_df: pd.DataFrame,
+        other_fields: Optional[List[str]] = None,
+    ) -> pd.DataFrame:
         """
         Add dividend column to transactions history DataFrame.
 
@@ -998,7 +1057,7 @@ class Portfolio:
 
         return tx_hist_df
 
-    def _calc_tx_metrics(self, tx_hist_df):
+    def _calc_tx_metrics(self, tx_hist_df: pd.DataFrame) -> pd.DataFrame:
         """
         Calculate summation metrics on transactions DataFrame.
 
@@ -1095,7 +1154,13 @@ class Portfolio:
 
         return transaction_metrics
 
-    def _add_benchmark(self, tx_df, ticker, price_history=None, other_fields=None):
+    def _add_benchmark(
+        self,
+        tx_df: pd.DataFrame,
+        ticker: str,
+        price_history: Optional[pd.DataFrame] = None,
+        other_fields: Optional[List[str]] = None,
+    ) -> pd.DataFrame:
         """
         Add a benchmark with transaction history dataframe.
 
@@ -1110,9 +1175,9 @@ class Portfolio:
             Transactions to calculate metrics on
         ticker : str
             The ticker to create the benchmark for
-        price_history : DataFrame
+        price_history : DataFrame (default is self.price_history)
             Price history DataFrame
-        other_fields : list (optional)
+        other_fields : list (default is None)
             additional fields to include
 
         Returns
@@ -1208,7 +1273,7 @@ class Portfolio:
 
         return benchmark_tx_hist
 
-    def _add_portfolio(self, tx_hist_df=None):
+    def _add_portfolio(self, tx_hist_df: pd.DataFrame) -> pd.DataFrame:
         """
         Add the portfolio with transaction history dataframe.
 
@@ -1253,7 +1318,7 @@ class Portfolio:
 
         return portfolio_tx_hist
 
-    def _calc_average_price(self, df):
+    def _calc_average_price(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Calculate the average cost basis.
 
@@ -1285,7 +1350,7 @@ class Portfolio:
                     ) / df.loc[df.index[i], "cumulative_units"]
         return df
 
-    def _calc_average_price_speed(self, df):
+    def _calc_average_price_speed(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Calculate the average cost basis.
 
@@ -1326,8 +1391,13 @@ class Portfolio:
         return df
 
     def _get_return_pct(
-        self, ticker, date, tx_hist_df=None, lookback=None, debug=False
-    ):
+        self,
+        ticker: str,
+        date: datetime.date,
+        tx_hist_df: Optional[pd.DataFrame] = None,
+        lookback: Optional[int] = None,
+        debug: Optional[bool] = False,
+    ) -> Dict[str, Any]:
         """
         Get the dollar and time weighted return of a ticker.
 
@@ -1352,7 +1422,6 @@ class Portfolio:
               (start_value + time_weighted_cash_flows)
 
            Time Weighted Return (TWRR)
-              TODO - although not a big fan as it doesn't take into account cash flows
               This is non-annualized
               Using the formula from investopedia
               https://www.investopedia.com/terms/t/time-weightedror.asp
@@ -1518,6 +1587,7 @@ class Portfolio:
             dwrr_ann_return_pct = xirr(
                 return_transactions["date"], return_transactions["return_txs"]
             )
+
             # where dwrr can't be calculated
             if dwrr_ann_return_pct is None:
                 logger.warning(
@@ -1589,7 +1659,12 @@ class Portfolio:
 
         return return_dict
 
-    def _get_return_pcts(self, date=None, tx_hist_df=None, lookback=None):
+    def _get_return_pcts(
+        self,
+        date: Optional[datetime.date] = None,
+        tx_hist_df: Optional[pd.DataFrame] = None,
+        lookback: Optional[int] = None,
+    ) -> pd.DataFrame:
         """
         Get the dollar weighted return of transactions.
 
@@ -1642,7 +1717,12 @@ class Portfolio:
 
         return return_pcts
 
-    def _filter_lookback(self, lookback, adjust_vars=False, tx_hist_df=None):
+    def _filter_lookback(
+        self,
+        lookback: int,
+        adjust_vars: bool = False,
+        tx_hist_df: Optional[pd.DataFrame] = None,
+    ) -> pd.DataFrame:
         """
         Modify the transactions history dataframe to only include lookback.
 
@@ -1668,8 +1748,8 @@ class Portfolio:
 
         # Using calendar lookback, but getting closest trading day
         end_date = lookback_df["date"].max()
-        cal_start_date = end_date - timedelta(days=lookback)
-        buffer_date = cal_start_date - timedelta(days=7)
+        cal_start_date = end_date - datetime.timedelta(days=lookback)
+        buffer_date = cal_start_date - datetime.timedelta(days=7)
         stock_dates = (
             mcal.get_calendar("NYSE")
             .schedule(start_date=buffer_date, end_date=end_date)
@@ -1713,20 +1793,26 @@ class Manager:
 
     def __init__(
         self,
-        config_path,
-        portfolios=None,
-    ):
+        config_path: str,
+        portfolios: Optional[List[str]] = None,
+    ) -> None:
         """Initialize the Manager class."""
         # create list of portfolios in configuration
         if portfolios is None:
-            sections = config_helper.get_config(config_path).sections()
+            sections = config_helper.get_config_options(
+                config_path, "investments"
+            ).keys()
             portfolios = [item for item in sections if item != "static"]
 
         self.portfolios = [
             Portfolio(config_path=config_path, portfolio=item) for item in portfolios
         ]
 
-    def get_summary(self, date=None, lookbacks=None):
+    def get_summary(
+        self,
+        date: Optional[datetime.date] = None,
+        lookbacks: Optional[Union[Any, List[Any]]] = None,
+    ) -> pd.DataFrame:
         """
         Get summary of portfolios.
 
@@ -1826,7 +1912,7 @@ class Manager:
 
         return summary_all
 
-    def get_view(self, view="market_value"):
+    def get_view(self, view: str = "market_value") -> pd.DataFrame:
         """
         Get the view of portfolios.
 
@@ -1855,7 +1941,9 @@ class Manager:
 
         return view_df
 
-    def get_return_chart(self, lookback=None, benchmarks=None):
+    def get_return_chart(
+        self, lookback: Optional[int] = None, benchmarks: Optional[List[str]] = None
+    ) -> "go.Figure":
         """
         Get the return chart of manager portfolios.
 
@@ -1881,7 +1969,7 @@ class Manager:
         cost_view = self.get_view(view="cumulative_cost") * -1
         if lookback is not None:
             lookback = convert_lookback(lookback)
-            lookback_date = return_view.index.max() - timedelta(days=lookback)
+            lookback_date = return_view.index.max() - datetime.timedelta(days=lookback)
         else:
             lookback_date = return_view.index.min()
 
@@ -1904,18 +1992,24 @@ class Manager:
             wrapper = Yahoo()
             min_year = return_view_filtered.index.min().year
             price_history = wrapper.stock_history(tickers=benchmarks, min_year=min_year)
-            benchmarks = price_history[price_history["date"] >= lookback_date].copy()
-            benchmarks["ticker"] = benchmarks["ticker"].apply(
+            benchmarks_history = price_history[
+                price_history["date"] >= lookback_date
+            ].copy()
+            benchmarks_history["ticker"] = benchmarks_history["ticker"].apply(
                 lambda x: "benchmark_" + x
             )
-            benchmarks = benchmarks.pivot(
+            benchmarks_history = benchmarks_history.pivot(
                 index="date", columns="ticker", values="last_price"
             )
-            for col in benchmarks.columns:
+            for col in benchmarks_history.columns:
                 # calculates return % over time
-                benchmarks[col] = (benchmarks[col] / benchmarks[col].iloc[0]) - 1
+                benchmarks_history[col] = (
+                    benchmarks_history[col] / benchmarks_history[col].iloc[0]
+                ) - 1
 
-            return_view_filtered = pd.concat([return_view_filtered, benchmarks], axis=1)
+            return_view_filtered = pd.concat(
+                [return_view_filtered, benchmarks_history], axis=1
+            )
 
         return_view_filtered = return_view_filtered.reset_index()
 

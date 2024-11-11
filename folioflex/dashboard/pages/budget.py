@@ -13,7 +13,8 @@ from flask_login import current_user
 from folioflex.budget import budget, models
 from folioflex.dashboard.components import dash_formats
 from folioflex.dashboard.utils import dashboard_helper
-from folioflex.utils import custom_logger
+from folioflex.portfolio import assets, loans
+from folioflex.utils import custom_logger, database
 
 logger = custom_logger.setup_logging(__name__)
 
@@ -27,14 +28,6 @@ def layout():
     """Create layout for the budget dashboard."""
     if not current_user.is_authenticated:
         return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])
-
-    # Get labels for the dropdown
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
-    budget_df = bdgt.get_transactions()
-    budget_df = bdgt.modify_transactions(budget_df)
-    labels = budget_df["label"].dropna().unique()
-    labels.sort()
-    label_options = [{"label": label, "value": label} for label in labels]
 
     return html.Div(
         [
@@ -51,6 +44,18 @@ def layout():
                         dcc.Input(
                             id="budget-chart-input",
                             value=prior_month,
+                            type="text",
+                        ),
+                        width="auto",
+                    ),
+                    dbc.Col(
+                        html.Label("Budget Name"),
+                        width="auto",
+                    ),
+                    dbc.Col(
+                        dcc.Input(
+                            id="budget-section-input",
+                            placeholder="budget name",
                             type="text",
                         ),
                         width="auto",
@@ -102,13 +107,22 @@ def layout():
                     dbc.AccordionItem(
                         [
                             # category chart
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        html.Button(
+                                            "Label Chart", id="label-chart-button"
+                                        ),
+                                        width="auto",
+                                    ),
+                                ]
+                            ),
                             html.Div(
                                 [
                                     html.Label("Select Label"),
                                     dcc.Dropdown(
                                         id="label-dropdown",
-                                        options=label_options,
-                                        value=labels[0] if len(labels) > 0 else None,
+                                        # options=None,
                                     ),
                                 ]
                             ),
@@ -199,6 +213,71 @@ def layout():
                         ],
                         title="Subscription Table",
                     ),
+                    dbc.AccordionItem(
+                        [
+                            # Assets table
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        html.Button(
+                                            "Assets Table",
+                                            id="assets-button",
+                                            n_clicks=0,
+                                        ),
+                                    ),
+                                    dbc.Col(
+                                        html.Button(
+                                            "Update Assets Values",
+                                            id="assets-retrieve-button",
+                                            n_clicks=0,
+                                        ),
+                                    ),
+                                ],
+                            ),
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        dcc.Loading(
+                                            id="loading-assets-table",
+                                            type="dot",
+                                            children=html.Div(id="assets-table"),
+                                        ),
+                                        style={"overflow": "auto"},
+                                    ),
+                                    dbc.Col(
+                                        dcc.Loading(
+                                            id="loading-assets-chart",
+                                            type="dot",
+                                            children=html.Div(id="assets-chart"),
+                                        ),
+                                        style={"overflow": "auto"},
+                                    ),
+                                ]
+                            ),
+                        ],
+                        title="Assets Table",
+                    ),
+                    dbc.AccordionItem(
+                        [
+                            # Loans table
+                            dbc.Col(
+                                html.Button(
+                                    "Loans Table",
+                                    id="loans-button",
+                                    n_clicks=0,
+                                ),
+                            ),
+                            dbc.Col(
+                                dcc.Loading(
+                                    id="loading-loans-table",
+                                    type="dot",
+                                    children=html.Div(id="loans-table"),
+                                ),
+                                style={"overflow": "auto"},
+                            ),
+                        ],
+                        title="Loans Table",
+                    ),
                 ],
                 start_collapsed=True,
                 always_open=True,
@@ -222,12 +301,15 @@ def layout():
         Output("budget-chart-labels", "children"),
     ],
     [Input("budget-chart-button", "n_clicks")],
-    [State("budget-chart-input", "value")],
+    [State("budget-chart-input", "value"), State("budget-section-input", "value")],
     prevent_initial_call=True,
 )
-def update_budgetchart(n_clicks, input_value):
+def update_budgetchart(n_clicks, input_value, budget_section):
     """Provide budget info chart."""
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash.no_update
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
     budget_view = bdgt.budget_view(
@@ -246,12 +328,15 @@ def update_budgetchart(n_clicks, input_value):
 @callback(
     Output("income-chart", "children"),
     [Input("income-chart-button", "n_clicks")],
-    [State("budget-chart-input", "value")],
+    [State("budget-chart-input", "value"), State("budget-section-input", "value")],
     prevent_initial_call=True,
 )
-def update_incomeview(n_clicks, input_value):
+def update_incomeview(n_clicks, input_value, budget_section):
     """Provide income info chart."""
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
     income_chart = bdgt.display_income_view(budget_df)
@@ -263,12 +348,15 @@ def update_incomeview(n_clicks, input_value):
 @callback(
     Output("compare-chart", "children"),
     [Input("budget-compare-button", "n_clicks")],
-    [State("budget-chart-input", "value")],
+    [State("budget-chart-input", "value"), State("budget-section-input", "value")],
     prevent_initial_call=True,
 )
-def update_comparechart(n_clicks, input_value):
+def update_comparechart(n_clicks, input_value, budget_section):
     """Provide budget compare info chart."""
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash.no_update
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
     compare_chart = bdgt.display_compare_expenses_view(
@@ -282,19 +370,23 @@ def update_comparechart(n_clicks, input_value):
 @callback(
     Output("toast-update-db", "is_open"),
     [Input("budget-update-db-button", "n_clicks")],
+    State("budget-section-input", "value"),
     prevent_initial_call=True,
 )
-def update_budget_db(n_clicks):
+def update_budget_db(n_clicks, budget_section):
     """Provide budget compare info chart."""
     # get the unlabeled transactions
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash.no_update
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     train_df = budget_df[~budget_df["label"].isna()]
     unlabeled_df = budget_df[budget_df["label"].isna()]
 
     # use trained model to predict labels
     model = models.Classifier(train_df=train_df)
-    model.load_model(model_name="components.pkl")
+    model.load_model(model_name=bdgt.model)
     predict_df = model.predict_labels(
         unlabeled_df=unlabeled_df, components=model.components
     )
@@ -307,34 +399,50 @@ def update_budget_db(n_clicks):
 
 @callback(
     Output("expense-chart", "children"),
-    Input("label-dropdown", "value"),
+    Output("label-dropdown", "options"),
+    [Input("label-chart-button", "n_clicks"), Input("label-dropdown", "value")],
+    State("budget-section-input", "value"),
+    prevent_initial_call=True,
 )
-def update_category_chart(selected_label):
+def update_category_chart(n_clicks, selected_label, budget_section):
     """Display category chart."""
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash.no_update
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
 
+    labels = budget_df["label"].dropna().unique()
+    labels.sort()
+    label_options = [{"label": label, "value": label} for label in labels]
+    if selected_label is None:
+        selected_label = labels[0]
+
     expense_chart = bdgt.display_category_trend(budget_df, selected_label)
 
-    return dcc.Graph(figure=expense_chart, id="expense-chart-fig")
+    return dcc.Graph(figure=expense_chart, id="expense-chart-fig"), label_options
 
 
 @callback(
     Output("expense-table", "children"),
     [Input("expense-chart-fig", "clickData"), Input("label-dropdown", "value")],
+    State("budget-section-input", "value"),
     prevent_initial_call=True,
 )
-def update_expenses_table(clickData, selected_label):
+def update_expenses_table(clickData, selected_label, budget_section):
     """Update the table with expenses for the selected label and month."""
     if clickData is None:
+        return dash.no_update
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
         return dash.no_update
 
     clicked_month = clickData["points"][0]["x"]
     clicked_month = pd.to_datetime(clicked_month).strftime("%Y-%m")
     logger.info(f"Selected month: {clicked_month}")
 
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
 
@@ -359,14 +467,18 @@ def update_expenses_table(clickData, selected_label):
 @callback(
     Output("subscription-table", "children"),
     [Input("subscription-button", "n_clicks")],
+    State("budget-section-input", "value"),
     prevent_initial_call=True,
 )
-def update_subscription_table(clickData):
+def update_subscription_table(clickData, budget_section):
     """Update the table with possible subscriptions."""
     if clickData is None:
         return dash.no_update
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash.no_update
 
-    bdgt = budget.Budget(config_path="budget_personal.ini", budget="personal")
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
 
@@ -384,3 +496,87 @@ def update_subscription_table(clickData):
     )
 
     return subscription_tbl_div
+
+
+@callback(
+    [Output("assets-table", "children"), Output("assets-chart", "children")],
+    [Input("assets-button", "n_clicks")],
+    State("budget-section-input", "value"),
+    prevent_initial_call=True,
+)
+def update_assets_table(clickData, budget_section):
+    """Update the table with assets."""
+    if clickData is None:
+        return dash.no_update
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash.no_update
+
+    engine = database.Engine(config_path="config.yml")
+    # get asset_df
+    asset_df = assets.get_asset_df(engine=engine, user=budget_section, current=True)
+
+    # create the table
+    assets_tbl_div = html.Div(
+        [
+            dag.AgGrid(
+                id="grid-assets",
+                rowData=asset_df.to_dict("records"),
+                columnDefs=dash_formats.get_column_defs(asset_df),
+            )
+        ]
+    )
+
+    # create the chart
+    unfiltered_asset_df = assets.get_asset_df(
+        engine=engine, user=budget_section, current=False
+    )
+    asset_chart = assets.display_asset_trend(unfiltered_asset_df)
+
+    return assets_tbl_div, dcc.Graph(figure=asset_chart)
+
+
+@callback(
+    Output("loans-table", "children"),
+    [Input("loans-button", "n_clicks")],
+    State("budget-section-input", "value"),
+    prevent_initial_call=True,
+)
+def update_loans_table(clickData, budget_section):
+    """Update the table with loans."""
+    if clickData is None:
+        return dash.no_update
+    if budget_section is None:
+        logger.error("Budget section input is not defined.")
+        return dash.no_update
+
+    engine = database.Engine(config_path="config.yml")
+    # get loans in config
+    loans_df = loans.get_loan_df(
+        config_path="config.yml", engine=engine, user=budget_section
+    )
+
+    # create the table
+    loans_tbl_div = html.Div(
+        [
+            dag.AgGrid(
+                id="grid-assets",
+                rowData=loans_df.to_dict("records"),
+                columnDefs=dash_formats.get_column_defs(loans_df),
+            )
+        ]
+    )
+
+    return loans_tbl_div
+
+
+@callback(
+    [Input("assets-retrieve-button", "n_clicks")],
+    prevent_initial_call=True,
+)
+def retrieve_asset_values(clickData):
+    """Get new asset values."""
+    if clickData is None:
+        return dash.no_update
+    assets.update_asset_info(config_path="config.yml", db_write=True)
+    return dash.no_update

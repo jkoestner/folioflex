@@ -1,0 +1,12 @@
+{
+    "short_name": "folioflex",
+    "name": "folioflex",
+    "icons": [
+      {
+        "src": "/assets/folioflex_192x192.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      }
+    ]
+  }
+  

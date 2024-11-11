@@ -13,14 +13,14 @@ Some methods that are included are:
 """
 
 import re
+from typing import Any, Dict, List, Optional, Union
 
 import emoji
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import sqlalchemy as sa
 
-from folioflex.utils import config_helper, custom_logger
+from folioflex.utils import config_helper, custom_logger, database
 
 logger = custom_logger.setup_logging(__name__)
 
@@ -40,16 +40,23 @@ class Budget:
 
     def __init__(
         self,
-        config_path,
-        budget,
-    ):
+        config_path: str,
+        budget: str,
+    ) -> None:
         """Initialize the Portfolio class."""
         logger.info("Initializing Budget class.")
-        self.config_dict = config_helper.get_config_options(config_path, budget)
+        self.config_path = config_path
+        self.config_dict = config_helper.get_config_options(
+            config_path, "budgets", budget
+        )
         self.budgets = self.config_dict["budgets"]
         self.default = self.config_dict["default"]
+        self.budget = budget
+        self.model = self.config_dict.get("model", None)
 
-    def get_transactions(self, engine=None):
+    def get_transactions(
+        self, engine: Optional[Any] = None, user: Optional[str] = None
+    ) -> pd.DataFrame:
         """
         Get the transactions for the budget.
 
@@ -59,6 +66,8 @@ class Budget:
         ----------
         engine : SQLAlchemy engine
             The engine to connect to the database.
+        user : str, optional
+            The user to get the transactions for.
 
         Returns
         -------
@@ -79,16 +88,16 @@ class Budget:
 
         """
         if engine is None:
-            engine = self._create_engine()
+            engine = database.Engine(self.config_path)
+        if user is None:
+            user = self.config_dict.get("user", None)
         logger.info("Getting transactions.")
         # creating a dataframe of transactions that include
         # the account name, item name, and transaction name
-        with engine.connect() as conn, conn.begin():
-            tx_df = pd.read_sql_table("transactions_table", conn)
-        with engine.connect() as conn, conn.begin():
-            item_df = pd.read_sql_table("items_table", conn)
-        with engine.connect() as conn, conn.begin():
-            account_df = pd.read_sql_table("accounts_table", conn)
+        user_df = engine.read_table("users_table")
+        item_df = engine.read_table("items_table")
+        account_df = engine.read_table("accounts_table")
+        tx_df = engine.read_table("transactions_table")
         # creating a grouped dataset
         tx_df = pd.merge(
             tx_df,
@@ -100,12 +109,22 @@ class Budget:
         )
         tx_df = pd.merge(
             tx_df,
-            item_df[["id", "plaid_institution_id"]],
+            item_df[["id", "plaid_institution_id", "user_id"]],
             left_on="item_id",
             right_on="id",
             how="left",
             suffixes=[None, "_tmp"],
         )
+        tx_df = pd.merge(
+            tx_df,
+            user_df[["id", "username"]],
+            left_on="user_id",
+            right_on="id",
+            how="left",
+            suffixes=[None, "_tmp"],
+        )
+        if user is not None:
+            tx_df = tx_df[tx_df["username"] == user]
         tx_df = tx_df[
             [
                 "id",
@@ -614,6 +633,9 @@ class Budget:
         # filter data for category
         category_df = tx_df[tx_df["label"] == category]
         category_df = category_df.groupby(["month"])["amount"].sum().reset_index()
+        if len(category_df) == 0:
+            logger.warning(f"No transactions found for category: {category}")
+            return None
 
         # budgets
         category_budget = self.budgets.get(category, 0)
@@ -721,68 +743,15 @@ class Budget:
 
         """
         if engine is None:
-            engine = self._create_engine()
+            engine = database.Engine(self.config_path)
         logger.info("Updating labels in database.")
-        rows_updated = 0
-        with engine.connect() as conn:
-            for _, row in tx_df.iterrows():
-                if pd.isna(row[label_column]):
-                    update_label_query = sa.text(
-                        """
-                        UPDATE public.transactions_table
-                        SET "label" = NULL
-                        WHERE id = :id;
-                    """
-                    )
-                    executed = conn.execute(update_label_query, {"id": row["id"]})
-                else:
-                    update_label_query = sa.text(
-                        """
-                        UPDATE public.transactions_table
-                        SET "label" = :label
-                        WHERE id = :id;
-                    """
-                    )
-                    executed = conn.execute(
-                        update_label_query,
-                        {"label": row[label_column], "id": row["id"]},
-                    )
-                rows_updated = rows_updated + executed.rowcount
-            conn.commit()
-        logger.info(f"Rows updated: {rows_updated}")
 
-    def _create_engine(self):
-        """
-        Create an engine.
+        # filter the table
+        tx_df = tx_df[[label_column, "id"]]
 
-        Returns
-        -------
-        engine : SQLAlchemy engine
-            The engine to connect to the database.
-
-        """
-        db_user = self.config_dict.get("db_user", None)
-        db_pass = self.config_dict.get("db_pass", None)
-        db_host = self.config_dict.get("db_host", None)
-        db_name = self.config_dict.get("db_name", None)
-        db_port = self.config_dict.get("db_port", None)
-
-        config_values = {
-            "db_user": db_user,
-            "db_pass": db_pass,
-            "db_host": db_host,
-            "db_name": db_name,
-            "db_port": db_port,
-        }
-        missing_values = [key for key, value in config_values.items() if value is None]
-        if missing_values:
-            raise ValueError(
-                f"The following configuration values are missing: "
-                f"{', '.join(missing_values)}"
-            )
-
-        logger.info("Connecting to database.")
-        engine = sa.create_engine(
-            f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+        tx_df = tx_df.rename(columns={label_column: "label"})
+        engine.bulk_update(
+            tx_df=tx_df, table_name="transactions_table", where_column="id"
         )
-        return engine
+
+        logger.info(f"Rows updated: {len(tx_df)}")

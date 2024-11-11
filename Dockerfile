@@ -3,7 +3,7 @@
 # then pulled down into a web container.
 # To run dockerfile and create own image `docker build --no-cache -t folioflex .` 
 # from where the dockerfile is located.
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 # Install git, chromium, and x11 display(lighter version of Chrome for seleniumbase)
 # x11 are only needed when debugging

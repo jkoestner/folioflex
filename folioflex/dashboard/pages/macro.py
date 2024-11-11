@@ -1,7 +1,8 @@
 """Macro dashboard."""
 
 import dash
-from dash import dash_table, dcc, html
+import dash_bootstrap_components as dbc
+from dash import Input, Output, callback, html
 
 from folioflex.dashboard.utils import dashboard_helper
 from folioflex.portfolio.wrappers import BLS, Fred, TradingView
@@ -21,12 +22,101 @@ dash.register_page(__name__, path="/macro", title="folioflex - Macro", order=2)
 
 def layout():
     """Macro layout."""
-    # getting data from wrappers
+    return dbc.Container(
+        [
+            html.H2("Macro Economic Dashboard", className="text-center my-4"),
+            # buttons
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dbc.Button(
+                            "Show Indicators",
+                            id="indicators-button",
+                            n_clicks=0,
+                            color="primary",
+                        ),
+                        width="auto",
+                    ),
+                    dbc.Col(
+                        dbc.Button(
+                            "Show Economic Calendar",
+                            id="calendar-button",
+                            n_clicks=0,
+                            color="primary",
+                        ),
+                        width="auto",
+                    ),
+                ],
+                className="mb-4",
+                justify="center",
+            ),
+            html.Div(id="content-container"),
+            # adding variables needed that are used in callbacks.
+            *dashboard_helper.get_defaults(),
+        ],
+        fluid=True,
+    )
+
+
+#    ____      _ _ _                _
+#   / ___|__ _| | | |__   __ _  ___| | _____
+#  | |   / _` | | | '_ \ / _` |/ __| |/ / __|
+#  | |__| (_| | | | |_) | (_| | (__|   <\__ \
+#   \____\__,_|_|_|_.__/ \__,_|\___|_|\_\___/
+#
+
+
+# economic indicator and calendar buttons
+@callback(
+    Output("content-container", "children"),
+    [
+        Input("indicators-button", "n_clicks"),
+        Input("calendar-button", "n_clicks"),
+    ],
+)
+def display_content(indicators_clicks, calendar_clicks):
+    """Display content based on button clicks."""
+    ctx = dash.callback_context
+
+    if not ctx.triggered:
+        return html.Div()
+    else:
+        button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+    if button_id == "indicators-button":
+        return dbc.Card(
+            [
+                dbc.CardHeader(html.H4("Key Indicators")),
+                dbc.CardBody(
+                    [
+                        create_indicators_table(),
+                    ]
+                ),
+            ],
+            className="mt-4",
+        )
+    elif button_id == "calendar-button":
+        return dbc.Card(
+            [
+                dbc.CardHeader(html.H4("Economic Calendar")),
+                dbc.CardBody(
+                    [
+                        create_economic_calendar_table(),
+                    ]
+                ),
+            ],
+            className="mt-4",
+        )
+    else:
+        return html.Div()
+
+
+def create_indicators_table():
+    """Create the indicators table."""
+    # Getting data from wrappers
     fred_summary = Fred().get_summary()
     bls_cpi = BLS().get_cpi()
-    economic_calendar = TradingView().get_economic_calendar()
 
-    # creating html table for items
     indicators_data = [
         {
             "Indicator": "US Recession Probability",
@@ -41,7 +131,7 @@ def layout():
         {
             "Indicator": "US Unemployment Rate",
             "Value": fred_summary["unemployment"],
-            "Link": "https://fred.stlouisfed.org/series/FEDFUNDS",
+            "Link": "https://fred.stlouisfed.org/series/UNRATE",
         },
         {
             "Indicator": "US Federal Fund Rate",
@@ -64,94 +154,28 @@ def layout():
             "Link": "https://fred.stlouisfed.org/series/DGS10",
         },
     ]
+    columns = [
+        {"name": "Indicator", "id": "Indicator"},
+        {"name": "Value", "id": "Value"},
+        {
+            "name": "Source",
+            "id": "Link",
+            "type": "text",
+            "presentation": "markdown",
+        },
+    ]
+    data = [{**row, "Link": f"[Source]({row['Link']})"} for row in indicators_data]
+    indicators_table = dashboard_helper.create_datatable(columns, data)
 
-    indicators_table = dash_table.DataTable(
-        id="key-indicators-table",
-        columns=[
-            {"name": "Indicator", "id": "Indicator"},
-            {"name": "Value", "id": "Value"},
-            {
-                "name": "Source",
-                "id": "Link",
-                "type": "text",
-                "presentation": "markdown",
-            },
-        ],
-        data=[{**row, "Link": f"[Source]({row['Link']})"} for row in indicators_data],
-        style_table={"overflowX": "auto"},
-        markdown_options={"link_target": "_blank"},
-    )
-
-    return html.Div(
-        [
-            # adding variables needed that are used in callbacks.
-            *dashboard_helper.get_defaults(),
-            # ---------------------------------------------------------------
-            dcc.Markdown(
-                """
-                        Macro indicators
-                        """
-            ),
-            html.P(),
-            # key indicators section
-            html.Div(
-                indicators_table,
-                className="four columns",
-            ),
-            # economic calendar section
-            html.Div(
-                [
-                    # creating economic calendar
-                    html.A(
-                        "Economic Calendar",
-                        href="https://www.tradingview.com/economic-calendar/",
-                        target="_blank",
-                    ),
-                    dash_table.DataTable(
-                        id="economic-calendar",
-                        columns=[
-                            {"name": i, "id": i} for i in economic_calendar.columns
-                        ],
-                        data=economic_calendar.to_dict("records"),
-                        style_cell={
-                            "whiteSpace": "normal",
-                            "height": "auto",
-                            "textAlign": "left",
-                        },
-                        style_cell_conditional=[
-                            # Apply a default width to all columns
-                            {
-                                "if": {"column_id": c},
-                                "minWidth": "50px",
-                                "width": "150px",
-                                "maxWidth": "180px",
-                            }
-                            for c in economic_calendar.columns
-                            if c != "comment"
-                        ]
-                        + [
-                            # Specifically targeting the 'comment'
-                            # column to have a larger width
-                            {
-                                "if": {"column_id": "comment"},
-                                "minWidth": "150px",
-                                "width": "2400px",
-                                "maxWidth": "2450px",
-                            },
-                        ],
-                        style_table={"overflowX": "auto"},
-                        page_action="none",
-                        style_data={"overflow": "hidden"},
-                    ),
-                ],
-                className="ten columns",
-            ),
-        ]
-    )
+    return indicators_table
 
 
-#    ____      _ _ _                _
-#   / ___|__ _| | | |__   __ _  ___| | _____
-#  | |   / _` | | | '_ \ / _` |/ __| |/ / __|
-#  | |__| (_| | | | |_) | (_| | (__|   <\__ \
-#   \____\__,_|_|_|_.__/ \__,_|\___|_|\_\___/
+def create_economic_calendar_table():
+    """Create the economic calendar table."""
+    # Getting data from wrapper
+    economic_calendar = TradingView().get_economic_calendar()
+    columns = [{"name": i, "id": i} for i in economic_calendar.columns]
+    data = economic_calendar.to_dict("records")
+    economic_calendar_table = dashboard_helper.create_datatable(columns, data)
+
+    return economic_calendar_table

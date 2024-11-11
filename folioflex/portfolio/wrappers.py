@@ -6,10 +6,13 @@ from the larger portfolio project, and allows easier integration.
 
 """
 
+import re
 import ssl
 from datetime import datetime, time, timedelta
 from io import StringIO
+from typing import Any, Dict, List, Optional, Union
 from urllib import request
+from urllib.parse import urlencode
 
 import fredapi
 import pandas as pd
@@ -36,10 +39,10 @@ class BLS:
     https://www.bls.gov/developers/api_signature.htm
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def get_cpi(self):
+    def get_cpi(self) -> Dict[str, Any]:
         """
         Get the latest CPI information.
 
@@ -80,10 +83,10 @@ class Finviz:
 
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def get_heatmap_data(self, timeframe="day"):
+    def get_heatmap_data(self, timeframe: str = "day") -> pd.DataFrame:
         """
         Get heatmap data from finviz.
 
@@ -125,7 +128,7 @@ class Finviz:
         r.raise_for_status()
 
         df_change = pd.DataFrame.from_dict(r.json()["nodes"], orient="index")
-        df_change.columns = ["return_pct"]
+        df_change.columns = pd.Index(["return_pct"])
         df_change["return_pct"] = df_change["return_pct"] / 100
 
         # get sector and market cap data
@@ -169,10 +172,10 @@ class Fred:
     https://fred.stlouisfed.org/docs/api/fred/
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def get_summary(self):
+    def get_summary(self) -> Dict[str, Any]:
         """
         Get a summary of FRED data.
 
@@ -219,10 +222,15 @@ class TradingView:
 
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def get_economic_calendar(self, to_date=None, from_date=None, minImportance=1):
+    def get_economic_calendar(
+        self,
+        to_date: Optional[str] = None,
+        from_date: Optional[str] = None,
+        minImportance: int = 1,
+    ) -> pd.DataFrame:
         """
         Get the latest economic calendar.
 
@@ -254,24 +262,23 @@ class TradingView:
             normalize_date = normalize_date.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
             return normalize_date
 
-        to_date = (
-            datetime.utcnow() + timedelta(days=7)
-            if to_date is None
-            else datetime.strptime(to_date, "%Y-%m-%d")
-        )
-        from_date = (
-            to_date - timedelta(days=14)
-            if from_date is None
-            else datetime.strptime(from_date, "%Y-%m-%d")
-        )
+        if to_date is None:
+            to_date_dt = datetime.utcnow() + timedelta(days=7)
+        else:
+            to_date_dt = datetime.strptime(to_date, "%Y-%m-%d")
 
-        to_date = normalize_date(to_date, time(23, 0, 0, 0))
-        from_date = normalize_date(from_date, time(0, 0, 0, 0))
+        if from_date is None:
+            from_date_dt = to_date_dt - timedelta(days=14)
+        else:
+            from_date_dt = datetime.strptime(from_date, "%Y-%m-%d")
+
+        to_date_dt = normalize_date(to_date, time(23, 0, 0, 0))
+        from_date_dt = normalize_date(from_date, time(0, 0, 0, 0))
 
         url = "https://economic-calendar.tradingview.com/events"
         payload = {
-            "from": from_date,
-            "to": to_date,
+            "from": from_date_dt,
+            "to": to_date_dt,
             "countries": ["US"],
             "minImportance": minImportance,
         }
@@ -308,10 +315,10 @@ class Web:
 
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def get_sp500_tickers(self):
+    def get_sp500_tickers(self) -> pd.DataFrame:
         """
         Provide sp500 tickers with sectors.
 
@@ -337,7 +344,7 @@ class Web:
 
         return sp500_tickers
 
-    def insider_activity(self, ticker):
+    def insider_activity(self, ticker: str) -> pd.DataFrame:
         """
         Get insider activity.
 
@@ -393,7 +400,7 @@ class Web:
         return df_insider
 
 
-def _get_header():
+def _get_header() -> Dict[str, str]:
     """
     Get header for requests.
 
@@ -411,7 +418,7 @@ def _get_header():
     return headers
 
 
-def _convert_to_number(s):
+def _convert_to_number(s: str) -> float:
     """
     Convert string to number.
 
@@ -446,10 +453,10 @@ class Yahoo:
     Class that provides functions that use data from yahoo finance.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def stock_history(self, tickers, min_year):
+    def stock_history(self, tickers: List[str], min_year: int) -> pd.DataFrame:
         """
         Get stock history data for a set of tickers.
 
@@ -493,7 +500,7 @@ class Yahoo:
 
         return stock_data
 
-    def news(self, ticker):
+    def news(self, ticker: str) -> pd.DataFrame:
         """
         Get the news for ticker.
 
@@ -517,7 +524,7 @@ class Yahoo:
 
         return news
 
-    def info(self, ticker):
+    def info(self, ticker: str) -> pd.DataFrame:
         """
         Get the info for ticker.
 
@@ -539,7 +546,28 @@ class Yahoo:
 
         return info
 
-    def fast_info(self, ticker):
+    def earnings_calendar(self, ticker: str, limit: int = 6) -> pd.DataFrame:
+        """
+        Get the earnings calendar for ticker.
+
+        Parameters
+        ----------
+        ticker : str
+            symbol to get data for
+        limit : int (default=6)
+            number of earnings to return
+
+        Returns
+        -------
+        earnings_calendar : DataFrame
+            provides earnings calendar on ticker
+
+        """
+        earnings_calendar = yf.Ticker(ticker).get_earnings_dates()
+        earnings_calendar = earnings_calendar.head(limit)
+        return earnings_calendar
+
+    def fast_info(self, ticker: str) -> Dict[str, Any]:
         """
         Get the info for ticker.
 
@@ -558,7 +586,7 @@ class Yahoo:
 
         return fast_info
 
-    def quote(self, ticker):
+    def quote(self, ticker: str) -> pd.DataFrame:
         """
         Get the quote for ticker.
 
@@ -583,7 +611,7 @@ class Yahoo:
 
         return quote
 
-    def most_active(self, count=25):
+    def most_active(self, count: int = 25) -> pd.DataFrame:
         """
         Provide a dataframe of the most active stocks for the most recent trading day.
 
@@ -605,9 +633,7 @@ class Yahoo:
                 f"Count should be between 1 and 100 and the count was {count}"
             )
 
-        url = (
-            f"https://finance.yahoo.com/screener/predefined/most_actives?count={count}"
-        )
+        url = f"https://finance.yahoo.com/markets/stocks/most-active?count={count}"
 
         response = requests.get(url, headers=_get_header(), timeout=10)
         most_active = pd.read_html(StringIO(response.text))[0]
@@ -624,28 +650,27 @@ class Yahoo:
         cols_keep = [
             "symbol",
             "name",
-            "price_intraday",
+            "price",
             "change",
-            "%_change",
+            "change_%",
             "volume",
-            "avg_vol_3_month",
+            "avg_vol_3m",
             "market_cap",
         ]
         most_active = most_active[cols_keep]
 
         # update columns
-        for var in ["%_change", "volume", "avg_vol_3_month", "market_cap"]:
+        most_active["price"] = most_active["price"].str.extract(r"^([\d.]+)")
+        for var in ["price", "change_%", "volume", "avg_vol_3m", "market_cap"]:
             most_active[var] = most_active[var].apply(_convert_to_number)
 
-        most_active["vol_delta"] = (
-            most_active["volume"] / most_active["avg_vol_3_month"]
-        )
-        most_active["vol_price"] = most_active["volume"] * most_active["price_intraday"]
+        most_active["vol_delta"] = most_active["volume"] / most_active["avg_vol_3m"]
+        most_active["vol_price"] = most_active["volume"] * most_active["price"]
         most_active = most_active.sort_values("vol_price", ascending=False)
 
         return most_active
 
-    def get_change_percent(self, ticker, days=365):
+    def get_change_percent(self, ticker: str, days: int = 365) -> float:
         """
         Get the percentage change of a stock over a given number of days.
 
@@ -671,10 +696,10 @@ class Yahoo:
         start_date = helper.check_stock_dates(start_date, fix=True)["fix_tx_df"][
             "date"
         ][0]
-        end_date = end_date.strftime("%Y-%m-%d")
-        start_date = start_date.strftime("%Y-%m-%d")
+        end_date_str = end_date.strftime("%Y-%m-%d")
+        start_date_str = start_date.strftime("%Y-%m-%d")
 
-        data = yf.download(ticker, start=start_date, end=end_date)
+        data = yf.download(ticker, start=start_date_str, end=end_date_str)
 
         # Extract the adjusted close price from one year ago and the most recent price
         start_price = data["Adj Close"].iloc[0]
@@ -685,7 +710,7 @@ class Yahoo:
 
         return change_percent
 
-    def get_sma(self, ticker, days=365):
+    def get_sma(self, ticker: str, days: int = 365) -> float:
         """
         Get the percentage change of a stock over a given number of days.
 
@@ -712,7 +737,9 @@ class Yahoo:
 
         return sma
 
-    def _clean_index(self, clean_df, lvl, tickers):
+    def _clean_index(
+        self, clean_df: pd.DataFrame, lvl: int, tickers: List[str]
+    ) -> pd.DataFrame:
         """
         Clean the index of DataFrame.
 
@@ -732,7 +759,7 @@ class Yahoo:
             a clean DataFrame
 
         """
-        if clean_df.columns.nlevels == 1:
+        if not isinstance(clean_df.columns, pd.MultiIndex):
             clean_df.columns = pd.MultiIndex.from_product([clean_df.columns, tickers])
 
         idx = clean_df.columns.levels[lvl]
@@ -747,3 +774,171 @@ class Yahoo:
         clean_df.columns = clean_df.columns.set_levels(idx, level=lvl)
 
         return clean_df
+
+
+class KBB:
+    """
+    Wrapper for kelley blue book.
+
+    Class that provides functions that use data from kelley blue book.
+    https://www.kbb.com/
+    """
+
+    def __init__(self) -> None:
+        self.value: Optional[int] = None
+
+    def get_value(
+        self, params: Dict[str, Any], proxy: Optional[str] = None
+    ) -> Union[float, None]:
+        """
+        Get the value for car.
+
+        supported intents are 'trade-in-sell' and 'buy-new'
+
+        Parameters
+        ----------
+        params : dict
+            dictionary of car parameters
+        proxy : str, optional
+            proxy to use for requests
+
+        Returns
+        -------
+        value : float
+            value of car
+
+        """
+        value = None
+        headers = {
+            "authority": "www.kbb.com",
+            "accept": "*/*",
+            "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+            "content-type": "application/json",
+            "origin": "https://www.kbb.com",
+            "referer": "https://www.kbb.com/",
+            "sec-ch-ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',  # noqa: E501
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",  # noqa: E501
+        }
+
+        # creating the url
+        base_keys = ["make", "model", "year", "style"]
+        options = {key: value for key, value in params.items() if key not in base_keys}
+        url = (
+            f"https://www.kbb.com/"
+            f"{params['make']}/"
+            f"{params['model']}/"
+            f"{params['year']}/"
+            f"{params['style']}/"
+            f"?{urlencode(options)}"
+        )
+
+        # set the proxy
+        proxies = None
+        if proxy:
+            proxies = {"http": proxy, "https": proxy}
+
+        # set the cookies
+        cookies = None
+        if params.get("zipcd"):
+            cookies = {
+                "x-coxauto-aka-data": f"US|VA|{params.get('zipcd')}|VA|||0|0|800|1280|Windows NT|Chrome"  # noqa: E501
+            }
+
+        # get the value
+        response = requests.get(url, headers=headers, proxies=proxies, cookies=cookies)
+        if params["intent"] == "trade-in-sell":
+            match = re.search(r',"value":(\d+)', response.text)
+        elif params["intent"] == "buy-new":
+            match = re.search(r'"price":(\d+)', response.text)
+        else:
+            logger.warning("Only 'trade-in-sell' and 'buy-new' intents are supported")
+            return None
+        try:
+            value = int(match.group(1))
+            logger.debug(f"url: {url}")
+            logger.debug(f"Trade-in value: {value}")
+        except Exception as e:
+            logger.warning(f"Error: {e}")
+            logger.warning(
+                f"value not found try different parameters and check url: {url}"
+            )
+        self.value = value
+
+        return value
+
+
+class Zillow:
+    """
+    Wrapper for Zillow data.
+
+    Class that provides functions that use data from Zillow data.
+
+    """
+
+    def __init__(self) -> None:
+        self.value: Optional[int] = None
+
+    def get_value(
+        self, params: Dict[str, Any], proxy: Optional[str] = None
+    ) -> Union[float, None]:
+        """
+        Get the value of a home.
+
+        Parameters
+        ----------
+        params : dict
+            dictionary of home parameters
+        proxy : str, optional
+            proxy to use for requests
+
+        Returns
+        -------
+        value : float
+            value of home
+
+        """
+        # headers
+        headers = {
+            "authority": "www.zillow.com",
+            "accept": "*/*",
+            "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+            "content-type": "application/json",
+            "origin": "https://www.zillow.com",
+            "referer": "https://www.zillow.com/",
+            "sec-ch-ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',  # noqa: E501
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",  # noqa: E501
+        }
+        # creating the url
+        url = f"https://www.zillow.com/homes/{params['street']}-{params['city']}-{params['zipcd']}"
+
+        # set the proxy
+        proxies = None
+        if proxy:
+            proxies = {"http": proxy, "https": proxy}
+
+        # get the value
+        response = requests.get(url, headers=headers, proxies=proxies)
+        match = re.search(r'\\"price\\":(\d+)', response.text)
+        try:
+            value = int(match.group(1))
+            logger.debug(f"url: {url}")
+            logger.debug(f"Home value: {value}")
+        except Exception as e:
+            logger.warning(f"Error: {e}")
+            logger.warning(
+                f"value not found try different parameters and check url: {url}"
+            )
+            value = None
+        self.value = value
+
+        return value

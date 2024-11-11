@@ -7,6 +7,7 @@ module.
 """
 
 from datetime import date, datetime, timedelta
+from typing import Any, Dict, Optional, Union
 
 import pandas as pd
 import pandas_market_calendars as mcal
@@ -17,7 +18,12 @@ from folioflex.utils import config_helper, custom_logger
 logger = custom_logger.setup_logging(__name__)
 
 
-def check_stock_dates(tx_df, fix=False, warning=True, timezone="local"):
+def check_stock_dates(
+    tx_df: Union[pd.DataFrame, str, date, datetime],
+    fix: bool = False,
+    warning: bool = True,
+    timezone: str = "local",
+) -> Dict[Any, Any]:
     """
     Check that the transaction dates are valid.
 
@@ -118,7 +124,9 @@ def check_stock_dates(tx_df, fix=False, warning=True, timezone="local"):
     return {"invalid_dt": invalid_dt, "fix_tx_df": fix_tx_df}
 
 
-def convert_date_to_timezone(date_series, timezone="local"):
+def convert_date_to_timezone(
+    date_series: pd.Series, timezone: Optional[str] = "local"
+) -> pd.Series:
     """
     Convert date column to a specific timezone.
 
@@ -149,7 +157,7 @@ def convert_date_to_timezone(date_series, timezone="local"):
     return converted_date
 
 
-def most_recent_stock_date():
+def most_recent_stock_date() -> date:
     """Get the most recent stock date."""
     stock_dates = mcal.get_calendar("NYSE").schedule(
         start_date=date.today() - timedelta(days=7), end_date=date.today()
@@ -157,7 +165,7 @@ def most_recent_stock_date():
     return stock_dates["market_open"].max().date()
 
 
-def prettify_dataframe(dataframe):
+def prettify_dataframe(dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     Prettify a dataframe with formatting.
 
@@ -186,7 +194,7 @@ def prettify_dataframe(dataframe):
     return dataframe
 
 
-def convert_lookback(lookback):
+def convert_lookback(lookback: Union[str, int, date]) -> int:
     """
     Convert lookback to an integer.
 

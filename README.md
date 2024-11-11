@@ -40,13 +40,11 @@ Simple investment portfolio tool that will track stock and provide returns and o
 **🔧 Features:**
 
 - **Market Screener**: Filter and find trending stocks. 🔍
-![screener](docs/screenshots/screener.png)
-![heatmap](docs/screenshots/heatmap.png)
+![stock](docs/screenshots/ffx_stock.gif)
 - **Portfolio Management**: Organize and track, your investments. 💼
-![portfolio](docs/screenshots/portfolio.png)
+![portfolio](docs/screenshots/ffx_invest.gif)
 - **Budget Tool**: Create and monitor a budget. 💰
-![budget](docs/screenshots/budget.png)
-![budget_compare](docs/screenshots/budget_compare.png)
+![budget](docs/screenshots/ffx_budget.gif)
 
 **📚 Documentation:**
 
@@ -166,7 +164,7 @@ When using the portfolio class, the following code can be used to get the return
 
 ```python
 from folioflex.portfolio.portfolio import Portfolio
-config_path = "portfolio_demo.ini"
+config_path = "portfolio_demo.yml"
 pf = Portfolio(
     config_path=config_path, 
     portfolio='company_a'

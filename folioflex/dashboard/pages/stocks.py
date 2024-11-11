@@ -2,7 +2,7 @@
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import Input, Output, State, callback, dash_table, dcc, html
+from dash import Input, Output, State, callback, html
 
 from folioflex.dashboard.components import layouts
 from folioflex.dashboard.utils import dashboard_helper
@@ -11,7 +11,7 @@ from folioflex.utils import custom_logger
 
 logger = custom_logger.setup_logging(__name__)
 
-dash.register_page(__name__, path="/", title="folioflex - Stocks", order=0)
+dash.register_page(__name__, path="/", title="folioflex", order=0)
 
 #   _                            _
 #  | |    __ _ _   _  ___  _   _| |_
@@ -23,120 +23,93 @@ dash.register_page(__name__, path="/", title="folioflex - Stocks", order=0)
 
 def layout():
     """Stocks layout."""
-    return html.Div(
+    return dbc.Container(
         [
-            # adding variables needed that are used in callbacks.
-            *dashboard_helper.get_defaults(),
-            # ---------------------------------------------------------------
-            html.Div(
+            # Header
+            html.H2("Stock Analysis Dashboard", className="text-center my-4"),
+            # Screener Section
+            dbc.Card(
                 [
-                    html.Label("Stock Analysis"),
-                    html.P(),
-                    dcc.Markdown(
-                        """
-                    A site to review for insider activity.
-                    http://www.insiderinsights.com/free
-                    """
-                    ),
-                    html.P(),
-                    dbc.Col(
+                    dbc.CardHeader(html.H4("Screener")),
+                    dbc.CardBody(
                         [
-                            dcc.Input(
-                                id="stock-input",
-                                placeholder="Enter Stock...",
-                                type="text",
-                            ),
-                            html.Button(
-                                "Active Submit", id="active-button", n_clicks=0
-                            ),
-                            html.Button("Stock Submit", id="stock-button", n_clicks=0),
-                            html.Button("Quote Submit", id="quote-button", n_clicks=0),
-                            html.Button("News Submit", id="news-button", n_clicks=0),
-                            html.Button(
-                                "Insider Summary Submit",
-                                id="insider-summary-button",
+                            dbc.Button(
+                                "Active",
+                                id="active-button",
                                 n_clicks=0,
+                                color="primary",
                             ),
+                            html.Div(id="active-table-container"),
                         ]
                     ),
                 ],
-                className="row",
+                className="mb-4",
             ),
-            html.Div(
+            # Stock Analysis Section
+            dbc.Card(
                 [
-                    html.Div(
+                    dbc.CardHeader(html.H4("Stock Analysis")),
+                    dbc.CardBody(
                         [
-                            # creating active information
-                            html.P(),
-                            dash_table.DataTable(
-                                id="active-table",
-                                page_action="native",
-                                sort_action="native",
+                            # Input Field
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        dbc.Input(
+                                            id="stock-input",
+                                            placeholder="Enter Stock Symbol...",
+                                            type="text",
+                                        ),
+                                        width=4,
+                                    ),
+                                    dbc.Col(
+                                        dbc.ButtonGroup(
+                                            [
+                                                dbc.Button(
+                                                    "Stock Info",
+                                                    id="stock-button",
+                                                    n_clicks=0,
+                                                    color="primary",
+                                                ),
+                                                dbc.Button(
+                                                    "Quote",
+                                                    id="quote-button",
+                                                    n_clicks=0,
+                                                    color="primary",
+                                                ),
+                                                dbc.Button(
+                                                    "News",
+                                                    id="news-button",
+                                                    n_clicks=0,
+                                                    color="primary",
+                                                ),
+                                                dbc.Button(
+                                                    "Insider",
+                                                    id="insider-summary-button",
+                                                    n_clicks=0,
+                                                    color="primary",
+                                                ),
+                                                dbc.Button(
+                                                    "Earnings Calendar",
+                                                    id="earnings-button",
+                                                    n_clicks=0,
+                                                    color="primary",
+                                                ),
+                                            ]
+                                        ),
+                                        width=8,
+                                    ),
+                                ],
+                                className="mb-3",
                             ),
-                        ],
-                        className="three columns",
+                            # Stock Analysis Table Container
+                            html.Div(id="stock-table-container"),
+                        ]
                     ),
-                ],
-                className="row",
+                ]
             ),
-            html.Div(
-                [
-                    html.Div(
-                        [
-                            # creating stock information
-                            dash_table.DataTable(
-                                id="stock-table",
-                                page_action="native",
-                            ),
-                        ],
-                        className="three columns",
-                    ),
-                    html.Div(
-                        [
-                            # creating quote information
-                            dash_table.DataTable(
-                                id="quote-table",
-                                page_action="native",
-                            ),
-                        ],
-                        className="three columns",
-                    ),
-                ],
-                className="row",
-            ),
-            html.Div(
-                [
-                    html.Div(
-                        [
-                            # creating news information
-                            html.P(),
-                            dash_table.DataTable(
-                                id="news-table",
-                                page_action="native",
-                            ),
-                        ],
-                        className="three columns",
-                    ),
-                ],
-                className="row",
-            ),
-            html.Div(
-                [
-                    html.Div(
-                        [
-                            # creating insider summary
-                            html.P(),
-                            dash_table.DataTable(
-                                id="insider-summary-table",
-                                page_action="native",
-                            ),
-                        ],
-                        className="three columns",
-                    ),
-                ],
-                className="row",
-            ),
-        ]
+        ],
+        fluid=True,
     )
 
 
@@ -147,121 +120,143 @@ def layout():
 #   \____\__,_|_|_|_.__/ \__,_|\___|_|\_\___/
 
 
+# Callback for Screener Section
 @callback(
-    [
-        Output("stock-table", "columns"),
-        Output("stock-table", "data"),
-    ],
-    [Input("stock-button", "n_clicks")],
-    [State("stock-input", "value")],
+    Output("active-table-container", "children"),
+    Input("active-button", "n_clicks"),
 )
-def update_stockanalysis(n_clicks, input_value):
-    """Provide stock info table."""
-    if n_clicks == 0:
-        stock_table = (None, None)
+def display_active_table(n_clicks):
+    """Display most active stocks table."""
+    if n_clicks > 0:
+        # Generate active table
+        active = wrappers.Yahoo().most_active(count=25)
+        active = active.reset_index()
+        columns = layouts.active_fmt
+        data = active.to_dict("records")
+        table = dashboard_helper.create_datatable(columns, data)
+        return dbc.Card(
+            [
+                dbc.CardHeader("Most Active Stocks"),
+                dbc.CardBody(table),
+            ],
+            className="mt-4",
+        )
     else:
+        return html.Div()
+
+
+# Callback for Stock Analysis Section
+@callback(
+    Output("stock-table-container", "children"),
+    [
+        Input("stock-button", "n_clicks"),
+        Input("quote-button", "n_clicks"),
+        Input("news-button", "n_clicks"),
+        Input("insider-summary-button", "n_clicks"),
+        Input("earnings-button", "n_clicks"),
+    ],
+    State("stock-input", "value"),
+)
+def display_stock_table(
+    stock_clicks,
+    quote_clicks,
+    news_clicks,
+    insider_clicks,
+    earnings_clicks,
+    input_value,
+):
+    """Display stock information table."""
+    ctx = dash.callback_context
+
+    if not ctx.triggered:
+        return html.Div()
+    else:
+        button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+    if not input_value:
+        return dbc.Alert("Please enter a stock symbol.", color="warning")
+
+    if button_id == "stock-button":
+        # Generate stock info table
         stock = wrappers.Yahoo().info(input_value)
         stock = stock.reset_index()
         stock.columns = ["Variable", "Value"]
         stock = stock[stock["Variable"].isin(layouts.yahoo_info["info"])]
-
-        stock_table = (
-            [{"name": i, "id": i} for i in stock.columns],
-            stock.to_dict("records"),
+        columns = [{"name": i, "id": i} for i in stock.columns]
+        data = stock.to_dict("records")
+        table = dashboard_helper.create_datatable(columns, data)
+        return dbc.Card(
+            [
+                dbc.CardHeader(f"Stock Information: {input_value.upper()}"),
+                dbc.CardBody(table),
+            ],
+            className="mt-4",
         )
-
-    return stock_table
-
-
-@callback(
-    [
-        Output("quote-table", "columns"),
-        Output("quote-table", "data"),
-    ],
-    [Input("quote-button", "n_clicks")],
-    [State("stock-input", "value")],
-)
-def update_quoteanalysis(n_clicks, input_value):
-    """Provide quote analysis table."""
-    if n_clicks == 0:
-        quote_table = (None, None)
-    else:
+    elif button_id == "quote-button":
+        # Generate quote table
         quote = wrappers.Yahoo().quote(input_value)
         quote = quote.reset_index()
-
-        quote_table = (
-            [{"name": i, "id": i} for i in quote.columns],
-            quote.to_dict("records"),
+        columns = [{"name": i, "id": i} for i in quote.columns]
+        data = quote.to_dict("records")
+        table = dashboard_helper.create_datatable(columns, data)
+        return dbc.Card(
+            [
+                dbc.CardHeader(f"Quote Information: {input_value.upper()}"),
+                dbc.CardBody(table),
+            ],
+            className="mt-4",
         )
-
-    return quote_table
-
-
-@callback(
-    [
-        Output("news-table", "columns"),
-        Output("news-table", "data"),
-    ],
-    [Input("news-button", "n_clicks")],
-    [State("stock-input", "value")],
-)
-def update_newsanalysis(n_clicks, input_value):
-    """Provide news analysis table."""
-    if n_clicks == 0:
-        news_table = (None, None)
-    else:
+    elif button_id == "news-button":
+        # Generate news table
         news_table = wrappers.Yahoo().news(input_value)
         news_table = news_table.drop(columns=["relatedTickers"])
         news_table = news_table.reset_index()
-
-        news_table = (
-            [{"name": i, "id": i} for i in news_table.columns],
-            news_table.to_dict("records"),
+        news_table["link"] = news_table.apply(
+            lambda row: f"[{row['link']}]({row['link']})", axis=1
         )
-
-    return news_table
-
-
-@callback(
-    [
-        Output("active-table", "columns"),
-        Output("active-table", "data"),
-    ],
-    [Input("active-button", "n_clicks")],
-)
-def update_activeanalysis(n_clicks):
-    """Provide active analysis table."""
-    if n_clicks == 0:
-        active_table = (None, None)
-    else:
-        active = wrappers.Yahoo().most_active(count=25)
-        active = active.reset_index()
-
-        active_table = layouts.active_fmt, active.to_dict("records")
-
-    return active_table
-
-
-@callback(
-    [
-        Output("insider-summary-table", "columns"),
-        Output("insider-summary-table", "data"),
-    ],
-    [Input("insider-summary-button", "n_clicks")],
-    [State("stock-input", "value")],
-)
-def update_insidersummaryanalysis(n_clicks, input_value):
-    """Provide insider summary table."""
-    if n_clicks == 0:
-        insider_summary_table = (None, None)
-    else:
+        columns = [
+            {"name": i, "id": i, "presentation": "markdown"}
+            if i == "link"
+            else {"name": i, "id": i}
+            for i in news_table.columns
+        ]
+        data = news_table.to_dict("records")
+        table = dashboard_helper.create_datatable(columns, data)
+        return dbc.Card(
+            [
+                dbc.CardHeader(f"Latest News: {input_value.upper()}"),
+                dbc.CardBody(table),
+            ],
+            className="mt-4",
+        )
+    elif button_id == "insider-summary-button":
+        # Generate insider summary table
         insider = wrappers.Web().insider_activity(ticker=input_value)
         insider = insider.reset_index()
         insider = insider.head(10)
-
-        insider_summary_table = (
-            [{"name": i, "id": i} for i in insider.columns],
-            insider.to_dict("records"),
+        columns = [{"name": i, "id": i} for i in insider.columns]
+        data = insider.to_dict("records")
+        table = dashboard_helper.create_datatable(columns, data)
+        return dbc.Card(
+            [
+                dbc.CardHeader(f"Insider Activity: {input_value.upper()}"),
+                dbc.CardBody(table),
+            ],
+            className="mt-4",
         )
-
-    return insider_summary_table
+    elif button_id == "earnings-button":
+        # Generate earnings table
+        earnings = wrappers.Yahoo().earnings_calendar(input_value)
+        earnings = earnings.reset_index()
+        columns = [{"name": i, "id": i} for i in earnings.columns]
+        data = earnings.to_dict("records")
+        table = dashboard_helper.create_datatable(columns, data)
+        return dbc.Card(
+            [
+                dbc.CardHeader(f"Earnings: {input_value.upper()}"),
+                dbc.CardBody(table),
+            ],
+            className="mt-4",
+        )
+    else:
+        return html.Div()
