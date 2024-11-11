@@ -1,5 +1,23 @@
 # Changelog
 
+## [v1.4.0](https://github.com/jkoestner/folioflex/tree/v1.4.0)
+
+[Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.3.0...v1.4.0)
+
+**Enhancements**
+- update to python 3.12
+- switch from .ini to .yml configs
+- add user functionality in budget module
+- add assets module to track other assets
+- add wrappers kelly blue book and zillow for assets
+- add loans module tp get loan metrics
+- add earnings calendar to stocks page
+- update ui layout of dashboard
+
+**Documentation**
+- add new README GIFs
+- start conversion to type hinting (work in progress)
+
 ## [v1.3.0](https://github.com/jkoestner/folioflex/tree/v1.3.0)
 
 [Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.2.3...v1.3.0)
