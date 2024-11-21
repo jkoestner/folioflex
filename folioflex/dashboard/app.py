@@ -42,9 +42,24 @@ app = dash.Dash(
 app.config.suppress_callback_exceptions = True
 app.title = "FolioFlex"
 app._favicon = "folioflex_logo.ico"
+
 # adding shortcut icons and google analytics
 GOOGLE_ANALYTICS_ID = config_helper.GOOGLE_ANALYTICS_ID
-app.index_string = """
+if GOOGLE_ANALYTICS_ID:
+    analytics_script = f"""
+    <script async src="https://www.googletagmanager.com/gtag/js?id={GOOGLE_ANALYTICS_ID}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){{{{dataLayer.push(arguments);}}}}
+        gtag('js', new Date());
+        gtag('config', '{GOOGLE_ANALYTICS_ID}');
+    </script>
+    """
+else:
+    analytics_script = ""
+
+app.index_string = (
+    """
 <!DOCTYPE html>
 <html>
     <head>
@@ -53,13 +68,9 @@ app.index_string = """
         <link rel="manifest" href="/assets/manifest.json">
         {%favicon%}
         {%css%}
-        <script async src="https://www.googletagmanager.com/gtag/js?id={GOOGLE_ANALYTICS_ID}"></script>
-        <script>
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){{dataLayer.push(arguments);}}
-            gtag('js', new Date());
-            gtag('config', '{GOOGLE_ANALYTICS_ID}');
-        </script>
+"""
+    + analytics_script
+    + """
     </head>
     <body>
         {%app_entry%}
@@ -71,6 +82,7 @@ app.index_string = """
     </body>
 </html>
 """
+)
 
 # creating the navbar
 page_links = [
