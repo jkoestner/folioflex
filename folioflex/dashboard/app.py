@@ -46,15 +46,19 @@ app._favicon = "folioflex_logo.ico"
 # adding shortcut icons and google analytics
 GOOGLE_ANALYTICS_ID = config_helper.GOOGLE_ANALYTICS_ID
 if GOOGLE_ANALYTICS_ID:
-    analytics_script = f"""
-    <script async src="https://www.googletagmanager.com/gtag/js?id={GOOGLE_ANALYTICS_ID}"></script>
+    analytics_script = (
+        f"""
+    <script async src="https://www.googletagmanager.com/gtag/js?id={GOOGLE_ANALYTICS_ID}"></script>"""  # noqa: ISC003
+        + """
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){{{{dataLayer.push(arguments);}}}}
-        gtag('js', new Date());
+        gtag('js', new Date());"""
+        + f"""
         gtag('config', '{GOOGLE_ANALYTICS_ID}');
     </script>
     """
+    )
 else:
     analytics_script = ""
 
