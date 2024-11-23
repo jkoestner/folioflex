@@ -44,19 +44,27 @@ app.title = "FolioFlex"
 app._favicon = "folioflex_logo.ico"
 
 # adding shortcut icons and google analytics
-GOOGLE_ANALYTICS_ID = config_helper.GOOGLE_ANALYTICS_ID
-if GOOGLE_ANALYTICS_ID:
+MATOMO = config_helper.MATOMO
+if MATOMO:
     analytics_script = (
-        f"""
-    <script async src="https://www.googletagmanager.com/gtag/js?id={GOOGLE_ANALYTICS_ID}"></script>"""  # noqa: ISC003
-        + """
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());"""
+        """
+<script>
+  var _paq = window._paq = window._paq || [];
+  /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+  _paq.push(['trackPageView']);
+  _paq.push(['enableLinkTracking']);
+  (function() {
+  """  # noqa: ISC003
         + f"""
-        gtag('config', '{GOOGLE_ANALYTICS_ID}');
-    </script>
+    var u="//{MATOMO}/";
+    """
+        + """
+    _paq.push(['setTrackerUrl', u+'matomo.php']);
+    _paq.push(['setSiteId', '1']);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+    g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+  })();
+</script>
     """
     )
 else:
