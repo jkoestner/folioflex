@@ -18,7 +18,7 @@ import dash_bootstrap_components as dbc
 from dash import Input, Output, callback, dcc, html
 
 from folioflex.dashboard.components import auth
-from folioflex.utils import config_helper, custom_logger
+from folioflex.utils import custom_logger
 
 #      _    ____  ____
 #     / \  |  _ \|  _ \
@@ -43,35 +43,8 @@ app.config.suppress_callback_exceptions = True
 app.title = "FolioFlex"
 app._favicon = "folioflex_logo.ico"
 
-# adding shortcut icons and google analytics
-MATOMO = config_helper.MATOMO
-if MATOMO:
-    analytics_script = (
-        """
-<script>
-  var _paq = window._paq = window._paq || [];
-  /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
-  _paq.push(['trackPageView']);
-  _paq.push(['enableLinkTracking']);
-  (function() {
-  """  # noqa: ISC003
-        + f"""
-    var u="//{MATOMO}/";
-    """
-        + """
-    _paq.push(['setTrackerUrl', u+'matomo.php']);
-    _paq.push(['setSiteId', '1']);
-    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
-    g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
-  })();
-</script>
-    """
-    )
-else:
-    analytics_script = ""
 
-app.index_string = (
-    """
+app.index_string = """
 <!DOCTYPE html>
 <html>
     <head>
@@ -80,9 +53,6 @@ app.index_string = (
         <link rel="manifest" href="/assets/manifest.json">
         {%favicon%}
         {%css%}
-"""
-    + analytics_script
-    + """
     </head>
     <body>
         {%app_entry%}
@@ -94,7 +64,6 @@ app.index_string = (
     </body>
 </html>
 """
-)
 
 # creating the navbar
 page_links = [
