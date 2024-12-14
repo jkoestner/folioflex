@@ -13,7 +13,7 @@ Some methods that are included are:
 """
 
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional
 
 import emoji
 import numpy as np
@@ -23,6 +23,9 @@ import plotly.express as px
 from folioflex.utils import config_helper, custom_logger, database
 
 logger = custom_logger.setup_logging(__name__)
+
+if TYPE_CHECKING:
+    import plotly.graph_objects as go
 
 
 class Budget:
@@ -51,6 +54,7 @@ class Budget:
         )
         self.budgets = self.config_dict["budgets"]
         self.default = self.config_dict["default"]
+        self.zero_txs = self.config_dict["zero_out"]
         self.budget = budget
         self.model = self.config_dict.get("model", None)
 
@@ -151,7 +155,9 @@ class Budget:
 
         return tx_df
 
-    def modify_transactions(self, tx_df, columns_to_zero=None):
+    def modify_transactions(
+        self, tx_df: pd.DataFrame, columns_to_zero: Optional[List[str]] = None
+    ) -> pd.DataFrame:
         """
         Modify the transactions for the budget.
 
@@ -165,7 +171,7 @@ class Budget:
         ----------
         tx_df : DataFrame
             The transactions for the budget.
-        columns_to_zero : set
+        columns_to_zero : list
             The columns to zero out the amount for.
 
         Returns
@@ -175,7 +181,7 @@ class Budget:
 
         """
         if columns_to_zero is None:
-            columns_to_zero = ["credit card", "transfer"]
+            columns_to_zero = self.zero_txs
 
         logger.info(f"Zeroing out amount for columns: {columns_to_zero}")
         tx_df = self.modify_zero_out_amount(tx_df, columns=columns_to_zero)
@@ -201,7 +207,9 @@ class Budget:
 
         return tx_df
 
-    def modify_zero_out_amount(self, tx_df, columns):
+    def modify_zero_out_amount(
+        self, tx_df: pd.DataFrame, columns: List[str]
+    ) -> pd.DataFrame:
         """
         Zero out the amount for the given columns.
 
@@ -225,7 +233,7 @@ class Budget:
         tx_df["amount"] = np.where(condition, 0, tx_df["amount"])
         return tx_df
 
-    def modify_extract_quoted_text(self, column):
+    def modify_extract_quoted_text(self, column: str) -> str:
         """
         Extract the text between quotes.
 
@@ -244,7 +252,7 @@ class Budget:
         match = re.search(quote_pattern, column)
         return match.group(1) if match else column
 
-    def modify_preprocess_emoji(self, text):
+    def modify_preprocess_emoji(self, text: str) -> str:
         """
         Preprocess the emoji in the text.
 
@@ -265,7 +273,7 @@ class Budget:
         )
         return text_with_spaces
 
-    def modify_remove_pending(self, tx_df):
+    def modify_remove_pending(self, tx_df: pd.DataFrame) -> pd.DataFrame:
         """
         Remove the pending transactions.
 
@@ -284,7 +292,7 @@ class Budget:
 
         return tx_df
 
-    def modify_custom_categorize(row):
+    def modify_custom_categorize(row: pd.Series) -> str:
         """
         Categorize the transaction.
 
@@ -310,7 +318,7 @@ class Budget:
             return "Incoming Transfer"
         return "OTHER"
 
-    def identify_subscriptions(self, tx_df):
+    def identify_subscriptions(self, tx_df: pd.DataFrame) -> pd.DataFrame:
         """
         Identify possible subscriptions in the transactions.
 
@@ -378,7 +386,12 @@ class Budget:
 
         return subscriptions_df
 
-    def budget_view(self, tx_df, target_date, exclude_labels=None):
+    def budget_view(
+        self,
+        tx_df: pd.DataFrame,
+        target_date: str,
+        exclude_labels: Optional[List[str]] = None,
+    ) -> pd.DataFrame:
         """
         Provide a view of categories and their budget status.
 
@@ -462,7 +475,7 @@ class Budget:
 
         return budget_df
 
-    def display_budget_view(self, budget_df):
+    def display_budget_view(self, budget_df: pd.DataFrame) -> "go.Figure":
         """
         Display the budget view as a bar chart.
 
@@ -492,7 +505,7 @@ class Budget:
         fig.update_layout(height=600)
         return fig
 
-    def display_income_view(self, tx_df):
+    def display_income_view(self, tx_df: pd.DataFrame) -> "go.Figure":
         """
         Display the income view as a line chart.
 
@@ -518,7 +531,12 @@ class Budget:
 
         return fig
 
-    def display_compare_expenses_view(self, tx_df, target_date=None, avg_months=12):
+    def display_compare_expenses_view(
+        self,
+        tx_df: pd.DataFrame,
+        target_date: Optional[str] = None,
+        avg_months: int = 12,
+    ) -> "go.Figure":
         """
         Display the compare expenses view as a line chart.
 
@@ -613,7 +631,7 @@ class Budget:
 
         return fig
 
-    def display_category_trend(self, tx_df, category):
+    def display_category_trend(self, tx_df: pd.DataFrame, category: str) -> "go.Figure":
         """
         Display the category trend view as a bar chart.
 
@@ -683,11 +701,11 @@ class Budget:
 
     def category_tx_view(
         self,
-        tx_df,
-        target_date,
-        category,
-        columns=None,
-    ):
+        tx_df: pd.DataFrame,
+        target_date: str,
+        category: str,
+        columns: Optional[List[str]] = None,
+    ) -> pd.DataFrame:
         """
         Display the transactions view as a table.
 
@@ -724,7 +742,12 @@ class Budget:
         cat_tx_df = cat_tx_df[columns]
         return cat_tx_df
 
-    def update_labels_db(self, tx_df, engine=None, label_column="label"):
+    def update_labels_db(
+        self,
+        tx_df: pd.DataFrame,
+        engine: Optional[Any] = None,
+        label_column: str = "label",
+    ) -> None:
         """
         Update the label in the database.
 

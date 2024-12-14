@@ -115,6 +115,7 @@ budgets:
       home services: 50
       income: -6000
       mortgage: 2000
+      one timers: 0
       pets: 100
       phone: 195
       restaurants: 230
@@ -125,6 +126,11 @@ budgets:
       utilities: 300
     # the default budget
     default: 0
+    # transactions to zero out
+    zero_out:
+      - credit card
+      - transfer
+      - one timers
     # the plaid user if empty it will not limit by user
     user: 
     # the model to use

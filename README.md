@@ -181,7 +181,7 @@ It also can be run locally by going to the project root folder and running below
 There are a number of environment variables listed in constants to be able to run locally. 
 
 ```python
-python app.py
+python -m folioflex.dashboard.app
 ```
 
 ### Plaid Dashboard
