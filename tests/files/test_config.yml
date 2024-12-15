@@ -116,6 +116,10 @@ budgets:
       transfer: 0
       utilities: 300
     default: 0
+    zero_out:
+      - credit card
+      - transfer
+      - one timers
     # database configs
     db_name: None
     db_user: None

@@ -473,6 +473,11 @@ class Budget:
         ]:
             budget_df[column] = budget_df[column] * budget_df["budget_flag"]
 
+        # sort values
+        budget_df = budget_df.sort_values(
+            by=["budget", "label"], ascending=[True, False]
+        )
+
         return budget_df
 
     def display_budget_view(self, budget_df: pd.DataFrame) -> "go.Figure":
