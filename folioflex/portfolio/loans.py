@@ -114,7 +114,7 @@ def get_payments_left(
     loan: Optional[str] = None,
     current_loan: Optional[float] = None,
     payment_amount: Optional[float] = None,
-    interest: Optional[float] = None,
+    interest_rate: Optional[float] = None,
 ) -> Union[float, None]:
     """
     Get the info of a loan.
@@ -134,7 +134,7 @@ def get_payments_left(
         The current loan amount.
     payment_amount : float, optional
         The payment amount.
-    interest : float, optional
+    interest_rate : float, optional
         The interest rate.
 
     Returns
@@ -159,9 +159,9 @@ def get_payments_left(
             return None
         current_loan = params["current_loan"]
         payment_amount = params["monthly_payment"]
-        interest = params["nominal_annual_interest"] / 12 / 100
+        interest_rate = params["nominal_annual_interest"] / 12 / 100
 
-    if current_loan is None or payment_amount is None or interest is None:
+    if current_loan is None or payment_amount is None or interest_rate is None:
         logger.error(
             "The config_path or the current_loan, payment_amount, and interest "
             "should be provided."
@@ -169,7 +169,7 @@ def get_payments_left(
         return None
 
     # checks
-    if interest >= 1:
+    if interest_rate >= 1:
         logger.error(
             "The interest rate should be less than 1 and be written as "
             "as percentage."
@@ -178,8 +178,8 @@ def get_payments_left(
 
     # get the payments left
     payments_left = math.log10(
-        1 / (1 - (current_loan * interest) / payment_amount)
-    ) / math.log10(1 + interest)
+        1 / (1 - (current_loan * interest_rate) / payment_amount)
+    ) / math.log10(1 + interest_rate)
 
     return payments_left
 
@@ -187,7 +187,7 @@ def get_payments_left(
 def get_payment_amount(
     current_loan: float,
     payments_left: float,
-    interest: float,
+    interest_rate: float,
 ) -> Union[float, None]:
     """
     Get the amount of the payment.
@@ -203,7 +203,7 @@ def get_payment_amount(
         The current loan amount.
     payments_left : float
         The monthly payment.
-    interest : float
+    interest_rate : float
         The interest rate.
 
     Returns
@@ -217,7 +217,7 @@ def get_payment_amount(
 
     """
     # checks
-    if interest >= 1:
+    if interest_rate >= 1:
         logger.error(
             "The interest rate should be less than 1 and be written as "
             "as percentage."
@@ -225,7 +225,9 @@ def get_payment_amount(
         return None
 
     # get the payments left
-    payment_amount = (current_loan * interest) / (1 - (1 + interest) ** -payments_left)
+    payment_amount = (current_loan * interest_rate) / (
+        1 - (1 + interest_rate) ** -payments_left
+    )
 
     return payment_amount
 
@@ -252,10 +254,49 @@ def get_interest(
     interest : float
         The amount of interest that will be paid.
 
+    References
+    ----------
+    - https://brownmath.com/bsci/loan.htm
+
     """
     interest = (payments_left * payment_amount) - current_loan
 
     return interest
+
+
+def get_total_paid(
+    current_loan: float, interest_rate: float, payments_left: float
+) -> float:
+    """
+    Get the total amount paid at the end of the loan.
+
+    Parameters
+    ----------
+    current_loan : float
+        The current loan amount.
+    interest_rate : float
+        The interest rate.
+    payments_left : float
+        The amount of payments left.
+
+    Returns
+    -------
+    total_paid : float
+        The total amount paid at the end of the loan.
+
+    References
+    ----------
+    - https://brownmath.com/bsci/loan.htm
+
+    """
+    payment_amount = get_payment_amount(
+        current_loan=current_loan,
+        payments_left=payments_left,
+        interest_rate=interest_rate,
+    )
+    total_paid = payment_amount * payments_left
+
+    return total_paid
 
 
 def get_credit_card_value(engine: "Engine", user: Optional[str] = None) -> float:

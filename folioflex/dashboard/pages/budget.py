@@ -72,11 +72,12 @@ def layout():
                                             dbc.Button(
                                                 "Update Budget Database",
                                                 id="budget-update-db-button",
-                                                color="primary",
+                                                color="secondary",
                                                 className="mt-4",
                                             ),
                                         ],
                                         width=3,
+                                        className="d-flex justify-content-end",
                                     ),
                                 ],
                                 className="g-3",
@@ -346,6 +347,124 @@ def layout():
                             ),
                         ],
                         title="Loans",
+                    ),
+                    # Loan Calculator
+                    dbc.AccordionItem(
+                        [
+                            dbc.Button(
+                                [
+                                    html.I(
+                                        className="fas fa-calculator me-2"
+                                    ),  # Font Awesome icon
+                                    "Calculate Loan",
+                                ],
+                                id="loan-calc-button",
+                                color="primary",
+                                className="mb-3",
+                            ),
+                            html.P(
+                                "Input 3 values to calculate the 4th. "
+                                "Payment amount must be input.",
+                            ),
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(html.H4("Loan Options")),
+                                    dbc.CardBody(
+                                        [
+                                            dbc.Row(
+                                                [
+                                                    dbc.Col(
+                                                        [
+                                                            dbc.InputGroup(
+                                                                [
+                                                                    dbc.InputGroupText(
+                                                                        "$"
+                                                                    ),
+                                                                    dbc.Input(
+                                                                        id="loan-calc-loan-amount",
+                                                                        type="number",
+                                                                        placeholder="Loan Amount",
+                                                                        className="form-control-lg",
+                                                                    ),
+                                                                ],
+                                                                className="mb-3",
+                                                            ),
+                                                        ],
+                                                        width=6,
+                                                    ),
+                                                    dbc.Col(
+                                                        [
+                                                            dbc.InputGroup(
+                                                                [
+                                                                    dbc.InputGroupText(
+                                                                        "%"
+                                                                    ),
+                                                                    dbc.Input(
+                                                                        id="loan-calc-interest",
+                                                                        type="number",
+                                                                        placeholder="Interest Rate",
+                                                                        className="form-control-lg",
+                                                                    ),
+                                                                ],
+                                                                className="mb-3",
+                                                            ),
+                                                        ],
+                                                        width=6,
+                                                    ),
+                                                ]
+                                            ),
+                                            dbc.Row(
+                                                [
+                                                    dbc.Col(
+                                                        [
+                                                            dbc.InputGroup(
+                                                                [
+                                                                    dbc.InputGroupText(
+                                                                        "#"
+                                                                    ),
+                                                                    dbc.Input(
+                                                                        id="loan-calc-payments-left",
+                                                                        type="number",
+                                                                        placeholder="Payments Left",
+                                                                        className="form-control-lg",
+                                                                    ),
+                                                                ],
+                                                                className="mb-3",
+                                                            ),
+                                                        ],
+                                                        width=6,
+                                                    ),
+                                                    dbc.Col(
+                                                        [
+                                                            dbc.InputGroup(
+                                                                [
+                                                                    dbc.InputGroupText(
+                                                                        "$"
+                                                                    ),
+                                                                    dbc.Input(
+                                                                        id="loan-calc-payment-amount",
+                                                                        type="number",
+                                                                        placeholder="Payment Amount",
+                                                                        className="form-control-lg",
+                                                                    ),
+                                                                ],
+                                                                className="mb-3",
+                                                            ),
+                                                        ],
+                                                        width=6,
+                                                    ),
+                                                ]
+                                            ),
+                                            html.Div(
+                                                id="loan-calc-output",
+                                            ),
+                                        ]
+                                    ),
+                                ],
+                                className="shadow",
+                            ),
+                        ],
+                        title="Loan Calculator",
                     ),
                 ],
                 start_collapsed=True,
@@ -653,3 +772,79 @@ def retrieve_asset_values(clickData):
         return dash.no_update
     assets.update_asset_info(config_path="config.yml", db_write=True)
     return dash.no_update
+
+
+@callback(
+    Output("loan-calc-output", "children"),
+    [Input("loan-calc-button", "n_clicks")],
+    [
+        State("loan-calc-loan-amount", "value"),
+        State("loan-calc-interest", "value"),
+        State("loan-calc-payments-left", "value"),
+        State("loan-calc-payment-amount", "value"),
+    ],
+    prevent_initial_call=True,
+)
+def update_loan_calc(
+    clickData, loan_amount, interest_rate, payments_left, payment_amount
+):
+    """Calculate the loan values."""
+    if clickData is None:
+        return dash.no_update
+
+    missing_values = []
+    variables = [
+        ("loan_amount", loan_amount),
+        ("interest", interest_rate),
+        ("payments_left", payments_left),
+        ("payment_amount", payment_amount),
+    ]
+
+    for name, value in variables:
+        if value is None:
+            missing_values.append(name)
+
+    if len(missing_values) != 1 or missing_values[0] == "loan_amount":
+        return dash.no_update
+
+    if missing_values[0] == "interest":
+        calc_value = loans.get_interest(
+            current_loan=loan_amount,
+            payments_left=payments_left,
+            payment_amount=payment_amount,
+        )
+    elif missing_values[0] == "payments_left":
+        calc_value = loans.get_payments_left(
+            current_loan=loan_amount,
+            interest_rate=interest_rate,
+            payment_amount=payment_amount,
+        )
+    elif missing_values[0] == "payment_amount":
+        calc_value = loans.get_payment_amount(
+            current_loan=loan_amount,
+            interest_rate=interest_rate,
+            payments_left=payments_left,
+        )
+
+    total_paid = loans.get_total_paid(
+        current_loan=loan_amount,
+        interest_rate=interest_rate,
+        payments_left=payments_left,
+    )
+
+    loan_calc_output_div = html.Div(
+        [
+            html.P(
+                [
+                    html.B(f"{missing_values[0]}"),
+                    " was calculated to be ",
+                    html.B(f"${calc_value:,.2f}"),
+                    ". The total amount paid is ",
+                    html.B(f"${total_paid:,.2f}"),
+                    ".",
+                ]
+            )
+        ]
+    )
+
+    return loan_calc_output_div
