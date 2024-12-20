@@ -853,10 +853,13 @@ class KBB:
         response = requests.get(url, headers=headers, proxies=proxies, cookies=cookies)
         if params["intent"] == "trade-in-sell":
             match = re.search(r',"value":(\d+)', response.text)
-        elif params["intent"] == "buy-new":
+        elif params["intent"] == "buy-new" or params["intent"] == "buy-used":
             match = re.search(r'"price":(\d+)', response.text)
         else:
-            logger.warning("Only 'trade-in-sell' and 'buy-new' intents are supported")
+            logger.warning(
+                "Only 'trade-in-sell', 'buy-new', and 'buy-used' intents "
+                "are supported"
+            )
             return None
         try:
             value = int(match.group(1))
