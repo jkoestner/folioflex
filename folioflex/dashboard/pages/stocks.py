@@ -209,14 +209,13 @@ def display_stock_table(
     elif button_id == "news-button":
         # Generate news table
         news_table = wrappers.Yahoo().news(input_value)
-        news_table = news_table.drop(columns=["relatedTickers"])
         news_table = news_table.reset_index()
-        news_table["link"] = news_table.apply(
-            lambda row: f"[{row['link']}]({row['link']})", axis=1
+        news_table["url"] = news_table.apply(
+            lambda row: f"[{row['url']}]({row['url']})", axis=1
         )
         columns = [
             {"name": i, "id": i, "presentation": "markdown"}
-            if i == "link"
+            if i == "url"
             else {"name": i, "id": i}
             for i in news_table.columns
         ]
