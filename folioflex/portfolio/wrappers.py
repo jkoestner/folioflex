@@ -491,9 +491,9 @@ class Yahoo:
         stock_data.index = stock_data.index.swaplevel("date", "ticker")
         stock_data = stock_data.sort_index(axis=0, level="ticker")
         stock_data = stock_data.reset_index()
-        cols = ["ticker", "date", "adj_close", "stock_splits"]
+        cols = ["ticker", "date", "close", "stock_splits"]
         stock_data = stock_data[cols]
-        stock_data = stock_data.rename(columns={"adj_close": "last_price"})
+        stock_data = stock_data.rename(columns={"close": "last_price"})
         stock_data["date"] = helper.convert_date_to_timezone(
             stock_data["date"], timezone=None
         )
@@ -515,11 +515,17 @@ class Yahoo:
             provides news articles on ticker
 
         """
-        yf_ticker = yf.Ticker(ticker)
-        news = pd.DataFrame(yf_ticker.news)
-        news = news.drop(columns=["thumbnail", "uuid"])
-        news["providerPublishTime"] = pd.to_datetime(
-            news["providerPublishTime"], unit="s"
+        news = yf.Ticker(ticker).news
+        news = pd.DataFrame(
+            [
+                {
+                    "date": story.get("content").get("pubDate").split("T")[0],
+                    "title": story.get("content").get("title"),
+                    "url": story.get("content").get("canonicalUrl").get("url"),
+                    "summary": story.get("content").get("summary"),
+                }
+                for story in news
+            ]
         )
 
         return news
