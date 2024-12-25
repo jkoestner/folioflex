@@ -58,7 +58,7 @@ def sector_query(start="2023-01-01"):
     sector_close = yf.download(
         layouts.list_sector, start=start, end=datetime(2100, 1, 1)
     )
-    cq_sector_close = sector_close["Adj Close"].to_json()
+    cq_sector_close = sector_close["Close"].to_json()
 
     return cq_sector_close
 

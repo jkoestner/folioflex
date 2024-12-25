@@ -707,9 +707,9 @@ class Yahoo:
 
         data = yf.download(ticker, start=start_date_str, end=end_date_str)
 
-        # Extract the adjusted close price from one year ago and the most recent price
-        start_price = data["Adj Close"].iloc[0]
-        end_price = data["Adj Close"].iloc[-1]
+        # Extract the close price from one year ago and the most recent price
+        start_price = data["Close"].iloc[0]
+        end_price = data["Close"].iloc[-1]
 
         # Calculate the change percentage
         change_percent = (end_price - start_price) / start_price
