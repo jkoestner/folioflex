@@ -105,7 +105,14 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({ match }) => {
       preFilteredRows.forEach(row => {
         optionsSet.add(row.values[id]);
       });
-      return Array.from(optionsSet);
+      // Convert to array and sort alphabetically
+      return Array.from(optionsSet).sort((a, b) => {
+        // Handle null/empty values to appear at the end
+        if (!a && !b) return 0;
+        if (!a) return 1;
+        if (!b) return -1;
+        return a.localeCompare(b);
+      });
     }, [id, preFilteredRows]);
 
     return (

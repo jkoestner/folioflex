@@ -14,20 +14,22 @@ from folioflex.budget import budget, models
 from folioflex.dashboard.components import dash_formats
 from folioflex.dashboard.utils import dashboard_helper
 from folioflex.portfolio import assets, loans
-from folioflex.utils import custom_logger, database
+from folioflex.utils import config_helper, custom_logger, database
 
 logger = custom_logger.setup_logging(__name__)
 
 dash.register_page(__name__, path="/budget", title="folioflex - Budget", order=5)
 
-# get the prior month
-prior_month = (datetime.datetime.now() - relativedelta(months=1)).strftime("%Y-%m")
+budget_list = list(config_helper.get_config_options("config.yml", "budgets").keys())
 
 
 def layout():
     """Create layout for the budget dashboard."""
     if not current_user.is_authenticated:
         return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])
+
+    # get the prior month
+    prior_month = (datetime.datetime.now() - relativedelta(months=1)).strftime("%Y-%m")
 
     return dbc.Container(
         [
@@ -58,11 +60,11 @@ def layout():
                                     dbc.Col(
                                         [
                                             dbc.Label("Budget Name"),
-                                            dcc.Input(
+                                            dcc.Dropdown(
+                                                budget_list,
                                                 id="budget-section-input",
-                                                placeholder="budget name",
-                                                type="text",
-                                                className="form-control",
+                                                placeholder="Select Budget",
+                                                className="mb-3",
                                             ),
                                         ],
                                         width=3,
