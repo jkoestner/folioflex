@@ -937,9 +937,12 @@ class Zillow:
 
         # get the value
         response = requests.get(url, headers=headers, proxies=proxies)
-        match = re.search(r'\\"price\\":(\d+)', response.text)
+        if response.status_code != 200:
+            logger.warning(f"Most likely denied.Error: {response.status_code}")
+            return None
+        match = re.search(r"<span>\$?([\d,]+)</span>", response.text)
         try:
-            value = int(match.group(1))
+            value = int(match.group(1).replace(",", ""))
             logger.debug(f"url: {url}")
             logger.debug(f"Home value: {value}")
         except Exception as e:

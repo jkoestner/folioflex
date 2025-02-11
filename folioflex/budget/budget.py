@@ -318,6 +318,59 @@ class Budget:
             return "Incoming Transfer"
         return "OTHER"
 
+    def modify_amazon_purchase_desc(
+        self, tx_df: pd.DataFrame, amazon_tx: pd.DataFrame
+    ) -> pd.DataFrame:
+        """
+        Update database with Amazon purchase descriptions.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            The transactions to update.
+        amazon_tx : DataFrame
+            The transactions that are Amazon purchases.
+
+        Returns
+        -------
+        tx_df_modified : DataFrame
+            The transactions with the Amazon purchase descriptions updated.
+
+        """
+        # get the data
+        tx_df = tx_df[tx_df["name"].str.contains("amazon", case=False)]
+        amazon_tx = amazon_tx.copy()
+        amazon_tx = amazon_tx[["date", "amount", "product_name"]]
+
+        # add amazon purchase descriptions
+        tx_df_modified = pd.merge_asof(
+            tx_df.sort_values("date"),
+            amazon_tx.sort_values("date"),
+            on="date",
+            by="amount",
+            tolerance=pd.Timedelta("10d"),
+            direction="nearest",
+        )
+        tx_df_modified = tx_df_modified.sort_values("date", ascending=False)
+
+        # remove duplicates and remove rows with no changes
+        rows = len(tx_df_modified)
+        tx_df_modified = tx_df_modified.drop_duplicates(keep="first")
+        removed = rows - len(tx_df_modified)
+        if removed > 0:
+            logger.warning(f"there were {removed} duplicate rows.")
+        mask = tx_df_modified["product_name"].notna() & (
+            tx_df_modified["product_name"] != ""
+        )
+        tx_df_modified = tx_df_modified[mask]
+
+        # update description
+        logger.info(f"updated `{len(tx_df_modified)}` transactions.")
+        tx_df_modified["name"] = tx_df_modified["product_name"]
+        tx_df_modified = tx_df_modified.drop(columns=["product_name"])
+
+        return tx_df_modified
+
     def identify_subscriptions(self, tx_df: pd.DataFrame) -> pd.DataFrame:
         """
         Identify possible subscriptions in the transactions.
@@ -747,11 +800,12 @@ class Budget:
         cat_tx_df = cat_tx_df[columns]
         return cat_tx_df
 
-    def update_labels_db(
+    def update_db_column(
         self,
         tx_df: pd.DataFrame,
         engine: Optional[Any] = None,
         label_column: str = "label",
+        database_column: str = "label",
     ) -> None:
         """
         Update the label in the database.
@@ -764,6 +818,8 @@ class Budget:
             The engine to connect to the database.
         label_column : str
             The column in the DataFrame that will be used to update the label.
+        database_column : str
+            The column in the database that will be updated.
 
         Returns
         -------
@@ -772,12 +828,12 @@ class Budget:
         """
         if engine is None:
             engine = database.Engine(self.config_path)
-        logger.info("Updating labels in database.")
+        logger.info(f"Updating `{database_column}` in database.")
 
         # filter the table
         tx_df = tx_df[[label_column, "id"]]
 
-        tx_df = tx_df.rename(columns={label_column: "label"})
+        tx_df = tx_df.rename(columns={label_column: database_column})
         engine.bulk_update(
             tx_df=tx_df, table_name="transactions_table", where_column="id"
         )

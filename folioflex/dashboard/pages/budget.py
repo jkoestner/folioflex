@@ -586,7 +586,9 @@ def update_budget_db(n_clicks, budget_section):
     )
 
     # update the database with the predicted labels
-    bdgt.update_labels_db(tx_df=predict_df, label_column="predicted_label")
+    bdgt.update_db_column(
+        tx_df=predict_df, label_column="predicted_label", database_column="label"
+    )
 
     return True
 
