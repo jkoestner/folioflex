@@ -333,17 +333,17 @@ class Budget:
 
         Returns
         -------
-        tx_df_modified : DataFrame
+        amazon_df : DataFrame
             The transactions with the Amazon purchase descriptions updated.
 
         """
-        # get the data
+        # get the transactions that are from amazon
         tx_df = tx_df[tx_df["name"].str.contains("amazon", case=False)]
         amazon_tx = amazon_tx.copy()
         amazon_tx = amazon_tx[["date", "amount", "product_name"]]
 
         # add amazon purchase descriptions
-        tx_df_modified = pd.merge_asof(
+        amazon_df = pd.merge_asof(
             tx_df.sort_values("date"),
             amazon_tx.sort_values("date"),
             on="date",
@@ -351,25 +351,27 @@ class Budget:
             tolerance=pd.Timedelta("10d"),
             direction="nearest",
         )
-        tx_df_modified = tx_df_modified.sort_values("date", ascending=False)
+        amazon_df = amazon_df.sort_values("date", ascending=False)
 
-        # remove duplicates and remove rows with no changes
-        rows = len(tx_df_modified)
-        tx_df_modified = tx_df_modified.drop_duplicates(keep="first")
-        removed = rows - len(tx_df_modified)
+        # remove duplicates and remove rows with amazon description
+        rows = len(amazon_df)
+        amazon_df = amazon_df.drop_duplicates(keep="first")
+        removed = rows - len(amazon_df)
         if removed > 0:
             logger.warning(f"there were {removed} duplicate rows.")
-        mask = tx_df_modified["product_name"].notna() & (
-            tx_df_modified["product_name"] != ""
-        )
-        tx_df_modified = tx_df_modified[mask]
+        amazon_df = amazon_df[
+            amazon_df["product_name"].notna() & (amazon_df["product_name"] != "")
+        ]
+
+        # remove items where the amazon description has already been updated
+        amazon_df = amazon_df[amazon_df["name"] != amazon_df["product_name"]]
 
         # update description
-        logger.info(f"updated `{len(tx_df_modified)}` transactions.")
-        tx_df_modified["name"] = tx_df_modified["product_name"]
-        tx_df_modified = tx_df_modified.drop(columns=["product_name"])
+        logger.info(f"updated `{len(amazon_df)}` transactions.")
+        amazon_df["name"] = amazon_df["product_name"]
+        amazon_df = amazon_df.drop(columns=["product_name"])
 
-        return tx_df_modified
+        return amazon_df
 
     def identify_subscriptions(self, tx_df: pd.DataFrame) -> pd.DataFrame:
         """

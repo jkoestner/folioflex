@@ -135,6 +135,8 @@ budgets:
     user: 
     # the model to use
     model: components.pkl
+    # the amazon user_data_dir to use
+    amazon_dirs:
 
 #                         _       
 #      /\                | |      

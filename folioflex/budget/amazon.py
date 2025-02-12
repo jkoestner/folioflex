@@ -1,5 +1,6 @@
 """Update transactions with Amazon descriptions."""
 
+import os
 import re
 import time
 from datetime import datetime
@@ -9,13 +10,17 @@ import pandas as pd
 from bs4 import BeautifulSoup as bs
 from seleniumbase import SB
 
-from folioflex.utils import custom_logger
+from folioflex.utils import config_helper, custom_logger
 
 logger = custom_logger.setup_logging(__name__)
 
 
 def get_amazon_tx(
-    user_data_dir: str, max_pages: int = 1, login: Optional[bool] = False, **kwargs
+    config_path: str,
+    budget: str,
+    max_pages: Optional[int] = 1,
+    login: Optional[bool] = False,
+    **kwargs,
 ):
     """
     Get transactions from Amazon.
@@ -25,8 +30,10 @@ def get_amazon_tx(
 
     Parameters
     ----------
-    user_data_dir : str
-        The path to the user data dir for the browser
+    config_path : str
+        The path to the config file
+    budget : str
+        The name of the budget
     max_pages : int (optional)
         The number of pages to get
     login : bool (optional)
@@ -41,51 +48,65 @@ def get_amazon_tx(
 
     """
     # initialize parameters
-    current_page = 1
-    page_list = []
+    config_dict = config_helper.get_config_options(config_path, "budgets", budget)
+    amazon_dirs = config_dict["amazon_dirs"]
+    amazon_tx = pd.DataFrame()
     timeout = 5
 
-    # loop through website data to get date paid and amount
-    # with SB there are a few best practices:
-    #  - use UC for remaining undetected
-    #  - use a user_data_dir to store cookies and other user data
-    #  - use a binary_location to specify the browser
-    #  - use a proxy to avoid fingerprint detection
-    #  - uc_click is really only for detection buttons
-    logger.info("Getting orders from website")
-    with SB(
-        uc=True,
-        user_data_dir=user_data_dir,
-        **kwargs,
-    ) as sb:
-        sb.uc_open_with_reconnect(
-            "https://www.amazon.com/gp/css/order-history",
-        )
-        if login:
-            logger.info("login within 30 seconds.")
-            sb.reconnect(timeout=30)
-        try:
-            sb.assert_text("Your Orders", timeout=timeout)
-        except Exception:
-            logger.warning("there is a captcha here and must login within 30 seconds.")
-            sb.reconnect(timeout=30)
-            logger.info("reconnected")
-        logger.info(f"getting data for `{max_pages}` max_pages")
-        while current_page <= max_pages:
-            next_page = 'a:contains("→")'
-            page_data = extract_page_data(sb)
-            page_list.append(page_data)
-            current_page += 1
-            if not sb.is_element_clickable(next_page) or current_page > max_pages:
-                break
-            sb.click(next_page)
-            time.sleep(2)
-            sb.wait_for_element(next_page)
-    logger.info(f"reached last page: `{current_page-1}`")
-    amazon_tx = pd.concat(page_list, ignore_index=True)
+    # sb params
+    binary_location = kwargs.pop("binary_location", None)
+    if binary_location or config_helper.BROWSER_LOCATION:
+        logger.info("using binary location for browser")
+        binary_location = binary_location or config_helper.BROWSER_LOCATION
 
-    # remove nas
-    amazon_tx = amazon_tx.dropna(subset=["date"])
+    for idx, amazon_dir in enumerate(amazon_dirs, 1):
+        current_page = 1
+        page_list = []
+        # loop through website data to get date paid and amount
+        # with SB there are a few best practices:
+        #  - use UC for remaining undetected
+        #  - use a user_data_dir to store cookies and other user data
+        #  - use a binary_location to specify the browser
+        #  - use a proxy to avoid fingerprint detection
+        #  - uc_click is really only for detection buttons
+        logger.info(f"Getting account `{idx}/{len(amazon_dirs)}`")
+        amazon_dir = os.path.join(config_helper.CONFIG_PATH, "data_dirs", amazon_dir)
+        with SB(
+            uc=True,
+            user_data_dir=amazon_dir,
+            binary_location=binary_location,
+            **kwargs,
+        ) as sb:
+            sb.uc_open_with_reconnect(
+                "https://www.amazon.com/gp/css/order-history",
+            )
+            if login:
+                logger.info("login within 30 seconds.")
+                sb.reconnect(timeout=30)
+            try:
+                sb.assert_text("Your Orders", timeout=timeout)
+            except Exception:
+                logger.warning(
+                    "there is a captcha here and must login within 30 seconds."
+                )
+                sb.reconnect(timeout=30)
+                logger.info("reconnected")
+            logger.info(f"getting data for `{max_pages}` max_pages")
+            while current_page <= max_pages:
+                next_page = 'a:contains("→")'
+                page_data = extract_page_data(sb)
+                page_list.append(page_data)
+                current_page += 1
+                if not sb.is_element_clickable(next_page) or current_page > max_pages:
+                    break
+                sb.click(next_page)
+                time.sleep(2)
+                sb.wait_for_element(next_page)
+        logger.info(f"reached last page: `{current_page-1}`")
+        user_amazon_tx = pd.concat(page_list, ignore_index=True)
+        # remove na's
+        user_amazon_tx = user_amazon_tx.dropna(subset=["date"])
+        amazon_tx = pd.concat([amazon_tx, user_amazon_tx], ignore_index=True)
 
     return amazon_tx
 
