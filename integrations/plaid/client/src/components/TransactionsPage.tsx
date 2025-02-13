@@ -211,6 +211,10 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({ match }) => {
           />
         ),
       },
+      {
+        Header: 'Owner',
+        accessor: 'account_owner',
+      },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [inputValues]
