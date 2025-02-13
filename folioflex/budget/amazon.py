@@ -70,10 +70,12 @@ def get_amazon_tx(
         #  - use a proxy to avoid fingerprint detection
         #  - uc_click is really only for detection buttons
         logger.info(f"Getting account `{idx}/{len(amazon_dirs)}`")
-        amazon_dir = os.path.join(config_helper.CONFIG_PATH, "data_dirs", amazon_dir)
+        amazon_dir_full = os.path.join(
+            config_helper.CONFIG_PATH, "data_dirs", amazon_dir
+        )
         with SB(
             uc=True,
-            user_data_dir=amazon_dir,
+            user_data_dir=amazon_dir_full,
             binary_location=binary_location,
             **kwargs,
         ) as sb:

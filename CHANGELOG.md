@@ -1,5 +1,20 @@
 # Changelog
 
+## [v1.4.0](https://github.com/jkoestner/folioflex/tree/v1.4.0)
+
+[Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.3.0...v1.4.0)
+
+**Enhancements**
+- add amazon order description update
+- restructure budget chart dashboard page
+- sort plaid labels alphabetically
+
+**Documentation**
+- type hinting on most modules
+
+**Bug Fixes**
+- update yfinance compatibility to latest version
+
 ## [v1.3.0](https://github.com/jkoestner/folioflex/tree/v1.3.0)
 
 [Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.2.3...v1.3.0)

@@ -7,7 +7,6 @@ import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, State, callback, dcc, html
-from dateutil.relativedelta import relativedelta
 from flask_login import current_user
 
 from folioflex.budget import budget, models
@@ -28,8 +27,8 @@ def layout():
     if not current_user.is_authenticated:
         return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])
 
-    # get the prior month
-    prior_month = (datetime.datetime.now() - relativedelta(months=1)).strftime("%Y-%m")
+    # get the current month
+    current_month = (datetime.datetime.now()).strftime("%Y-%m")
 
     return dbc.Container(
         [
@@ -50,7 +49,7 @@ def layout():
                                             dbc.Label("Date (YYYY-MM)"),
                                             dcc.Input(
                                                 id="budget-chart-input",
-                                                value=prior_month,
+                                                value=current_month,
                                                 type="text",
                                                 className="form-control",
                                             ),
