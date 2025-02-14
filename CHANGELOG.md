@@ -7,7 +7,7 @@
 **Enhancements**
 - add amazon order description update
 - restructure budget chart dashboard page
-- sort plaid labels alphabetically
+- update plaid with better sort, add account owner, and not updating every day
 
 **Documentation**
 - type hinting on most modules

@@ -31,7 +31,7 @@ const createOrUpdateTransactions = async transactions => {
     const { id: accountId } = await retrieveAccountByPlaidAccountId(
       plaidAccountId
     );
-    const [category, subcategory] = categories;
+    const [category = null, subcategory = null] = Array.isArray(categories) ? categories : [];
     try {
       const query = {
         text: `
