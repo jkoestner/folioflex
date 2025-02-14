@@ -184,6 +184,7 @@ const TransactionsPage: React.FC<TransactionsPageProps> = ({ match }) => {
         Header: 'Description',
         accessor: 'name',
         filter: 'fuzzyText',
+        width: 250,
       },
       {
         Header: 'Account',
