@@ -208,6 +208,98 @@ class Engine:
                 trans.rollback()
                 raise e
 
+    def get_user_transactions(self, user_id: int) -> pd.DataFrame:
+        """
+        Get plaid transactions for a user.
+
+        Parameters
+        ----------
+        user_id : int
+            The id of the user.
+
+        Returns
+        -------
+        plaid_transactions : pd.DataFrame
+            The plaid transactions.
+
+        """
+        logger.debug(f"Getting plaid transactions for user `{user_id}`")
+        query = """
+            SELECT
+                t.date,
+                t.name,
+                t.account_id,
+                t.amount,
+                t.label,
+                t.account_owner,
+                t.id
+            FROM transactions t
+            JOIN accounts a ON t.account_id = a.id
+            JOIN items i ON a.item_id = i.id
+            WHERE t.user_id = :user_id
+                AND t.pending = False
+            ORDER BY t.date DESC, t.id DESC
+        """
+
+        with self.engine.connect() as conn:
+            result = conn.execute(sa.text(query), {"user_id": user_id})
+            plaid_transactions = pd.DataFrame(result.fetchall())
+            plaid_transactions["date"] = pd.to_datetime(
+                plaid_transactions["date"]
+            ).dt.strftime("%Y-%m-%d")
+
+        return plaid_transactions
+
+    def get_user_accounts(self, user_id: int) -> pd.DataFrame:
+        """
+        Get plaid accounts for a user.
+
+        Parameters
+        ----------
+        user_id : int
+            The id of the user.
+
+        Returns
+        -------
+        plaid_accounts : pd.DataFrame
+            The plaid accounts.
+
+        """
+        logger.debug(f"Getting plaid accounts for user `{user_id}`")
+        query = """
+            SELECT
+                a.item_id,
+                a.id,
+                a.official_name,
+                a.current_balance,
+                a.type,
+                a.updated_at
+            FROM accounts a
+            JOIN items i ON a.item_id = i.id
+            WHERE a.user_id = :user_id
+            ORDER BY a.updated_at DESC, a.id DESC
+        """
+
+        with self.engine.connect() as conn:
+            result = conn.execute(sa.text(query), {"user_id": user_id})
+            plaid_accounts = pd.DataFrame(result.fetchall())
+            plaid_accounts["updated_at"] = pd.to_datetime(
+                plaid_accounts["updated_at"]
+            ).dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        return plaid_accounts
+
+    def close(self):
+        """
+        Close the connection to the database.
+
+        Returns
+        -------
+        None
+
+        """
+        self.engine.dispose()
+
     def _create_engine(self):
         """
         Create an engine.
