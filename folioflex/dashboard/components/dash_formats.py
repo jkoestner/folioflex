@@ -5,7 +5,7 @@ from folioflex.utils import custom_logger
 logger = custom_logger.setup_logging(__name__)
 
 
-def get_column_defs(table, edit=[]):
+def get_column_defs(table, edit=None):
     """
     Get the column definitions.
 
@@ -22,6 +22,8 @@ def get_column_defs(table, edit=[]):
         The column definitions
 
     """
+    if edit is None:
+        edit = []
     column_defs = []
     for col in table.columns:
         if col in edit:

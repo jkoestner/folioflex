@@ -289,6 +289,27 @@ class Engine:
 
         return plaid_accounts
 
+    def get_user_id(self, username: str) -> int:
+        """
+        Get the user id for a username.
+
+        Parameters
+        ----------
+        username : str
+            The username.
+
+        Returns
+        -------
+        user_id : int
+            The user id.
+
+        """
+        query = "SELECT id FROM users WHERE username = :username"
+        with self.engine.connect() as conn:
+            result = conn.execute(sa.text(query), {"username": username})
+            user_id = result.fetchone()[0]
+        return user_id
+
     def close(self):
         """
         Close the connection to the database.

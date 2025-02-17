@@ -170,8 +170,7 @@ config_file = os.path.join(CONFIG_PATH, "config.yml")
 
 # credentials
 _credentials_config = get_config_options(config_file, "config", "credentials")
-FFX_USERNAME = _credentials_config.get("ffx_username", None)
-FFX_PASSWORD = _credentials_config.get("ffx_password", None)
+USERNAME_PASSWORDS = _credentials_config.get("username_passwords", None)
 
 # apis
 _api_config = get_config_options(config_file, "config", "api")

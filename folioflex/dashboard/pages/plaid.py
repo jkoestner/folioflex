@@ -14,13 +14,24 @@ from folioflex.utils import custom_logger, database
 logger = custom_logger.setup_logging(__name__)
 
 dash.register_page(__name__, path="/plaid", title="folioflex - Plaid", order=6)
+
+#   _                            _
+#  | |    __ _ _   _  ___  _   _| |_
+#  | |   / _` | | | |/ _ \| | | | __|
+#  | |__| (_| | |_| | (_) | |_| | |_
+#  |_____\__,_|\__, |\___/ \__,_|\__|
+#              |___/
+
 engine = database.Engine(config_path="config.yml")
 
 
 def layout():
     """Create layout for the Plaid dashboard."""
+    if not current_user.is_authenticated:
+        return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])
     return dbc.Container(
         [
+            print(current_user.get_id()),
             # stores
             dcc.Store(
                 id="transactions-store",
@@ -191,6 +202,14 @@ def layout():
     )
 
 
+#    ____      _ _ _                _
+#   / ___|__ _| | | |__   __ _  ___| | _____
+#  | |   / _` | | | '_ \ / _` |/ __| |/ / __|
+#  | |__| (_| | | | |_) | (_| | (__|   <\__ \
+#   \____\__,_|_|_|_.__/ \__,_|\___|_|\_\___/
+#
+
+
 @callback(
     Output("transactions-table", "children"),
     Output("transactions-store", "data"),
@@ -209,16 +228,17 @@ def update_data(n_clicks, stored_tx_data, stored_accounts_data):
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
 
+    user_id = engine.get_user_id(username=current_user.get_id())
     # initial load or refresh
     if triggered_id == "refresh-button" or (
         n_clicks is None and (stored_tx_data is None or stored_accounts_data is None)
     ):
         logger.info("refreshing transactions")
         # get transactions
-        tx_df = engine.get_user_transactions(1)
+        tx_df = engine.get_user_transactions(user_id)
 
         # get accounts
-        accounts_df = engine.get_user_accounts(1)
+        accounts_df = engine.get_user_accounts(user_id)
 
     # else use stored data
     else:

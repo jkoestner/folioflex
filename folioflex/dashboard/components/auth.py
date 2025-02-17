@@ -20,8 +20,8 @@ from folioflex.utils import config_helper
 server = Flask(__name__)
 
 # login parameters
-restricted_page = {"/budget": True, "/personal": True}
-VALID_USERNAME_PASSWORD = {config_helper.FFX_USERNAME: config_helper.FFX_PASSWORD}
+restricted_page = {"/budget": True, "/personal": True, "/plaid": True}
+VALID_USERNAME_PASSWORDS = config_helper.USERNAME_PASSWORDS
 
 # login information
 server.config.update(SECRET_KEY=os.urandom(24))
@@ -42,7 +42,7 @@ def login_button_click():
     """Login button click event."""
     username = request.form["username"]
     password = request.form["password"]
-    if VALID_USERNAME_PASSWORD.get(username) == password:
+    if VALID_USERNAME_PASSWORDS.get(username) == password:
         login_user(User(username))
         url = session.get("url")
         if url:
