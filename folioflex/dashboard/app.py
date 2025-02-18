@@ -20,6 +20,8 @@ from dash import Input, Output, callback, dcc, html
 from folioflex.dashboard.components import auth
 from folioflex.utils import custom_logger
 
+logger = custom_logger.setup_logging(__name__)
+
 #      _    ____  ____
 #     / \  |  _ \|  _ \
 #    / _ \ | |_) | |_) |
@@ -42,7 +44,6 @@ app = dash.Dash(
 app.config.suppress_callback_exceptions = True
 app.title = "FolioFlex"
 app._favicon = "folioflex_logo.ico"
-
 
 app.index_string = """
 <!DOCTYPE html>

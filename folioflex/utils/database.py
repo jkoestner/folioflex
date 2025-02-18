@@ -310,6 +310,150 @@ class Engine:
             user_id = result.fetchone()[0]
         return user_id
 
+    def get_item_info(self, plaid_item_id: str) -> dict:
+        """
+        Get information about an item.
+
+        Parameters
+        ----------
+        plaid_item_id : str
+            The plaid item id.
+
+        Returns
+        -------
+        item : dict
+            The item for the plaid item id.
+
+        """
+        logger.debug(f"Getting plaid item for plaid_item_id `{plaid_item_id}`")
+        query = "SELECT * FROM items WHERE plaid_item_id = :plaid_item_id"
+        with self.engine.connect() as conn:
+            result = conn.execute(sa.text(query), {"plaid_item_id": plaid_item_id})
+            item = dict(result.mappings().fetchone())
+        return item
+
+    def add_transactions(self, transactions: list) -> None:
+        """
+        Add or update transactions in the database.
+
+        Parameters
+        ----------
+        transactions : list
+            List of transactions
+
+        """
+        query = """
+            INSERT INTO transactions_table
+                (
+                    account_id,
+                    plaid_transaction_id,
+                    plaid_category_id,
+                    category,
+                    subcategory,
+                    type,
+                    name,
+                    amount,
+                    iso_currency_code,
+                    unofficial_currency_code,
+                    date,
+                    pending,
+                    primary_category,
+                    detailed_category,
+                    confidence_level,
+                    account_owner
+                )
+            VALUES
+                (
+                    :account_id,
+                    :plaid_transaction_id,
+                    :plaid_category_id,
+                    :category,
+                    :subcategory,
+                    :type,
+                    :name,
+                    :amount,
+                    :iso_currency_code,
+                    :unofficial_currency_code,
+                    :date,
+                    :pending,
+                    :primary_category,
+                    :detailed_category,
+                    :confidence_level,
+                    :account_owner
+                )
+            ON CONFLICT (plaid_transaction_id) DO UPDATE SET
+                plaid_category_id = EXCLUDED.plaid_category_id,
+                category = EXCLUDED.category,
+                subcategory = EXCLUDED.subcategory,
+                type = EXCLUDED.type,
+                name = EXCLUDED.name,
+                amount = EXCLUDED.amount,
+                iso_currency_code = EXCLUDED.iso_currency_code,
+                unofficial_currency_code = EXCLUDED.unofficial_currency_code,
+                date = EXCLUDED.date,
+                pending = EXCLUDED.pending,
+                primary_category = EXCLUDED.primary_category,
+                detailed_category = EXCLUDED.detailed_category,
+                confidence_level = EXCLUDED.confidence_level,
+                account_owner = EXCLUDED.account_owner
+        """
+        try:
+            with self.engine.connect() as conn:
+                try:
+                    conn.execute(sa.text(query), transactions)
+                    conn.commit()
+                except sa.exc.SQLAlchemyError as e:
+                    conn.rollback()
+                    logger.error(f"Error executing transaction query: {e!s}")
+                    raise
+        except Exception as e:
+            logger.error(f"Unexpected error in add_transactions: {e!s}")
+            raise
+
+    def delete_transactions(self, plaid_transaction_ids: list) -> None:
+        """
+        Delete transactions from the database.
+
+        Parameters
+        ----------
+        plaid_transaction_ids : list
+            List of plaid transaction ids.
+
+        """
+        query = "DELETE FROM transactions_table WHERE plaid_transaction_id = ANY(:plaid_transaction_ids)"
+        with self.engine.connect() as conn:
+            try:
+                conn.execute(
+                    sa.text(query), {"plaid_transaction_ids": plaid_transaction_ids}
+                )
+                conn.commit()
+            except sa.exc.SQLAlchemyError as e:
+                conn.rollback()
+                logger.error(f"Error executing delete transactions query: {e!s}")
+                raise
+
+    def update_item_cursor(self, item_id: str, cursor: str) -> None:
+        """
+        Update the cursor for an item.
+
+        Parameters
+        ----------
+        item_id : str
+            The id of the item.
+        cursor : str
+            The cursor for the item.
+
+        """
+        query = "UPDATE items SET transactions_cursor = :cursor WHERE plaid_item_id = :item_id"
+        with self.engine.connect() as conn:
+            try:
+                conn.execute(sa.text(query), {"item_id": item_id, "cursor": cursor})
+                conn.commit()
+            except sa.exc.SQLAlchemyError as e:
+                conn.rollback()
+                logger.error(f"Error executing update cursor query: {e!s}")
+                raise
+
     def close(self):
         """
         Close the connection to the database.
@@ -360,7 +504,11 @@ class Engine:
 
         # create the engine
         engine = sa.create_engine(
-            f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+            f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}",
+            pool_pre_ping=True,  # Enables connection health checks
+            pool_recycle=3600,  # Recycle connections after 1 hour
+            pool_size=3,  # Maximum number of connections to keep
+            max_overflow=3,  # Maximum number of connections that can be created beyond pool_size
         )
         logger.info(f"Connected to database: {db_name}")
 

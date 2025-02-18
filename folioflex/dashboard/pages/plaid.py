@@ -31,7 +31,6 @@ def layout():
         return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])
     return dbc.Container(
         [
-            print(current_user.get_id()),
             # stores
             dcc.Store(
                 id="transactions-store",
@@ -219,16 +218,20 @@ def layout():
     Output("total-credit", "children"),
     Output("net-worth", "children"),
     Input("refresh-button", "n_clicks"),
-    Input("transactions-store", "data"),
-    Input("accounts-store", "data"),
+    State("transactions-store", "data"),
+    State("accounts-store", "data"),
+    State("url", "pathname"),
     prevent_initial_call=False,
 )
-def update_data(n_clicks, stored_tx_data, stored_accounts_data):
+def update_data(n_clicks, stored_tx_data, stored_accounts_data, pathname):
     """Update both transactions and accounts tables."""
+    if n_clicks is None:
+        return [dash.no_update] * 7
+
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
-
     user_id = engine.get_user_id(username=current_user.get_id())
+
     # initial load or refresh
     if triggered_id == "refresh-button" or (
         n_clicks is None and (stored_tx_data is None or stored_accounts_data is None)

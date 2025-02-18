@@ -4,10 +4,13 @@ import os
 
 import dash
 from dash import Input, Output, callback
-from flask import Flask, redirect, request, session
+from flask import Flask, jsonify, redirect, request, session
 from flask_login import LoginManager, UserMixin, current_user, login_user
 
-from folioflex.utils import config_helper
+from folioflex.utils import config_helper, custom_logger
+from integrations import plaid_rewrite
+
+logger = custom_logger.setup_logging(__name__)
 
 #   _                _
 #  | |    ___   __ _(_)_ __
@@ -50,6 +53,19 @@ def login_button_click():
             return redirect(url)
         return redirect("/")
     return "invalid username and/or password <a href='/login'>login here</a>"
+
+
+@server.route("/plaid-webhook", methods=["POST"])
+def receive_plaid_webhook():
+    """Receive Plaid webhooks."""
+    if not request.is_json:
+        return jsonify({"error": "Content type must be application/json"}), 400
+
+    logger.info("Received Plaid webhook")
+    webhook_data = request.get_json()
+    plaid_rewrite.server.handle_plaid_webhooks(webhook_data)
+
+    return jsonify({"status": "success"}), 200
 
 
 @login_manager.user_loader
