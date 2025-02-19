@@ -9,7 +9,8 @@ from flask_login import current_user
 
 from folioflex.dashboard.components import dash_formats
 from folioflex.dashboard.utils import dashboard_helper
-from folioflex.utils import custom_logger, database
+from folioflex.integrations.plaid import database
+from folioflex.utils import custom_logger
 
 logger = custom_logger.setup_logging(__name__)
 

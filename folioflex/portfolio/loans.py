@@ -14,7 +14,7 @@ logger = custom_logger.setup_logging(__name__)
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from folioflex.utils.database import Engine
+    from folioflex.integrations.plaid.database import Engine
 
 
 def get_loan_df(

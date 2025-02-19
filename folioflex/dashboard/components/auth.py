@@ -7,8 +7,8 @@ from dash import Input, Output, callback
 from flask import Flask, jsonify, redirect, request, session
 from flask_login import LoginManager, UserMixin, current_user, login_user
 
+from folioflex.integrations import plaid
 from folioflex.utils import config_helper, custom_logger
-from integrations import plaid_rewrite
 
 logger = custom_logger.setup_logging(__name__)
 
@@ -61,9 +61,12 @@ def receive_plaid_webhook():
     if not request.is_json:
         return jsonify({"error": "Content type must be application/json"}), 400
 
-    logger.info("Received Plaid webhook")
     webhook_data = request.get_json()
-    plaid_rewrite.server.handle_plaid_webhooks(webhook_data)
+    webhook_code = webhook_data.get("webhook_code")
+    plaid_item_id = webhook_data.get("item_id")
+    response = plaid.server.handle_plaid_webhooks(webhook_data)
+
+    logger.info(f"{webhook_code}: {plaid_item_id} - {response}")
 
     return jsonify({"status": "success"}), 200
 

@@ -20,7 +20,8 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 
-from folioflex.utils import config_helper, custom_logger, database
+from folioflex.integrations.plaid import database
+from folioflex.utils import config_helper, custom_logger
 
 logger = custom_logger.setup_logging(__name__)
 

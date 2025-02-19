@@ -12,8 +12,9 @@ from flask_login import current_user
 from folioflex.budget import budget, models
 from folioflex.dashboard.components import dash_formats
 from folioflex.dashboard.utils import dashboard_helper
+from folioflex.integrations.plaid import database
 from folioflex.portfolio import assets, loans
-from folioflex.utils import config_helper, custom_logger, database
+from folioflex.utils import config_helper, custom_logger
 
 logger = custom_logger.setup_logging(__name__)
 

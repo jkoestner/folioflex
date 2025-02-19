@@ -52,11 +52,13 @@ def handle_plaid_webhooks(webhook_data: dict) -> dict:
     access_token = item_info.get("plaid_access_token")
     cursor = item_info.get("transactions_cursor")
 
+    # update database with new transactions and cursor if available
     if webhook_code == "SYNC_UPDATES_AVAILABLE":
         transactions = transactions_sync(access_token, cursor)
         added = transactions.get("added")
         modified = transactions.get("modified")
         removed = transactions.get("removed")
+        new_cursor = transactions.get("next_cursor")
         if added:
             engine.add_transactions(added)
         if modified:
@@ -64,6 +66,8 @@ def handle_plaid_webhooks(webhook_data: dict) -> dict:
         if removed:
             removed_ids = [tx.get("transaction_id") for tx in removed]
             engine.delete_transactions(removed_ids)
+        if new_cursor != cursor:
+            engine.update_item_cursor(plaid_item_id, new_cursor)
         updated_data = {
             "added": len(added),
             "modified": len(modified),
