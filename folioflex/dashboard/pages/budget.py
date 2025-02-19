@@ -529,7 +529,7 @@ def update_incomeview(n_clicks, input_value):
     [State("budget-chart-input", "value")],
     prevent_initial_call=True,
 )
-def update_comparechart(n_clicks, input_value, budget_section):
+def update_comparechart(n_clicks, input_value):
     """Provide budget compare info chart."""
     budget_section = current_user.get_id()
     bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
