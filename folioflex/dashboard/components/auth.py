@@ -40,6 +40,12 @@ class User(UserMixin):
         self.id = username
 
 
+@login_manager.user_loader
+def load_user(username):
+    """Reload the user object from the user ID stored in the session."""
+    return User(username)
+
+
 @server.route("/login", methods=["POST"])
 def login_button_click():
     """Login button click event."""
@@ -47,12 +53,13 @@ def login_button_click():
     password = request.form["password"]
     if VALID_USERNAME_PASSWORDS.get(username) == password:
         login_user(User(username))
+        # redirect to page user was trying to access when logged in
         url = session.get("url")
         if url:
             session["url"] = None
             return redirect(url)
         return redirect("/")
-    return "invalid username and/or password <a href='/login'>login here</a>"
+    return redirect("/login?error=invalid")
 
 
 @server.route("/plaid-webhook", methods=["POST"])
@@ -69,12 +76,6 @@ def receive_plaid_webhook():
     logger.info(f"{webhook_code}: {plaid_item_id} - {response}")
 
     return jsonify({"status": "success"}), 200
-
-
-@login_manager.user_loader
-def load_user(username):
-    """Reload the user object from the user ID stored in the session."""
-    return User(username)
 
 
 #    ____      _ _ _                _
