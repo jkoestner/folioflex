@@ -711,8 +711,9 @@ class Yahoo:
         start_price = data["Close"].iloc[0]
         end_price = data["Close"].iloc[-1]
 
-        # Calculate the change percentage
+        # Calculate the change percentage and make float
         change_percent = (end_price - start_price) / start_price
+        change_percent = change_percent.iloc[0]
 
         return change_percent
 
