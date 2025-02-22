@@ -38,6 +38,7 @@ dependencies = [
     "Flask-Compress>=1.17",
     "Flask-Login>=0.6.3",
     "gunicorn>=23.0.0",
+    "lxml>=5.3.1",
 
     # worker
     "celery>=5.4.0",
