@@ -256,14 +256,14 @@ class TradingView:
 
         """
 
-        def normalize_date(date, time):
+        def normalize_date(date, time_value):
             # Format the date and time in ISO 8601 format
-            normalize_date = datetime.combine(date, time)
-            normalize_date = normalize_date.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-            return normalize_date
+            normalize_dt = datetime.combine(date, time_value)
+            normalize_dt = normalize_dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+            return normalize_dt
 
         if to_date is None:
-            to_date_dt = datetime.utcnow() + timedelta(days=7)
+            to_date_dt = datetime.now() + timedelta(days=7)
         else:
             to_date_dt = datetime.strptime(to_date, "%Y-%m-%d")
 
@@ -272,13 +272,13 @@ class TradingView:
         else:
             from_date_dt = datetime.strptime(from_date, "%Y-%m-%d")
 
-        to_date_dt = normalize_date(to_date, time(23, 0, 0, 0))
-        from_date_dt = normalize_date(from_date, time(0, 0, 0, 0))
+        to_date_iso = normalize_date(to_date_dt, time(23, 0, 0, 0))
+        from_date_iso = normalize_date(from_date_dt, time(0, 0, 0, 0))
 
         url = "https://economic-calendar.tradingview.com/events"
         payload = {
-            "from": from_date_dt,
-            "to": to_date_dt,
+            "from": from_date_iso,
+            "to": to_date_iso,
             "countries": ["US"],
             "minImportance": minImportance,
         }
