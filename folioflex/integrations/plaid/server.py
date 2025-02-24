@@ -20,6 +20,7 @@ logger = custom_logger.setup_logging(__name__)
 headers = {
     "Content-type": "application/json",
 }
+plaid_env = config_helper.PLAID_ENV
 
 
 def handle_plaid_webhooks(webhook_data: dict) -> dict:
@@ -27,6 +28,13 @@ def handle_plaid_webhooks(webhook_data: dict) -> dict:
     Handle Plaid webhook data.
 
     Will receive the webhook and then update the database accordingly.
+
+    webhooks that are handled
+    - SYNC_UPDATES_AVAILABLE
+
+    plaid webhooks
+    - https://plaid.com/docs/api/items/#webhooks
+    - https://plaid.com/docs/api/products/transactions/#webhooks
 
     Parameters
     ----------
@@ -108,13 +116,87 @@ def transactions_sync(access_token: str, cursor: Optional[str] = None) -> dict:
         "count": 250,
     }
     response = requests.post(
-        "https://production.plaid.com/transactions/sync",
+        f"https://{plaid_env}.plaid.com/transactions/sync",
         headers=headers,
         data=json.dumps(data),
     )
     transactions = response.json()
 
     return transactions
+
+
+def create_link_token(
+    username: str, webhook: Optional[str] = None, redirect_uri: Optional[str] = None
+) -> dict:
+    """
+    Create a link token for a user.
+
+    https://plaid.com/docs/api/link/#linktokencreate
+
+    Parameters
+    ----------
+    username : str
+        The username for the request.
+    webhook : str, optional
+        The webhook for the request.
+    redirect_uri : str, optional
+        The redirect uri for the request.
+
+    Returns
+    -------
+    response : json
+        The link token for the user.
+
+    """
+    data = {
+        "client_id": config_helper.PLAID_CLIENT_ID,
+        "secret": config_helper.PLAID_SECRET,
+        "client_name": "FolioFlex",
+        "language": "en",
+        "country_codes": ["US"],
+        "user": {"client_user_id": username},
+        "products": ["transactions"],
+        "redirect_uri": redirect_uri,
+        "webhook": webhook,
+    }
+    response = requests.post(
+        f"https://{plaid_env}.plaid.com/link/token/create",
+        headers=headers,
+        data=json.dumps(data),
+    )
+
+    return response
+
+
+def exchange_public_token(public_token: str) -> dict:
+    """
+    Exchange a public token for an access token.
+
+    https://plaid.com/docs/api/items/#itempublic_tokenexchange
+
+    Parameters
+    ----------
+    public_token : str
+        The public token for the request.
+
+    Returns
+    -------
+    response : json
+        The access token for the public token.
+
+    """
+    data = {
+        "client_id": config_helper.PLAID_CLIENT_ID,
+        "secret": config_helper.PLAID_SECRET,
+        "public_token": public_token,
+    }
+    response = requests.post(
+        f"https://{plaid_env}.plaid.com/item/public_token/exchange",
+        headers=headers,
+        data=json.dumps(data),
+    )
+
+    return response
 
 
 def get_accounts(access_token: str) -> dict:
@@ -140,7 +222,7 @@ def get_accounts(access_token: str) -> dict:
         "access_token": access_token,
     }
     response = requests.post(
-        "https://production.plaid.com/accounts/get",
+        f"https://{plaid_env}.plaid.com/accounts/get",
         headers=headers,
         data=json.dumps(data),
     )
@@ -172,7 +254,7 @@ def get_item_info(access_token: str) -> dict:
         "access_token": access_token,
     }
     response = requests.post(
-        "https://production.plaid.com/item/get",
+        f"https://{plaid_env}.plaid.com/item/get",
         headers=headers,
         data=json.dumps(data),
     )
@@ -204,7 +286,7 @@ def get_institution_info(institution_id: str) -> dict:
         "country_codes": ["US"],
     }
     response = requests.post(
-        "https://production.plaid.com/institutions/get_by_id",
+        f"https://{plaid_env}.plaid.com/institutions/get_by_id",
         headers=headers,
         data=json.dumps(data),
     )
@@ -236,7 +318,7 @@ def remove_item(access_token: str) -> dict:
         "access_token": access_token,
     }
     response = requests.post(
-        "https://production.plaid.com/item/remove",
+        f"https://{plaid_env}.plaid.com/item/remove",
         headers=headers,
         data=json.dumps(data),
     )

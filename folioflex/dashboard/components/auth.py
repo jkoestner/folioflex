@@ -62,22 +62,6 @@ def login_button_click():
     return redirect("/login?error=invalid")
 
 
-@server.route("/plaid-webhook", methods=["POST"])
-def receive_plaid_webhook():
-    """Receive Plaid webhooks."""
-    if not request.is_json:
-        return jsonify({"error": "Content type must be application/json"}), 400
-
-    webhook_data = request.get_json()
-    webhook_code = webhook_data.get("webhook_code")
-    plaid_item_id = webhook_data.get("item_id")
-    response = plaid.server.handle_plaid_webhooks(webhook_data)
-
-    logger.info(f"{webhook_code}: {plaid_item_id} - {response}")
-
-    return jsonify({"status": "success"}), 200
-
-
 #    ____      _ _ _                _
 #   / ___|__ _| | | |__   __ _  ___| | _____
 #  | |   / _` | | | '_ \ / _` |/ __| |/ / __|
