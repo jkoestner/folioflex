@@ -4,10 +4,9 @@ import os
 
 import dash
 from dash import Input, Output, callback
-from flask import Flask, jsonify, redirect, request, session
+from flask import Flask, redirect, request, session
 from flask_login import LoginManager, UserMixin, current_user, login_user
 
-from folioflex.integrations import plaid
 from folioflex.utils import config_helper, custom_logger
 
 logger = custom_logger.setup_logging(__name__)

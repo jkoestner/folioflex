@@ -208,87 +208,6 @@ class Engine:
                 trans.rollback()
                 raise e
 
-    def get_user_transactions(self, user_id: int) -> pd.DataFrame:
-        """
-        Get plaid transactions for a user.
-
-        Parameters
-        ----------
-        user_id : int
-            The id of the user.
-
-        Returns
-        -------
-        plaid_transactions : pd.DataFrame
-            The plaid transactions.
-
-        """
-        logger.debug(f"Getting plaid transactions for user `{user_id}`")
-        query = """
-            SELECT
-                t.date,
-                t.name,
-                t.account_id,
-                t.amount,
-                t.label,
-                t.account_owner,
-                t.id
-            FROM transactions t
-            JOIN accounts a ON t.account_id = a.id
-            JOIN items i ON a.item_id = i.id
-            WHERE t.user_id = :user_id
-                AND t.pending = False
-            ORDER BY t.date DESC, t.id DESC
-        """
-
-        with self.engine.connect() as conn:
-            result = conn.execute(sa.text(query), {"user_id": user_id})
-            plaid_transactions = pd.DataFrame(result.fetchall())
-            plaid_transactions["date"] = pd.to_datetime(
-                plaid_transactions["date"]
-            ).dt.strftime("%Y-%m-%d")
-
-        return plaid_transactions
-
-    def get_user_accounts(self, user_id: int) -> pd.DataFrame:
-        """
-        Get plaid accounts for a user.
-
-        Parameters
-        ----------
-        user_id : int
-            The id of the user.
-
-        Returns
-        -------
-        plaid_accounts : pd.DataFrame
-            The plaid accounts.
-
-        """
-        logger.debug(f"Getting plaid accounts for user `{user_id}`")
-        query = """
-            SELECT
-                a.item_id,
-                a.id,
-                a.official_name,
-                a.current_balance,
-                a.type,
-                a.updated_at
-            FROM accounts a
-            JOIN items i ON a.item_id = i.id
-            WHERE a.user_id = :user_id
-            ORDER BY a.updated_at DESC, a.id DESC
-        """
-
-        with self.engine.connect() as conn:
-            result = conn.execute(sa.text(query), {"user_id": user_id})
-            plaid_accounts = pd.DataFrame(result.fetchall())
-            plaid_accounts["updated_at"] = pd.to_datetime(
-                plaid_accounts["updated_at"]
-            ).dt.strftime("%Y-%m-%d %H:%M:%S")
-
-        return plaid_accounts
-
     def get_user_id(self, username: str) -> int:
         """
         Get the user id for a username.
@@ -329,8 +248,301 @@ class Engine:
         query = "SELECT * FROM items WHERE plaid_item_id = :plaid_item_id"
         with self.engine.connect() as conn:
             result = conn.execute(sa.text(query), {"plaid_item_id": plaid_item_id})
-            item = dict(result.mappings().fetchone())
+            item = dict(result.mappings().fetchone() or {})
         return item
+
+    def get_account_info(self, plaid_account_id: str) -> dict:
+        """
+        Get information about an account.
+
+        Parameters
+        ----------
+        plaid_account_id : str
+            The plaid account id.
+
+        Returns
+        -------
+        account : dict
+            The account for the plaid account id.
+
+        """
+        logger.debug(f"Getting plaid account for plaid_account_id `{plaid_account_id}`")
+        query = "SELECT * FROM accounts WHERE plaid_account_id = :plaid_account_id"
+        with self.engine.connect() as conn:
+            result = conn.execute(
+                sa.text(query), {"plaid_account_id": plaid_account_id}
+            )
+            account = dict(result.mappings().fetchone() or {})
+        return account
+
+    def get_user_accounts(self, user_id: int) -> pd.DataFrame:
+        """
+        Get plaid accounts for a user.
+
+        Parameters
+        ----------
+        user_id : int
+            The id of the user.
+
+        Returns
+        -------
+        plaid_accounts : pd.DataFrame
+            The plaid accounts.
+
+        """
+        logger.debug(f"Getting plaid accounts for user `{user_id}`")
+        query = """
+            SELECT
+                a.item_id,
+                a.id,
+                a.official_name,
+                a.current_balance,
+                a.type,
+                a.updated_at
+            FROM accounts a
+            JOIN items i ON a.item_id = i.id
+            WHERE a.user_id = :user_id
+            ORDER BY a.updated_at DESC, a.id DESC
+        """
+
+        with self.engine.connect() as conn:
+            result = conn.execute(sa.text(query), {"user_id": user_id})
+            plaid_accounts = pd.DataFrame(result.fetchall())
+            plaid_accounts["updated_at"] = pd.to_datetime(
+                plaid_accounts["updated_at"]
+            ).dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        return plaid_accounts
+
+    def get_item_accounts(self, item_id: int) -> pd.DataFrame:
+        """
+        Get plaid accounts for an item.
+
+        Parameters
+        ----------
+        item_id : int
+            The id of the item.
+
+        Returns
+        -------
+        plaid_accounts : pd.DataFrame
+            The plaid accounts.
+
+        """
+        logger.debug(f"Getting plaid accounts for item `{item_id}`")
+        query = """
+            SELECT
+                a.item_id,
+                a.id,
+                a.official_name,
+                a.current_balance,
+                a.type,
+                a.updated_at,
+                a.plaid_account_id
+            FROM accounts a
+            JOIN items i ON a.item_id = i.id
+            WHERE a.item_id = :item_id
+            ORDER BY a.updated_at DESC, a.id DESC
+        """
+
+        with self.engine.connect() as conn:
+            result = conn.execute(sa.text(query), {"item_id": item_id})
+            plaid_accounts = pd.DataFrame(result.fetchall())
+
+        return plaid_accounts
+
+    def get_user_transactions(self, user_id: int) -> pd.DataFrame:
+        """
+        Get plaid transactions for a user.
+
+        Avoiding the pending transactions as this is used in the budget app.
+
+        Parameters
+        ----------
+        user_id : int
+            The id of the user.
+
+        Returns
+        -------
+        plaid_transactions : pd.DataFrame
+            The plaid transactions.
+
+        """
+        logger.debug(f"Getting plaid transactions for user `{user_id}`")
+        query = """
+            SELECT
+                t.date,
+                t.name,
+                t.account_id,
+                t.amount,
+                t.label,
+                t.account_owner,
+                t.id
+            FROM transactions t
+            JOIN accounts a ON t.account_id = a.id
+            JOIN items i ON a.item_id = i.id
+            WHERE t.user_id = :user_id
+                AND t.pending = False
+            ORDER BY t.date DESC, t.id DESC
+        """
+
+        with self.engine.connect() as conn:
+            result = conn.execute(sa.text(query), {"user_id": user_id})
+            plaid_transactions = pd.DataFrame(result.fetchall())
+            plaid_transactions["date"] = pd.to_datetime(
+                plaid_transactions["date"]
+            ).dt.strftime("%Y-%m-%d")
+
+        return plaid_transactions
+
+    def get_item_transactions(self, item_id: int) -> pd.DataFrame:
+        """
+        Get plaid transactions for an item.
+
+        Parameters
+        ----------
+        item_id : int
+            The id of the item.
+
+        Returns
+        -------
+        plaid_transactions : pd.DataFrame
+            The plaid transactions.
+
+        """
+        logger.debug(f"Getting plaid transactions for item `{item_id}`")
+        query = """
+            SELECT
+                t.date,
+                t.name,
+                t.account_id,
+                t.amount,
+                t.label,
+                t.account_owner,
+                t.id,
+                t.plaid_transaction_id
+            FROM transactions t
+            JOIN accounts a ON t.account_id = a.id
+            JOIN items i ON a.item_id = i.id
+            WHERE t.item_id = :item_id
+            ORDER BY t.date DESC, t.id DESC
+        """
+
+        with self.engine.connect() as conn:
+            result = conn.execute(sa.text(query), {"item_id": item_id})
+            plaid_transactions = pd.DataFrame(result.fetchall())
+
+        return plaid_transactions
+
+    def add_item(
+        self, item_id: str, user_id: int, access_token: str, institution_id: str
+    ) -> None:
+        """
+        Add an item to the database.
+
+        Parameters
+        ----------
+        item_id : str
+            The id of the item.
+        user_id : int
+            The id of the user.
+        access_token : str
+            The access token for the item.
+        institution_id : str
+            The id of the institution.
+
+        """
+        status = "good"
+        query = """
+        INSERT INTO items_table (
+            plaid_item_id,
+            user_id,
+            plaid_access_token,
+            plaid_institution_id,
+            status
+        ) VALUES (
+            :item_id,
+            :user_id,
+            :access_token,
+            :institution_id,
+            :status
+        )
+        """
+        logger.info(f"Adding item: {item_id}")
+        with self.engine.connect() as conn:
+            try:
+                conn.execute(
+                    sa.text(query),
+                    {
+                        "item_id": item_id,
+                        "user_id": user_id,
+                        "access_token": access_token,
+                        "institution_id": institution_id,
+                        "status": status,
+                    },
+                )
+                conn.commit()
+            except sa.exc.SQLAlchemyError as e:
+                conn.rollback()
+                logger.error(f"Error executing add item query: {e!s}")
+                raise
+
+    def add_accounts(self, accounts: list[dict]) -> None:
+        """
+        Add accounts to the database.
+
+        Parameters
+        ----------
+        accounts : list[dict]
+            List of accounts.
+
+        """
+        for account in accounts:
+            account["item_id"] = self.get_item_info(account["item_id"])["id"]
+
+        query = """
+        INSERT INTO accounts_table (
+            item_id,
+            plaid_account_id,
+            name,
+            mask,
+            official_name,
+            current_balance,
+            available_balance,
+            iso_currency_code,
+            unofficial_currency_code,
+            type,
+            subtype
+        ) VALUES (
+            :item_id,
+            :plaid_account_id,
+            :name,
+            :mask,
+            :official_name,
+            :current_balance,
+            :available_balance,
+            :iso_currency_code,
+            :unofficial_currency_code,
+            :type,
+            :subtype
+        )
+        ON CONFLICT (plaid_account_id) DO UPDATE SET
+            current_balance = :current_balance,
+            available_balance = :available_balance
+        """
+        logger.info(f"Adding `{len(accounts)}` accounts")
+        try:
+            with self.engine.connect() as conn:
+                try:
+                    conn.execute(sa.text(query), accounts)
+                    conn.commit()
+                except sa.exc.SQLAlchemyError as e:
+                    conn.rollback()
+                    logger.error(f"Error executing account query: {e!s}")
+                    raise
+        except Exception as e:
+            logger.error(f"Unexpected error in add_accounts: {e!s}")
+            raise
 
     def add_transactions(self, transactions: list) -> None:
         """
@@ -342,6 +554,11 @@ class Engine:
             List of transactions
 
         """
+        for transaction in transactions:
+            transaction["account_id"] = self.get_account_info(
+                transaction["account_id"]
+            )["id"]
+
         query = """
             INSERT INTO transactions_table
                 (
@@ -410,6 +627,48 @@ class Engine:
             logger.error(f"Unexpected error in add_transactions: {e!s}")
             raise
 
+    def delete_item(self, plaid_item_id: str) -> None:
+        """
+        Delete item from the database.
+
+        Parameters
+        ----------
+        plaid_item_id : str
+            Plaid item id.
+
+        """
+        logger.info(f"Deleting item {plaid_item_id}")
+        query = "DELETE FROM items_table WHERE plaid_item_id = :plaid_item_id"
+        with self.engine.connect() as conn:
+            try:
+                conn.execute(sa.text(query), {"plaid_item_id": plaid_item_id})
+                conn.commit()
+            except sa.exc.SQLAlchemyError as e:
+                conn.rollback()
+                logger.error(f"Error executing delete item query: {e!s}")
+                raise
+
+    def delete_accounts(self, plaid_account_ids: list) -> None:
+        """
+        Delete accounts from the database.
+
+        Parameters
+        ----------
+        plaid_account_ids : list
+            List of plaid account ids.
+
+        """
+        logger.info(f"Deleting {len(plaid_account_ids)} accounts")
+        query = "DELETE FROM accounts_table WHERE plaid_account_id = ANY(:plaid_account_ids)"
+        with self.engine.connect() as conn:
+            try:
+                conn.execute(sa.text(query), {"plaid_account_ids": plaid_account_ids})
+                conn.commit()
+            except sa.exc.SQLAlchemyError as e:
+                conn.rollback()
+                logger.error(f"Error executing delete accounts query: {e!s}")
+                raise
+
     def delete_transactions(self, plaid_transaction_ids: list) -> None:
         """
         Delete transactions from the database.
@@ -420,6 +679,7 @@ class Engine:
             List of plaid transaction ids.
 
         """
+        logger.info(f"Deleting {len(plaid_transaction_ids)} transactions")
         query = "DELETE FROM transactions_table WHERE plaid_transaction_id = ANY(:plaid_transaction_ids)"
         with self.engine.connect() as conn:
             try:

@@ -64,8 +64,8 @@ def handle_plaid_webhooks(webhook_data: dict) -> dict:
     # update database with new transactions and cursor if available
     if webhook_code == "SYNC_UPDATES_AVAILABLE":
         transactions = transactions_sync(access_token, cursor)
-        added = transactions.get("added")
-        modified = transactions.get("modified")
+        added = format_transactions(transactions.get("added"))
+        modified = format_transactions(transactions.get("modified"))
         removed = transactions.get("removed")
         new_cursor = transactions.get("next_cursor")
         if added:
@@ -86,43 +86,54 @@ def handle_plaid_webhooks(webhook_data: dict) -> dict:
     return updated_data
 
 
-def transactions_sync(access_token: str, cursor: Optional[str] = None) -> dict:
+def handle_plaid_maintenance(user_data: dict) -> None:
     """
-    Fetch transactions for an item from the last known cursor.
+    Handle plaid maintenance.
 
-    This method is preferred over the `transactions_get` method as it is
-    more efficient.
-
-    https://plaid.com/docs/api/products/transactions/#transactionssync
+    The maintenance codes that are handled are:
+    - {"maintenance_code": "DELETE_ITEM", "details": {"access_token": "string"}}
 
     Parameters
     ----------
-    access_token : str
-        The access token for the item.
-    cursor : str
-        The cursor for the item.
+    user_data : dict
+        The user data.
 
     Returns
     -------
-    transactions : list
-        The transactions for the item.
+    None
 
     """
-    data = {
-        "client_id": config_helper.PLAID_CLIENT_ID,
-        "secret": config_helper.PLAID_SECRET,
-        "access_token": access_token,
-        "cursor": cursor,
-        "count": 250,
-    }
-    response = requests.post(
-        f"https://{plaid_env}.plaid.com/transactions/sync",
-        headers=headers,
-        data=json.dumps(data),
-    )
-    transactions = response.json()
+    # get the user data
+    maintenance_code = user_data.get("maintenance_code")
+    details = user_data.get("details")
 
-    return transactions
+    # connect to database
+    engine = database.Engine(config_path="config.yml")
+
+    # process user_data codes
+    if maintenance_code == "DELETE_ITEM":
+        item_info = get_item_info(access_token=details["access_token"])
+        if item_info.get("item") is None:
+            logger.warning(f"{item_info.get("error_code")}")
+            return
+        logger.info("Deleting item")
+
+        # get the ids to delete
+        plaid_item_id = item_info["item"]["item_id"]
+        item_id = engine.get_item_info(plaid_item_id=plaid_item_id)["id"]
+        plaid_account_ids = list(
+            engine.get_item_accounts(item_id=item_id).get("plaid_account_id") or []
+        )
+        plaid_transaction_ids = list(
+            engine.get_item_transactions(item_id=item_id).get("plaid_transaction_id")
+            or []
+        )
+
+        # delete the item
+        engine.delete_transactions(plaid_transaction_ids)
+        engine.delete_accounts(plaid_account_ids)
+        engine.delete_item(plaid_item_id)
+        remove_item(access_token=details["access_token"])
 
 
 def create_link_token(
@@ -148,6 +159,7 @@ def create_link_token(
         The link token for the user.
 
     """
+    logger.info(f"Creating link token for user: `{username}`")
     data = {
         "client_id": config_helper.PLAID_CLIENT_ID,
         "secret": config_helper.PLAID_SECRET,
@@ -196,39 +208,130 @@ def exchange_public_token(public_token: str) -> dict:
         data=json.dumps(data),
     )
 
+    if response.status_code != 200:
+        logger.error(f"Failed to exchange public token: {response.text}")
+
+    logger.info("Exchanged public token")
+
     return response
 
 
-def get_accounts(access_token: str) -> dict:
+def transactions_sync(access_token: str, cursor: Optional[str] = None) -> dict:
     """
-    Get the accounts for an item.
+    Fetch transactions for an item from the last known cursor.
 
-    https://plaid.com/docs/api/items/#accountsget
+    This method is preferred over the `transactions_get` method as it is
+    more efficient.
+
+    https://plaid.com/docs/api/products/transactions/#transactionssync
 
     Parameters
     ----------
     access_token : str
         The access token for the item.
+    cursor : str
+        The cursor for the item.
 
     Returns
     -------
-    accounts : list
-        The accounts for the item.
+    transactions : list
+        The transactions for the item.
 
     """
+    logger.info(f"Fetching transactions for access token: `{access_token}`")
     data = {
         "client_id": config_helper.PLAID_CLIENT_ID,
         "secret": config_helper.PLAID_SECRET,
         "access_token": access_token,
+        "cursor": cursor,
+        "count": 250,
     }
     response = requests.post(
-        f"https://{plaid_env}.plaid.com/accounts/get",
+        f"https://{plaid_env}.plaid.com/transactions/sync",
         headers=headers,
         data=json.dumps(data),
     )
-    accounts = response.json()
+    transactions = response.json()
 
-    return accounts
+    return transactions
+
+
+def format_accounts(accounts: dict) -> list:
+    """
+    Format accounts for the database.
+
+    Parameters
+    ----------
+    accounts : list
+        The accounts to format.
+
+    Returns
+    -------
+    accounts_formated : list
+        The formatted accounts.
+
+    """
+    item_id = accounts["item"]["item_id"]
+    formatted_accounts = [
+        {
+            "item_id": item_id,
+            "plaid_account_id": account["account_id"],
+            "name": account["name"],
+            "mask": account["mask"],
+            "official_name": account["official_name"],
+            "current_balance": account["balances"]["current"],
+            "available_balance": account["balances"]["available"],
+            "iso_currency_code": account["balances"]["iso_currency_code"],
+            "unofficial_currency_code": account["balances"]["unofficial_currency_code"],
+            "type": account["type"],
+            "subtype": account["subtype"],
+        }
+        for account in accounts["accounts"]
+    ]
+    return formatted_accounts
+
+
+def format_transactions(transactions):
+    """
+    Format transactions for the database.
+
+    Parameters
+    ----------
+    transactions : list
+        The transactions to format.
+
+    Returns
+    -------
+    transactions_formated : list
+        The formatted transactions.
+
+    """
+    formatted_transactions = [
+        {
+            "account_id": transaction["account_id"],
+            "plaid_transaction_id": transaction["transaction_id"],
+            "plaid_category_id": transaction["category_id"],
+            "category": transaction["category"][0],
+            "subcategory": transaction["category"][1]
+            if len(transaction["category"]) > 1
+            else None,
+            "type": transaction["transaction_type"],
+            "name": transaction["name"],
+            "amount": transaction["amount"],
+            "iso_currency_code": transaction["iso_currency_code"],
+            "unofficial_currency_code": transaction["unofficial_currency_code"],
+            "date": transaction["date"],
+            "pending": transaction["pending"],
+            "primary_category": transaction["personal_finance_category"]["primary"],
+            "detailed_category": transaction["personal_finance_category"]["detailed"],
+            "confidence_level": transaction["personal_finance_category"][
+                "confidence_level"
+            ],
+            "account_owner": transaction["account_owner"],
+        }
+        for transaction in transactions
+    ]
+    return formatted_transactions
 
 
 def get_item_info(access_token: str) -> dict:
@@ -248,6 +351,7 @@ def get_item_info(access_token: str) -> dict:
         The item for the access token.
 
     """
+    logger.debug(f"Getting item info for access token: `{access_token}`")
     data = {
         "client_id": config_helper.PLAID_CLIENT_ID,
         "secret": config_helper.PLAID_SECRET,
@@ -260,6 +364,39 @@ def get_item_info(access_token: str) -> dict:
     )
     item = response.json()
     return item
+
+
+def get_accounts(access_token: str) -> dict:
+    """
+    Get the accounts for an item.
+
+    https://plaid.com/docs/api/items/#accountsget
+
+    Parameters
+    ----------
+    access_token : str
+        The access token for the item.
+
+    Returns
+    -------
+    accounts : list
+        The accounts for the item.
+
+    """
+    logger.info(f"Getting accounts for access token: `{access_token}`")
+    data = {
+        "client_id": config_helper.PLAID_CLIENT_ID,
+        "secret": config_helper.PLAID_SECRET,
+        "access_token": access_token,
+    }
+    response = requests.post(
+        f"https://{plaid_env}.plaid.com/accounts/get",
+        headers=headers,
+        data=json.dumps(data),
+    )
+    accounts = response.json()
+
+    return accounts
 
 
 def get_institution_info(institution_id: str) -> dict:
@@ -279,6 +416,7 @@ def get_institution_info(institution_id: str) -> dict:
         The institution for the id.
 
     """
+    logger.info(f"Getting institution info for institution id: `{institution_id}`")
     data = {
         "client_id": config_helper.PLAID_CLIENT_ID,
         "secret": config_helper.PLAID_SECRET,
@@ -312,6 +450,7 @@ def remove_item(access_token: str) -> dict:
         The request for the item.
 
     """
+    logger.info(f"Removing item from serverfor access token: `{access_token}`")
     data = {
         "client_id": config_helper.PLAID_CLIENT_ID,
         "secret": config_helper.PLAID_SECRET,
