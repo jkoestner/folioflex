@@ -43,9 +43,8 @@ def handle_plaid_webhooks(webhook_data: dict) -> dict:
 
     Returns
     -------
-    dict
-        The updated data containing counts of added,
-        modified, and removed transactions.
+    response : string
+        The response from the webhook.
 
     """
     # initialize dict
@@ -87,12 +86,18 @@ def handle_plaid_webhooks(webhook_data: dict) -> dict:
         accounts = get_accounts(access_token=access_token)
         formatted_accounts = format_accounts(accounts=accounts)
         engine.add_accounts(accounts=formatted_accounts)
-    if webhook_code == "TRANSACTIONS_REMOVED":
+        response = f"{webhook_code}: {plaid_item_id} - {updated_data}"
+    elif webhook_code == "TRANSACTIONS_REMOVED":
         # delete transactions
         removed_transactions = webhook_data.get("removed_transactions")
         engine.delete_transactions(removed_transactions)
+        response = f"{webhook_code}: removed {len(removed_transactions)} transactions"
+    elif webhook_code == "WEBHOOK_UPDATE_ACKNOWLEDGED":
+        response = f"{webhook_code}: {plaid_item_id}"
+    else:
+        response = f"{webhook_code}: webhook not handled"
 
-    return updated_data
+    return response
 
 
 def handle_plaid_maintenance(user_data: dict) -> None:
