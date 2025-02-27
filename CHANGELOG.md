@@ -7,7 +7,7 @@
 **Enhancements**
 - add amazon order description update
 - restructure budget chart dashboard page
-- update plaid with better sort, add account owner, and not updating every day
+- remove plaid pattern and rewrite plaid server and client into app
 
 **Documentation**
 - type hinting on most modules

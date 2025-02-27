@@ -308,9 +308,10 @@ class Engine:
         with self.engine.connect() as conn:
             result = conn.execute(sa.text(query), {"user_id": user_id})
             plaid_accounts = pd.DataFrame(result.fetchall())
-            plaid_accounts["updated_at"] = pd.to_datetime(
-                plaid_accounts["updated_at"]
-            ).dt.strftime("%Y-%m-%d %H:%M:%S")
+            if not plaid_accounts.empty:
+                plaid_accounts["updated_at"] = pd.to_datetime(
+                    plaid_accounts["updated_at"]
+                ).dt.strftime("%Y-%m-%d %H:%M:%S")
 
         return plaid_accounts
 
@@ -389,9 +390,10 @@ class Engine:
         with self.engine.connect() as conn:
             result = conn.execute(sa.text(query), {"user_id": user_id})
             plaid_transactions = pd.DataFrame(result.fetchall())
-            plaid_transactions["date"] = pd.to_datetime(
-                plaid_transactions["date"]
-            ).dt.strftime("%Y-%m-%d")
+            if not plaid_transactions.empty:
+                plaid_transactions["date"] = pd.to_datetime(
+                    plaid_transactions["date"]
+                ).dt.strftime("%Y-%m-%d")
 
         return plaid_transactions
 
@@ -530,7 +532,7 @@ class Engine:
             current_balance = :current_balance,
             available_balance = :available_balance
         """
-        logger.info(f"Adding `{len(accounts)}` accounts")
+        logger.info(f"Adding/Updating `{len(accounts)}` accounts")
         try:
             with self.engine.connect() as conn:
                 try:

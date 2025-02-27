@@ -63,6 +63,7 @@ def handle_plaid_webhooks(webhook_data: dict) -> dict:
 
     # update database with new transactions and cursor if available
     if webhook_code == "SYNC_UPDATES_AVAILABLE":
+        # update transactions
         transactions = transactions_sync(access_token, cursor)
         added = format_transactions(transactions.get("added"))
         modified = format_transactions(transactions.get("modified"))
@@ -82,6 +83,14 @@ def handle_plaid_webhooks(webhook_data: dict) -> dict:
             "modified": len(modified),
             "removed": len(removed),
         }
+        # update accounts
+        accounts = get_accounts(access_token=access_token)
+        formatted_accounts = format_accounts(accounts=accounts)
+        engine.add_accounts(accounts=formatted_accounts)
+    if webhook_code == "TRANSACTIONS_REMOVED":
+        # delete transactions
+        removed_transactions = webhook_data.get("removed_transactions")
+        engine.delete_transactions(removed_transactions)
 
     return updated_data
 
@@ -160,6 +169,10 @@ def create_link_token(
 
     """
     logger.info(f"Creating link token for user: `{username}`")
+    if not webhook:
+        webhook = config_helper.PLAID_WEBHOOK
+    if not redirect_uri:
+        redirect_uri = config_helper.PLAID_REDIRECT_URI
     data = {
         "client_id": config_helper.PLAID_CLIENT_ID,
         "secret": config_helper.PLAID_SECRET,
@@ -221,7 +234,8 @@ def transactions_sync(access_token: str, cursor: Optional[str] = None) -> dict:
     Fetch transactions for an item from the last known cursor.
 
     This method is preferred over the `transactions_get` method as it is
-    more efficient.
+    more efficient. It handles pagination automatically by checking the 'has_more'
+    flag and using the 'next_cursor' value until all transactions are retrieved.
 
     https://plaid.com/docs/api/products/transactions/#transactionssync
 
@@ -239,19 +253,50 @@ def transactions_sync(access_token: str, cursor: Optional[str] = None) -> dict:
 
     """
     logger.info(f"Fetching transactions for access token: `{access_token}`")
-    data = {
-        "client_id": config_helper.PLAID_CLIENT_ID,
-        "secret": config_helper.PLAID_SECRET,
-        "access_token": access_token,
-        "cursor": cursor,
-        "count": 250,
+
+    # initialize dictionary
+    transactions = {
+        "accounts": [],
+        "added": [],
+        "modified": [],
+        "removed": [],
+        "next_cursor": cursor,
+        "has_more": True,  # start with True to enter the loop
+        "request_id": None,
+        "transactions_update_status": None,
     }
-    response = requests.post(
-        f"https://{plaid_env}.plaid.com/transactions/sync",
-        headers=headers,
-        data=json.dumps(data),
-    )
-    transactions = response.json()
+
+    # loop through the transactions
+    while transactions["has_more"]:
+        data = {
+            "client_id": config_helper.PLAID_CLIENT_ID,
+            "secret": config_helper.PLAID_SECRET,
+            "access_token": access_token,
+            "cursor": transactions["next_cursor"],
+            "count": 250,
+        }
+        response = requests.post(
+            f"https://{plaid_env}.plaid.com/transactions/sync",
+            headers=headers,
+            data=json.dumps(data),
+        )
+        transactions_iteration = response.json()
+
+        # append new transaction data to our result
+        if transactions_iteration.get("accounts"):
+            transactions["accounts"] = transactions_iteration["accounts"]
+        if transactions_iteration.get("added"):
+            transactions["added"].extend(transactions_iteration["added"])
+        if transactions_iteration.get("modified"):
+            transactions["modified"].extend(transactions_iteration["modified"])
+        if transactions_iteration.get("removed"):
+            transactions["removed"].extend(transactions_iteration["removed"])
+        transactions["next_cursor"] = transactions_iteration.get("next_cursor")
+        transactions["has_more"] = transactions_iteration.get("has_more", False)
+        transactions["request_id"] = transactions_iteration.get("request_id")
+        transactions["transactions_update_status"] = transactions_iteration.get(
+            "transactions_update_status"
+        )
 
     return transactions
 
@@ -431,6 +476,44 @@ def get_institution_info(institution_id: str) -> dict:
     institution = response.json()
 
     return institution
+
+
+def update_item_webhook(access_token: str, webhook: str) -> dict:
+    """
+    Update an item's webhook.
+
+    https://plaid.com/docs/api/items/#itemwebhookupdate
+
+    Parameters
+    ----------
+    access_token : str
+        The access token for the item.
+    webhook : str
+        The webhook url for the item.
+
+    Returns
+    -------
+    item : dict
+        The item for the access token.
+
+    """
+    logger.info(
+        f"Updating webhook for access token: `{access_token}` \n"
+        f"webhook: `{webhook}`"
+    )
+    data = {
+        "client_id": config_helper.PLAID_CLIENT_ID,
+        "secret": config_helper.PLAID_SECRET,
+        "access_token": access_token,
+        "webhook": webhook,
+    }
+    response = requests.post(
+        f"https://{plaid_env}.plaid.com/item/webhook/update",
+        headers=headers,
+        data=json.dumps(data),
+    )
+    item = response.json()
+    return item
 
 
 def remove_item(access_token: str) -> dict:

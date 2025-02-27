@@ -451,6 +451,13 @@ class Yahoo:
     Wrapper for yahoo finance data.
 
     Class that provides functions that use data from yahoo finance.
+
+    Note:
+    ----
+    careful of Yahoo api rate limits. it is currently 60 per minute.
+    - https://help.yahooinc.com/dsp-api/docs/rate-limits
+    - https://github.com/ranaroussi/yfinance/issues/2325
+
     """
 
     def __init__(self) -> None:

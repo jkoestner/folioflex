@@ -38,8 +38,14 @@ config:
     smtp_password: None
     smtp_server: None
     smtp_port: 587
+  plaid:
+    plaid_client_id: None
+    plaid_secret: None
+    plaid_env: None # "sandbox" or "production"
+    plaid_redirect_uri: None
+    plaid_webhook: None
   # only postgres is supported
-  # used in dashboard to connecto to budget
+  # used in dashboard to connect to budget
   database:
     db_name: None
     db_user: None

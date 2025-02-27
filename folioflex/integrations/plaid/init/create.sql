@@ -226,3 +226,16 @@ CREATE TABLE plaid_api_events_table
   error_code text,
   created_at timestamptz default now()
 );
+
+
+-- FFX ASSETS
+-- This table is used to store the assets of our application.
+
+CREATE TABLE ffx_assets
+(
+  idx SERIAL PRIMARY KEY,
+  date date,
+  asset text,
+  value float,
+  params text
+);
