@@ -481,6 +481,7 @@ class Yahoo:
             start=datetime(min_year, 1, 1),
             end=datetime(2100, 1, 1),
             actions=True,  # get dividends and stock splits
+            timeout=30,  # noticed error with shorter timeout
         )
         stock_data = self._clean_index(clean_df=stock_data, lvl=0, tickers=tickers)
         stock_data.index = stock_data.index.rename("date")
