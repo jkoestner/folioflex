@@ -94,6 +94,8 @@ def handle_plaid_webhooks(webhook_data: dict) -> dict:
         response = f"{webhook_code}: removed {len(removed_transactions)} transactions"
     elif webhook_code == "WEBHOOK_UPDATE_ACKNOWLEDGED":
         response = f"{webhook_code}: {plaid_item_id}"
+    elif webhook_code == "DEFAULT_UPDATE":
+        response = f"{webhook_code}: using transactions_sync instead"
     else:
         response = f"{webhook_code}: webhook not handled"
 

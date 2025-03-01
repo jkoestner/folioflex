@@ -488,11 +488,9 @@ def receive_plaid_webhook():
         return jsonify({"error": "Content type must be application/json"}), 400
 
     webhook_data = request.get_json()
-    webhook_code = webhook_data.get("webhook_code")
-    plaid_item_id = webhook_data.get("item_id")
     response = plaid.server.handle_plaid_webhooks(webhook_data)
 
-    logger.info(f"{webhook_code}: {plaid_item_id} - {response}")
+    logger.info(response)
 
     return jsonify({"status": "success"}), 200
 

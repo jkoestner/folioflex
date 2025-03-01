@@ -124,7 +124,7 @@ def layout():
                                 id="toast-update-db",
                                 header="Updated Database",
                                 is_open=False,
-                                duration=1000,
+                                duration=4000,
                                 icon="success",
                                 style={
                                     "position": "fixed",
