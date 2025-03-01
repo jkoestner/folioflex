@@ -5,7 +5,7 @@ from folioflex.utils import custom_logger
 logger = custom_logger.setup_logging(__name__)
 
 
-def get_column_defs(table):
+def get_column_defs(table, edit=None):
     """
     Get the column definitions.
 
@@ -13,6 +13,8 @@ def get_column_defs(table):
     ----------
     table : pd.DataFrame
         The table
+    edit : list
+        The list of columns that can be edited
 
     Returns
     -------
@@ -20,25 +22,33 @@ def get_column_defs(table):
         The column definitions
 
     """
+    if edit is None:
+        edit = []
     column_defs = []
     for col in table.columns:
+        if col in edit:
+            editable = True
+        else:
+            editable = False
         # specific case for columns
-        if any(substring in col.lower() for substring in ["amount"]):
+        if any(substring in col.lower() for substring in ["amount", "current_balance"]):
             column_defs.append(
                 {
                     "field": col,
                     "headerName": col,
                     "valueFormatter": {"function": "d3.format(',.2f')(params.value)"},
+                    "editable": editable,
                 }
             )
         # update integer columns
         elif table[col].dtype.kind in "i":
-            if "year" in col.lower():
+            if any(substring in col.lower() for substring in ["year", "id"]):
                 column_defs.append(
                     {
                         "field": col,
                         "headerName": col,
                         "valueFormatter": {"function": "d3.format('d')(params.value)"},
+                        "editable": editable,
                     }
                 )
             else:
@@ -47,6 +57,7 @@ def get_column_defs(table):
                         "field": col,
                         "headerName": col,
                         "valueFormatter": {"function": "d3.format(',')(params.value)"},
+                        "editable": editable,
                     }
                 )
         # update float columns
@@ -59,6 +70,7 @@ def get_column_defs(table):
                         "valueFormatter": {
                             "function": "d3.format('.2%')(params.value)"
                         },
+                        "editable": editable,
                     }
                 )
             else:
@@ -69,6 +81,7 @@ def get_column_defs(table):
                         "valueFormatter": {
                             "function": "d3.format(',.1f')(params.value)"
                         },
+                        "editable": editable,
                     }
                 )
         # update other types
@@ -77,6 +90,7 @@ def get_column_defs(table):
                 {
                     "field": col,
                     "headerName": col,
+                    "editable": editable,
                 }
             )
     return column_defs

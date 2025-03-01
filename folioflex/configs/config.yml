@@ -38,8 +38,14 @@ config:
     smtp_password: None
     smtp_server: None
     smtp_port: 587
+  plaid:
+    plaid_client_id: None
+    plaid_secret: None
+    plaid_env: None # "sandbox" or "production"
+    plaid_redirect_uri: None
+    plaid_webhook: None
   # only postgres is supported
-  # used in dashboard to connecto to budget
+  # used in dashboard to connect to budget
   database:
     db_name: None
     db_user: None
@@ -115,6 +121,7 @@ budgets:
       home services: 50
       income: -6000
       mortgage: 2000
+      one timers: 0
       pets: 100
       phone: 195
       restaurants: 230
@@ -125,10 +132,17 @@ budgets:
       utilities: 300
     # the default budget
     default: 0
+    # transactions to zero out
+    zero_out:
+      - credit card
+      - transfer
+      - one timers
     # the plaid user if empty it will not limit by user
     user: 
     # the model to use
     model: components.pkl
+    # the amazon user_data_dir to use
+    amazon_dirs:
 
 #                         _       
 #      /\                | |      

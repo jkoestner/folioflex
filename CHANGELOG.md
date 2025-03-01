@@ -5,6 +5,21 @@
 [Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.3.0...v1.4.0)
 
 **Enhancements**
+- add amazon order description update
+- restructure budget chart dashboard page
+- remove plaid pattern and rewrite plaid server and client into app
+
+**Documentation**
+- type hinting on most modules
+
+**Bug Fixes**
+- update yfinance compatibility to latest version
+
+## [v1.3.0](https://github.com/jkoestner/folioflex/tree/v1.3.0)
+
+[Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.2.3...v1.3.0)
+
+**Enhancements**
 - update to python 3.12
 - switch from .ini to .yml configs
 - add user functionality in budget module
@@ -17,13 +32,6 @@
 **Documentation**
 - add new README GIFs
 - start conversion to type hinting (work in progress)
-
-## [v1.3.0](https://github.com/jkoestner/folioflex/tree/v1.3.0)
-
-[Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.2.3...v1.3.0)
-
-**Enhancements**
-- add multiple users for budget
 
 ## [v1.2.3](https://github.com/jkoestner/folioflex/tree/v1.2.3)
 

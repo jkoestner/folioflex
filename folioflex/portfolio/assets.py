@@ -6,8 +6,9 @@ import pandas as pd
 import plotly.express as px
 import sqlalchemy as sa
 
+from folioflex.integrations.plaid import database
 from folioflex.portfolio import wrappers
-from folioflex.utils import config_helper, custom_logger, database
+from folioflex.utils import config_helper, custom_logger
 
 pd.options.display.float_format = "{:,.2f}".format
 

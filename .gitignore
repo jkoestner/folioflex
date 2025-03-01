@@ -15,4 +15,6 @@ folioflex/configs/models/*
 archive/
 build/
 docs/coverage/
+downloaded_files/
 folioflex.egg-info/
+latest_logs/

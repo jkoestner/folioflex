@@ -170,8 +170,7 @@ config_file = os.path.join(CONFIG_PATH, "config.yml")
 
 # credentials
 _credentials_config = get_config_options(config_file, "config", "credentials")
-FFX_USERNAME = _credentials_config.get("ffx_username", None)
-FFX_PASSWORD = _credentials_config.get("ffx_password", None)
+USERNAME_PASSWORDS = _credentials_config.get("username_passwords", None)
 
 # apis
 _api_config = get_config_options(config_file, "config", "api")
@@ -200,3 +199,11 @@ SMTP_USERNAME = _other_config.get("smtp_username", None)
 SMTP_PASSWORD = _other_config.get("smtp_password", None)
 SMTP_SERVER = _other_config.get("smtp_server", None)
 SMTP_PORT = _other_config.get("smtp_port", None)
+
+# plaid
+_plaid_config = get_config_options(config_file, "config", "plaid")
+PLAID_CLIENT_ID = _plaid_config.get("plaid_client_id", None)
+PLAID_SECRET = _plaid_config.get("plaid_secret", None)
+PLAID_ENV = _plaid_config.get("plaid_env", None)
+PLAID_REDIRECT_URI = _plaid_config.get("plaid_redirect_uri", None)
+PLAID_WEBHOOK = _plaid_config.get("plaid_webhook", None)

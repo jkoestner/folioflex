@@ -7,7 +7,9 @@ from dash import Input, Output, callback
 from flask import Flask, redirect, request, session
 from flask_login import LoginManager, UserMixin, current_user, login_user
 
-from folioflex.utils import config_helper
+from folioflex.utils import config_helper, custom_logger
+
+logger = custom_logger.setup_logging(__name__)
 
 #   _                _
 #  | |    ___   __ _(_)_ __
@@ -20,8 +22,8 @@ from folioflex.utils import config_helper
 server = Flask(__name__)
 
 # login parameters
-restricted_page = {"/budget": True, "/personal": True}
-VALID_USERNAME_PASSWORD = {config_helper.FFX_USERNAME: config_helper.FFX_PASSWORD}
+restricted_page = {"/budget": True, "/personal": True, "/plaid": True}
+VALID_USERNAME_PASSWORDS = config_helper.USERNAME_PASSWORDS
 
 # login information
 server.config.update(SECRET_KEY=os.urandom(24))
@@ -37,25 +39,26 @@ class User(UserMixin):
         self.id = username
 
 
+@login_manager.user_loader
+def load_user(username):
+    """Reload the user object from the user ID stored in the session."""
+    return User(username)
+
+
 @server.route("/login", methods=["POST"])
 def login_button_click():
     """Login button click event."""
     username = request.form["username"]
     password = request.form["password"]
-    if VALID_USERNAME_PASSWORD.get(username) == password:
+    if VALID_USERNAME_PASSWORDS.get(username) == password:
         login_user(User(username))
+        # redirect to page user was trying to access when logged in
         url = session.get("url")
         if url:
             session["url"] = None
             return redirect(url)
         return redirect("/")
-    return "invalid username and/or password <a href='/login'>login here</a>"
-
-
-@login_manager.user_loader
-def load_user(username):
-    """Reload the user object from the user ID stored in the session."""
-    return User(username)
+    return redirect("/login?error=invalid")
 
 
 #    ____      _ _ _                _

@@ -13,16 +13,20 @@ Some methods that are included are:
 """
 
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional
 
 import emoji
 import numpy as np
 import pandas as pd
 import plotly.express as px
 
-from folioflex.utils import config_helper, custom_logger, database
+from folioflex.integrations.plaid import database
+from folioflex.utils import config_helper, custom_logger
 
 logger = custom_logger.setup_logging(__name__)
+
+if TYPE_CHECKING:
+    import plotly.graph_objects as go
 
 
 class Budget:
@@ -51,6 +55,7 @@ class Budget:
         )
         self.budgets = self.config_dict["budgets"]
         self.default = self.config_dict["default"]
+        self.zero_txs = self.config_dict["zero_out"]
         self.budget = budget
         self.model = self.config_dict.get("model", None)
 
@@ -151,7 +156,9 @@ class Budget:
 
         return tx_df
 
-    def modify_transactions(self, tx_df, columns_to_zero=None):
+    def modify_transactions(
+        self, tx_df: pd.DataFrame, columns_to_zero: Optional[List[str]] = None
+    ) -> pd.DataFrame:
         """
         Modify the transactions for the budget.
 
@@ -165,7 +172,7 @@ class Budget:
         ----------
         tx_df : DataFrame
             The transactions for the budget.
-        columns_to_zero : set
+        columns_to_zero : list
             The columns to zero out the amount for.
 
         Returns
@@ -175,7 +182,7 @@ class Budget:
 
         """
         if columns_to_zero is None:
-            columns_to_zero = ["credit card", "transfer"]
+            columns_to_zero = self.zero_txs
 
         logger.info(f"Zeroing out amount for columns: {columns_to_zero}")
         tx_df = self.modify_zero_out_amount(tx_df, columns=columns_to_zero)
@@ -201,7 +208,9 @@ class Budget:
 
         return tx_df
 
-    def modify_zero_out_amount(self, tx_df, columns):
+    def modify_zero_out_amount(
+        self, tx_df: pd.DataFrame, columns: List[str]
+    ) -> pd.DataFrame:
         """
         Zero out the amount for the given columns.
 
@@ -225,7 +234,7 @@ class Budget:
         tx_df["amount"] = np.where(condition, 0, tx_df["amount"])
         return tx_df
 
-    def modify_extract_quoted_text(self, column):
+    def modify_extract_quoted_text(self, column: str) -> str:
         """
         Extract the text between quotes.
 
@@ -244,7 +253,7 @@ class Budget:
         match = re.search(quote_pattern, column)
         return match.group(1) if match else column
 
-    def modify_preprocess_emoji(self, text):
+    def modify_preprocess_emoji(self, text: str) -> str:
         """
         Preprocess the emoji in the text.
 
@@ -265,7 +274,7 @@ class Budget:
         )
         return text_with_spaces
 
-    def modify_remove_pending(self, tx_df):
+    def modify_remove_pending(self, tx_df: pd.DataFrame) -> pd.DataFrame:
         """
         Remove the pending transactions.
 
@@ -284,7 +293,7 @@ class Budget:
 
         return tx_df
 
-    def modify_custom_categorize(row):
+    def modify_custom_categorize(row: pd.Series) -> str:
         """
         Categorize the transaction.
 
@@ -310,7 +319,62 @@ class Budget:
             return "Incoming Transfer"
         return "OTHER"
 
-    def identify_subscriptions(self, tx_df):
+    def modify_amazon_purchase_desc(
+        self, tx_df: pd.DataFrame, amazon_tx: pd.DataFrame
+    ) -> pd.DataFrame:
+        """
+        Update database with Amazon purchase descriptions.
+
+        Parameters
+        ----------
+        tx_df : DataFrame
+            The transactions to update.
+        amazon_tx : DataFrame
+            The transactions that are Amazon purchases.
+
+        Returns
+        -------
+        amazon_df : DataFrame
+            The transactions with the Amazon purchase descriptions updated.
+
+        """
+        # get the transactions that are from amazon
+        tx_df = tx_df[tx_df["name"].str.contains("amazon", case=False)]
+        amazon_tx = amazon_tx.copy()
+        amazon_tx = amazon_tx[["date", "amount", "product_name"]]
+
+        # add amazon purchase descriptions
+        amazon_df = pd.merge_asof(
+            tx_df.sort_values("date"),
+            amazon_tx.sort_values("date"),
+            on="date",
+            by="amount",
+            tolerance=pd.Timedelta("10d"),
+            direction="nearest",
+        )
+        amazon_df = amazon_df.sort_values("date", ascending=False)
+
+        # remove duplicates and remove rows with amazon description
+        rows = len(amazon_df)
+        amazon_df = amazon_df.drop_duplicates(keep="first")
+        removed = rows - len(amazon_df)
+        if removed > 0:
+            logger.warning(f"there were {removed} duplicate rows.")
+        amazon_df = amazon_df[
+            amazon_df["product_name"].notna() & (amazon_df["product_name"] != "")
+        ]
+
+        # remove items where the amazon description has already been updated
+        amazon_df = amazon_df[amazon_df["name"] != amazon_df["product_name"]]
+
+        # update description
+        logger.info(f"updated `{len(amazon_df)}` transactions.")
+        amazon_df["name"] = amazon_df["product_name"]
+        amazon_df = amazon_df.drop(columns=["product_name"])
+
+        return amazon_df
+
+    def identify_subscriptions(self, tx_df: pd.DataFrame) -> pd.DataFrame:
         """
         Identify possible subscriptions in the transactions.
 
@@ -378,7 +442,12 @@ class Budget:
 
         return subscriptions_df
 
-    def budget_view(self, tx_df, target_date, exclude_labels=None):
+    def budget_view(
+        self,
+        tx_df: pd.DataFrame,
+        target_date: str,
+        exclude_labels: Optional[List[str]] = None,
+    ) -> pd.DataFrame:
         """
         Provide a view of categories and their budget status.
 
@@ -460,9 +529,14 @@ class Budget:
         ]:
             budget_df[column] = budget_df[column] * budget_df["budget_flag"]
 
+        # sort values
+        budget_df = budget_df.sort_values(
+            by=["budget", "label"], ascending=[True, False]
+        )
+
         return budget_df
 
-    def display_budget_view(self, budget_df):
+    def display_budget_view(self, budget_df: pd.DataFrame) -> "go.Figure":
         """
         Display the budget view as a bar chart.
 
@@ -492,7 +566,7 @@ class Budget:
         fig.update_layout(height=600)
         return fig
 
-    def display_income_view(self, tx_df):
+    def display_income_view(self, tx_df: pd.DataFrame) -> "go.Figure":
         """
         Display the income view as a line chart.
 
@@ -518,7 +592,12 @@ class Budget:
 
         return fig
 
-    def display_compare_expenses_view(self, tx_df, target_date=None, avg_months=12):
+    def display_compare_expenses_view(
+        self,
+        tx_df: pd.DataFrame,
+        target_date: Optional[str] = None,
+        avg_months: int = 12,
+    ) -> "go.Figure":
         """
         Display the compare expenses view as a line chart.
 
@@ -613,7 +692,7 @@ class Budget:
 
         return fig
 
-    def display_category_trend(self, tx_df, category):
+    def display_category_trend(self, tx_df: pd.DataFrame, category: str) -> "go.Figure":
         """
         Display the category trend view as a bar chart.
 
@@ -683,11 +762,11 @@ class Budget:
 
     def category_tx_view(
         self,
-        tx_df,
-        target_date,
-        category,
-        columns=None,
-    ):
+        tx_df: pd.DataFrame,
+        target_date: str,
+        category: str,
+        columns: Optional[List[str]] = None,
+    ) -> pd.DataFrame:
         """
         Display the transactions view as a table.
 
@@ -724,7 +803,13 @@ class Budget:
         cat_tx_df = cat_tx_df[columns]
         return cat_tx_df
 
-    def update_labels_db(self, tx_df, engine=None, label_column="label"):
+    def update_db_column(
+        self,
+        tx_df: pd.DataFrame,
+        engine: Optional[Any] = None,
+        label_column: str = "label",
+        database_column: str = "label",
+    ) -> None:
         """
         Update the label in the database.
 
@@ -736,6 +821,8 @@ class Budget:
             The engine to connect to the database.
         label_column : str
             The column in the DataFrame that will be used to update the label.
+        database_column : str
+            The column in the database that will be updated.
 
         Returns
         -------
@@ -744,12 +831,12 @@ class Budget:
         """
         if engine is None:
             engine = database.Engine(self.config_path)
-        logger.info("Updating labels in database.")
+        logger.info(f"Updating `{database_column}` in database.")
 
         # filter the table
         tx_df = tx_df[[label_column, "id"]]
 
-        tx_df = tx_df.rename(columns={label_column: "label"})
+        tx_df = tx_df.rename(columns={label_column: database_column})
         engine.bulk_update(
             tx_df=tx_df, table_name="transactions_table", where_column="id"
         )

@@ -16,9 +16,12 @@ with "standard font"
 import dash
 import dash_bootstrap_components as dbc
 from dash import Input, Output, callback, dcc, html
+from flask_login import current_user
 
 from folioflex.dashboard.components import auth
 from folioflex.utils import custom_logger
+
+logger = custom_logger.setup_logging(__name__)
 
 #      _    ____  ____
 #     / \  |  _ \|  _ \
@@ -42,7 +45,7 @@ app = dash.Dash(
 app.config.suppress_callback_exceptions = True
 app.title = "FolioFlex"
 app._favicon = "folioflex_logo.ico"
-# adding shortcut icons
+
 app.index_string = """
 <!DOCTYPE html>
 <html>
@@ -68,7 +71,7 @@ app.index_string = """
 page_links = [
     dbc.NavItem(dbc.NavLink(page["name"], href=page["relative_path"]))
     for page in dash.page_registry.values()
-    if page["name"] != "Login"
+    if page["name"] not in ["Login", "Logout"]
 ]
 
 navbar = dbc.Navbar(
@@ -103,20 +106,18 @@ navbar = dbc.Navbar(
                 align="center",
                 className="g-0",
             ),
-            dbc.Row(
-                dbc.Nav(
-                    page_links,
-                    className="ms-auto",
-                    navbar=True,
-                ),
-                align="center",
+            dbc.Nav(page_links, navbar=True, className="ms-auto"),
+            dbc.Nav(
+                [
+                    html.Div(id="user-auth-status"),
+                ],
+                navbar=True,
             ),
         ],
         fluid=True,
     ),
     color="primary",
     dark=True,
-    sticky="top",
 )
 
 app.layout = html.Div(
@@ -172,6 +173,39 @@ def toggle_interval_speed(
         return 1000
     else:
         return 24 * 60 * 60 * 1000
+
+
+#    ____      _ _ _                _
+#   / ___|__ _| | | |__   __ _  ___| | _____
+#  | |   / _` | | | '_ \ / _` |/ __| |/ / __|
+#  | |__| (_| | | | |_) | (_| | (__|   <\__ \
+#   \____\__,_|_|_|_.__/ \__,_|\___|_|\_\___/
+
+
+@callback(
+    Output("user-auth-status", "children"),
+    Input("url", "pathname"),
+)
+def update_auth_status(pathname):
+    """Update the authentication status in the navbar."""
+    try:
+        if current_user.is_authenticated:
+            return [
+                dbc.NavItem(
+                    [
+                        html.A(
+                            f"Logout ({current_user.id})",
+                            href="/logout",
+                            className="nav-link me-2",
+                        ),
+                    ]
+                )
+            ]
+        else:
+            return [dbc.NavItem(dbc.NavLink("Login", href="/login", className="me-2"))]
+    except Exception as e:
+        logger.error(f"Error in update_auth_status: {e}")
+        return []
 
 
 if __name__ == "__main__":

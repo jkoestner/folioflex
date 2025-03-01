@@ -37,7 +37,7 @@ def test_get_payments_left():
     payments_left = loans.get_payments_left(
         current_loan=A,
         payment_amount=P,
-        interest=i,
+        interest_rate=i,
     )
     calc_payments_left = -math.log10(1 - i * A / P) / math.log10(1 + i)
     assert payments_left == calc_payments_left
@@ -52,7 +52,7 @@ def test_get_payment_amount():
     payment_amount = loans.get_payment_amount(
         current_loan=A,
         payments_left=N,
-        interest=i,
+        interest_rate=i,
     )
     calc_payment_amount = (i * A) / (1 - (1 + i) ** -N)
     assert payment_amount == calc_payment_amount
@@ -70,3 +70,13 @@ def test_get_interest():
     )
     calc_interest_left = P * N - A
     assert interest_left == calc_interest_left
+
+
+def test_get_total_paid():
+    """Tests the get_total_paid function."""
+    A = 400000
+    i = 5 / 100 / 12
+    N = 430.92
+    total_paid = loans.get_total_paid(A, i, N)
+    calc_total_paid = loans.get_payment_amount(A, N, i) * N
+    assert total_paid == calc_total_paid

@@ -256,14 +256,14 @@ class TradingView:
 
         """
 
-        def normalize_date(date, time):
+        def normalize_date(date, time_value):
             # Format the date and time in ISO 8601 format
-            normalize_date = datetime.combine(date, time)
-            normalize_date = normalize_date.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-            return normalize_date
+            normalize_dt = datetime.combine(date, time_value)
+            normalize_dt = normalize_dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+            return normalize_dt
 
         if to_date is None:
-            to_date_dt = datetime.utcnow() + timedelta(days=7)
+            to_date_dt = datetime.now() + timedelta(days=7)
         else:
             to_date_dt = datetime.strptime(to_date, "%Y-%m-%d")
 
@@ -272,13 +272,13 @@ class TradingView:
         else:
             from_date_dt = datetime.strptime(from_date, "%Y-%m-%d")
 
-        to_date_dt = normalize_date(to_date, time(23, 0, 0, 0))
-        from_date_dt = normalize_date(from_date, time(0, 0, 0, 0))
+        to_date_iso = normalize_date(to_date_dt, time(23, 0, 0, 0))
+        from_date_iso = normalize_date(from_date_dt, time(0, 0, 0, 0))
 
         url = "https://economic-calendar.tradingview.com/events"
         payload = {
-            "from": from_date_dt,
-            "to": to_date_dt,
+            "from": from_date_iso,
+            "to": to_date_iso,
             "countries": ["US"],
             "minImportance": minImportance,
         }
@@ -451,6 +451,13 @@ class Yahoo:
     Wrapper for yahoo finance data.
 
     Class that provides functions that use data from yahoo finance.
+
+    Note:
+    ----
+    careful of Yahoo api rate limits. it is currently 60 per minute.
+    - https://help.yahooinc.com/dsp-api/docs/rate-limits
+    - https://github.com/ranaroussi/yfinance/issues/2325
+
     """
 
     def __init__(self) -> None:
@@ -481,6 +488,7 @@ class Yahoo:
             start=datetime(min_year, 1, 1),
             end=datetime(2100, 1, 1),
             actions=True,  # get dividends and stock splits
+            timeout=30,  # noticed error with shorter timeout
         )
         stock_data = self._clean_index(clean_df=stock_data, lvl=0, tickers=tickers)
         stock_data.index = stock_data.index.rename("date")
@@ -491,9 +499,9 @@ class Yahoo:
         stock_data.index = stock_data.index.swaplevel("date", "ticker")
         stock_data = stock_data.sort_index(axis=0, level="ticker")
         stock_data = stock_data.reset_index()
-        cols = ["ticker", "date", "adj_close", "stock_splits"]
+        cols = ["ticker", "date", "close", "stock_splits"]
         stock_data = stock_data[cols]
-        stock_data = stock_data.rename(columns={"adj_close": "last_price"})
+        stock_data = stock_data.rename(columns={"close": "last_price"})
         stock_data["date"] = helper.convert_date_to_timezone(
             stock_data["date"], timezone=None
         )
@@ -515,11 +523,17 @@ class Yahoo:
             provides news articles on ticker
 
         """
-        yf_ticker = yf.Ticker(ticker)
-        news = pd.DataFrame(yf_ticker.news)
-        news = news.drop(columns=["thumbnail", "uuid"])
-        news["providerPublishTime"] = pd.to_datetime(
-            news["providerPublishTime"], unit="s"
+        news = yf.Ticker(ticker).news
+        news = pd.DataFrame(
+            [
+                {
+                    "date": story.get("content").get("pubDate").split("T")[0],
+                    "title": story.get("content").get("title"),
+                    "url": story.get("content").get("canonicalUrl").get("url"),
+                    "summary": story.get("content").get("summary"),
+                }
+                for story in news
+            ]
         )
 
         return news
@@ -701,12 +715,13 @@ class Yahoo:
 
         data = yf.download(ticker, start=start_date_str, end=end_date_str)
 
-        # Extract the adjusted close price from one year ago and the most recent price
-        start_price = data["Adj Close"].iloc[0]
-        end_price = data["Adj Close"].iloc[-1]
+        # Extract the close price from one year ago and the most recent price
+        start_price = data["Close"].iloc[0]
+        end_price = data["Close"].iloc[-1]
 
-        # Calculate the change percentage
+        # Calculate the change percentage and make float
         change_percent = (end_price - start_price) / start_price
+        change_percent = change_percent.iloc[0]
 
         return change_percent
 
@@ -853,10 +868,13 @@ class KBB:
         response = requests.get(url, headers=headers, proxies=proxies, cookies=cookies)
         if params["intent"] == "trade-in-sell":
             match = re.search(r',"value":(\d+)', response.text)
-        elif params["intent"] == "buy-new":
+        elif params["intent"] == "buy-new" or params["intent"] == "buy-used":
             match = re.search(r'"price":(\d+)', response.text)
         else:
-            logger.warning("Only 'trade-in-sell' and 'buy-new' intents are supported")
+            logger.warning(
+                "Only 'trade-in-sell', 'buy-new', and 'buy-used' intents "
+                "are supported"
+            )
             return None
         try:
             value = int(match.group(1))
@@ -905,18 +923,20 @@ class Zillow:
         # headers
         headers = {
             "authority": "www.zillow.com",
-            "accept": "*/*",
-            "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
-            "content-type": "application/json",
-            "origin": "https://www.zillow.com",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "accept-language": "en-US,en;q=0.9",
+            "cache-control": "max-age=0",
+            "dnt": "1",
             "referer": "https://www.zillow.com/",
-            "sec-ch-ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',  # noqa: E501
+            "sec-ch-ua": '"Google Chrome";v="122", "Chromium";v="122", "Not:A-Brand";v="99"',
             "sec-ch-ua-mobile": "?0",
             "sec-ch-ua-platform": '"Windows"',
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "same-origin",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",  # noqa: E501
+            "sec-fetch-dest": "document",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-site": "none",
+            "sec-fetch-user": "?1",
+            "upgrade-insecure-requests": "1",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         }
         # creating the url
         url = f"https://www.zillow.com/homes/{params['street']}-{params['city']}-{params['zipcd']}"
@@ -928,9 +948,12 @@ class Zillow:
 
         # get the value
         response = requests.get(url, headers=headers, proxies=proxies)
-        match = re.search(r'\\"price\\":(\d+)', response.text)
+        if response.status_code != 200:
+            logger.warning(f"Most likely denied.Error: {response.status_code}")
+            return None
+        match = re.search(r"<span>\$?([\d,]+)</span>", response.text)
         try:
-            value = int(match.group(1))
+            value = int(match.group(1).replace(",", ""))
             logger.debug(f"url: {url}")
             logger.debug(f"Home value: {value}")
         except Exception as e:

@@ -23,7 +23,7 @@ dependencies = [
     "pandas-market-calendars>=4.4.1",
     "pyxirr>=0.10.6",
     "sqlalchemy>=2.0.36",
-    "yfinance>=0.2.48",
+    "yfinance>=0.2.51",
     "tzlocal>=5.2",
 
     # web
@@ -38,6 +38,7 @@ dependencies = [
     "Flask-Compress>=1.17",
     "Flask-Login>=0.6.3",
     "gunicorn>=23.0.0",
+    "lxml>=5.3.1",
 
     # worker
     "celery>=5.4.0",

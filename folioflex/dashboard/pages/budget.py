@@ -7,21 +7,20 @@ import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, State, callback, dcc, html
-from dateutil.relativedelta import relativedelta
 from flask_login import current_user
 
 from folioflex.budget import budget, models
 from folioflex.dashboard.components import dash_formats
 from folioflex.dashboard.utils import dashboard_helper
+from folioflex.integrations.plaid import database
 from folioflex.portfolio import assets, loans
-from folioflex.utils import custom_logger, database
+from folioflex.utils import config_helper, custom_logger
 
 logger = custom_logger.setup_logging(__name__)
 
 dash.register_page(__name__, path="/budget", title="folioflex - Budget", order=5)
 
-# get the prior month
-prior_month = (datetime.datetime.now() - relativedelta(months=1)).strftime("%Y-%m")
+budget_list = list(config_helper.get_config_options("config.yml", "budgets").keys())
 
 
 def layout():
@@ -29,261 +28,446 @@ def layout():
     if not current_user.is_authenticated:
         return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])
 
-    return html.Div(
+    # get the current month
+    current_month = (datetime.datetime.now()).strftime("%Y-%m")
+
+    return dbc.Container(
         [
-            # adding variables needed that are used in callbacks.
+            # Hidden defaults needed for callbacks
             *dashboard_helper.get_defaults(),
-            # ---------------------------------------------------------------
-            dbc.Row(
+            # Header
+            html.H2("Budget Dashboard", className="text-center my-4"),
+            # Input Controls Card
+            dbc.Card(
                 [
-                    dbc.Col(
-                        html.Label("Date (YYYY-MM)"),
-                        width="auto",
+                    dbc.CardHeader(html.H4("Budget Controls")),
+                    dbc.CardBody(
+                        [
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        [
+                                            dbc.Label("Date (YYYY-MM)"),
+                                            dcc.Input(
+                                                id="budget-chart-input",
+                                                value=current_month,
+                                                type="text",
+                                                className="form-control",
+                                            ),
+                                        ],
+                                        width=3,
+                                    ),
+                                    dbc.Col(
+                                        [
+                                            dbc.Button(
+                                                "Update Budget Database",
+                                                id="budget-update-db-button",
+                                                color="secondary",
+                                                className="mt-4",
+                                            ),
+                                        ],
+                                        width=3,
+                                        className="d-flex justify-content-end",
+                                    ),
+                                ],
+                                className="g-3",
+                            ),
+                        ]
                     ),
-                    dbc.Col(
-                        dcc.Input(
-                            id="budget-chart-input",
-                            value=prior_month,
-                            type="text",
-                        ),
-                        width="auto",
-                    ),
-                    dbc.Col(
-                        html.Label("Budget Name"),
-                        width="auto",
-                    ),
-                    dbc.Col(
-                        dcc.Input(
-                            id="budget-section-input",
-                            placeholder="budget name",
-                            type="text",
-                        ),
-                        width="auto",
-                    ),
-                    dbc.Col(
-                        html.Button(
-                            "Update Budget Database",
-                            id="budget-update-db-button",
-                        ),
-                        width="auto",
-                    ),
-                ]
+                ],
+                className="mb-4",
             ),
+            # Main Content Accordion
             dbc.Accordion(
                 [
+                    # Budget Chart Section
                     dbc.AccordionItem(
                         [
-                            # Budget chart
                             dbc.Row(
                                 [
                                     dbc.Col(
-                                        html.Button(
-                                            "Budget Chart", id="budget-chart-button"
-                                        ),
-                                        width="auto",
-                                    ),
-                                ]
-                            ),
-                            dbc.Col(
-                                dcc.Loading(
-                                    id="loading-budget-chart",
-                                    type="dot",
-                                    children=html.Div(id="budget-chart"),
-                                ),
-                                style={"overflow": "auto"},
-                            ),
-                            html.Div(id="budget-chart-labels", children=""),
-                            dbc.Toast(
-                                "Updated database tables.",
-                                id="toast-update-db",
-                                header="Updated Database",
-                                is_open=False,
-                                dismissable=True,
-                                icon="success",
-                            ),
-                        ],
-                        title="Budget Chart",
-                    ),
-                    dbc.AccordionItem(
-                        [
-                            # category chart
-                            dbc.Row(
-                                [
-                                    dbc.Col(
-                                        html.Button(
-                                            "Label Chart", id="label-chart-button"
+                                        dbc.Button(
+                                            "Budget Chart",
+                                            id="budget-chart-button",
+                                            color="primary",
+                                            className="mb-3",
                                         ),
                                         width="auto",
                                     ),
                                 ]
                             ),
                             html.Div(
+                                id="budget-chart-line",
+                                children="",
+                                className="text-muted mt-2",
+                            ),
+                            dbc.Card(
                                 [
-                                    html.Label("Select Label"),
-                                    dcc.Dropdown(
-                                        id="label-dropdown",
-                                        # options=None,
+                                    dbc.CardBody(
+                                        [
+                                            dcc.Loading(
+                                                id="loading-budget-chart",
+                                                type="dot",
+                                                children=html.Div(id="budget-chart"),
+                                            ),
+                                            html.Div(
+                                                id="budget-chart-labels",
+                                                children="",
+                                                className="text-muted mt-2",
+                                            ),
+                                        ]
                                     ),
                                 ]
                             ),
-                            # category table
+                            dbc.Toast(
+                                "Updated database tables.",
+                                id="toast-update-db",
+                                header="Updated Database",
+                                is_open=False,
+                                duration=4000,
+                                icon="success",
+                                style={
+                                    "position": "fixed",
+                                    "top": 66,
+                                    "right": 10,
+                                    "width": 350,
+                                },
+                            ),
+                        ],
+                        title="Budget Chart",
+                    ),
+                    # Label Analysis Section
+                    dbc.AccordionItem(
+                        [
                             dbc.Row(
                                 [
                                     dbc.Col(
-                                        dcc.Loading(
-                                            id="loading-expense-chart",
-                                            type="dot",
-                                            children=html.Div(id="expense-chart"),
-                                        ),
-                                        style={"overflow": "auto"},
-                                        width=6,
+                                        [
+                                            dbc.Button(
+                                                "Label Chart",
+                                                id="label-chart-button",
+                                                color="primary",
+                                                className="mb-3",
+                                            ),
+                                        ],
+                                        width="auto",
                                     ),
-                                    dbc.Col(
-                                        dcc.Loading(
-                                            id="loading-expense-table",
-                                            type="dot",
-                                            children=html.Div(id="expense-table"),
-                                        ),
-                                        style={"overflow": "auto"},
-                                        width=6,
+                                ]
+                            ),
+                            dbc.Card(
+                                [
+                                    dbc.CardBody(
+                                        [
+                                            dbc.Label("Select Label"),
+                                            dcc.Dropdown(
+                                                id="label-dropdown",
+                                                className="mb-3",
+                                            ),
+                                            dbc.Row(
+                                                [
+                                                    dbc.Col(
+                                                        dcc.Loading(
+                                                            id="loading-expense-chart",
+                                                            type="dot",
+                                                            children=html.Div(
+                                                                id="expense-chart"
+                                                            ),
+                                                        ),
+                                                        width=6,
+                                                    ),
+                                                    dbc.Col(
+                                                        dcc.Loading(
+                                                            id="loading-expense-table",
+                                                            type="dot",
+                                                            children=html.Div(
+                                                                id="expense-table"
+                                                            ),
+                                                        ),
+                                                        width=6,
+                                                    ),
+                                                ]
+                                            ),
+                                        ]
                                     ),
                                 ]
                             ),
                         ],
-                        title="Label Dropdown",
+                        title="Label Analysis",
                     ),
+                    # Income Section
                     dbc.AccordionItem(
                         [
-                            # Income chart
-                            dbc.Col(
-                                html.Button(
-                                    "Income Chart", id="income-chart-button", n_clicks=0
-                                ),
+                            dbc.Button(
+                                "Income Chart",
+                                id="income-chart-button",
+                                color="primary",
+                                className="mb-3",
                             ),
-                            dbc.Col(
-                                dcc.Loading(
-                                    id="loading-income-chart",
-                                    type="dot",
-                                    children=html.Div(id="income-chart"),
-                                ),
-                                style={"overflow": "auto"},
+                            dbc.Card(
+                                [
+                                    dbc.CardBody(
+                                        dcc.Loading(
+                                            id="loading-income-chart",
+                                            type="dot",
+                                            children=html.Div(id="income-chart"),
+                                        ),
+                                    ),
+                                ]
                             ),
                         ],
-                        title="Income Chart",
+                        title="Income Analysis",
                     ),
+                    # Expense Comparison Section
                     dbc.AccordionItem(
                         [
-                            # Compare chart
-                            dbc.Col(
-                                html.Button(
-                                    "Compare Chart",
-                                    id="budget-compare-button",
-                                    n_clicks=0,
-                                ),
+                            dbc.Button(
+                                "Compare Chart",
+                                id="budget-compare-button",
+                                color="primary",
+                                className="mb-3",
                             ),
-                            dbc.Col(
-                                dcc.Loading(
-                                    id="loading-compare-chart",
-                                    type="dot",
-                                    children=html.Div(id="compare-chart"),
-                                ),
-                                style={"overflow": "auto"},
+                            dbc.Card(
+                                [
+                                    dbc.CardBody(
+                                        dcc.Loading(
+                                            id="loading-compare-chart",
+                                            type="dot",
+                                            children=html.Div(id="compare-chart"),
+                                        ),
+                                    ),
+                                ]
                             ),
                         ],
-                        title="Expense Compare Chart",
+                        title="Expense Comparison",
                     ),
+                    # Subscription Section
                     dbc.AccordionItem(
                         [
-                            # Subscription table
-                            dbc.Col(
-                                html.Button(
-                                    "Subscription Table",
-                                    id="subscription-button",
-                                    n_clicks=0,
-                                ),
+                            dbc.Button(
+                                "Subscription Table",
+                                id="subscription-button",
+                                color="primary",
+                                className="mb-3",
                             ),
-                            dbc.Col(
-                                dcc.Loading(
-                                    id="loading-subscription-table",
-                                    type="dot",
-                                    children=html.Div(id="subscription-table"),
-                                ),
-                                style={"overflow": "auto"},
+                            dbc.Card(
+                                [
+                                    dbc.CardBody(
+                                        dcc.Loading(
+                                            id="loading-subscription-table",
+                                            type="dot",
+                                            children=html.Div(id="subscription-table"),
+                                        ),
+                                    ),
+                                ]
                             ),
                         ],
-                        title="Subscription Table",
+                        title="Subscriptions",
                     ),
+                    # Assets Section
                     dbc.AccordionItem(
                         [
-                            # Assets table
                             dbc.Row(
                                 [
                                     dbc.Col(
-                                        html.Button(
+                                        dbc.Button(
                                             "Assets Table",
                                             id="assets-button",
-                                            n_clicks=0,
+                                            color="primary",
+                                            className="mb-3",
                                         ),
                                     ),
                                     dbc.Col(
-                                        html.Button(
+                                        dbc.Button(
                                             "Update Assets Values",
                                             id="assets-retrieve-button",
-                                            n_clicks=0,
+                                            color="secondary",
+                                            className="mb-3",
                                         ),
                                     ),
-                                ],
+                                ]
                             ),
-                            dbc.Row(
+                            dbc.Card(
                                 [
-                                    dbc.Col(
-                                        dcc.Loading(
-                                            id="loading-assets-table",
-                                            type="dot",
-                                            children=html.Div(id="assets-table"),
-                                        ),
-                                        style={"overflow": "auto"},
-                                    ),
-                                    dbc.Col(
-                                        dcc.Loading(
-                                            id="loading-assets-chart",
-                                            type="dot",
-                                            children=html.Div(id="assets-chart"),
-                                        ),
-                                        style={"overflow": "auto"},
+                                    dbc.CardBody(
+                                        [
+                                            dbc.Row(
+                                                [
+                                                    dbc.Col(
+                                                        dcc.Loading(
+                                                            id="loading-assets-table",
+                                                            type="dot",
+                                                            children=html.Div(
+                                                                id="assets-table"
+                                                            ),
+                                                        ),
+                                                        width=6,
+                                                    ),
+                                                    dbc.Col(
+                                                        dcc.Loading(
+                                                            id="loading-assets-chart",
+                                                            type="dot",
+                                                            children=html.Div(
+                                                                id="assets-chart"
+                                                            ),
+                                                        ),
+                                                        width=6,
+                                                    ),
+                                                ]
+                                            ),
+                                        ]
                                     ),
                                 ]
                             ),
                         ],
-                        title="Assets Table",
+                        title="Assets",
                     ),
+                    # Loans Section
                     dbc.AccordionItem(
                         [
-                            # Loans table
-                            dbc.Col(
-                                html.Button(
-                                    "Loans Table",
-                                    id="loans-button",
-                                    n_clicks=0,
-                                ),
+                            dbc.Button(
+                                "Loans Table",
+                                id="loans-button",
+                                color="primary",
+                                className="mb-3",
                             ),
-                            dbc.Col(
-                                dcc.Loading(
-                                    id="loading-loans-table",
-                                    type="dot",
-                                    children=html.Div(id="loans-table"),
-                                ),
-                                style={"overflow": "auto"},
+                            dbc.Card(
+                                [
+                                    dbc.CardBody(
+                                        dcc.Loading(
+                                            id="loading-loans-table",
+                                            type="dot",
+                                            children=html.Div(id="loans-table"),
+                                        ),
+                                    ),
+                                ]
                             ),
                         ],
-                        title="Loans Table",
+                        title="Loans",
+                    ),
+                    # Loan Calculator
+                    dbc.AccordionItem(
+                        [
+                            dbc.Button(
+                                [
+                                    html.I(
+                                        className="fas fa-calculator me-2"
+                                    ),  # Font Awesome icon
+                                    "Calculate Loan",
+                                ],
+                                id="loan-calc-button",
+                                color="primary",
+                                className="mb-3",
+                            ),
+                            html.P(
+                                "Input 3 values to calculate the 4th. "
+                                "Payment amount must be input.",
+                            ),
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(html.H4("Loan Options")),
+                                    dbc.CardBody(
+                                        [
+                                            dbc.Row(
+                                                [
+                                                    dbc.Col(
+                                                        [
+                                                            dbc.InputGroup(
+                                                                [
+                                                                    dbc.InputGroupText(
+                                                                        "$"
+                                                                    ),
+                                                                    dbc.Input(
+                                                                        id="loan-calc-loan-amount",
+                                                                        type="number",
+                                                                        placeholder="Loan Amount",
+                                                                        className="form-control-lg",
+                                                                    ),
+                                                                ],
+                                                                className="mb-3",
+                                                            ),
+                                                        ],
+                                                        width=6,
+                                                    ),
+                                                    dbc.Col(
+                                                        [
+                                                            dbc.InputGroup(
+                                                                [
+                                                                    dbc.InputGroupText(
+                                                                        "%"
+                                                                    ),
+                                                                    dbc.Input(
+                                                                        id="loan-calc-interest",
+                                                                        type="number",
+                                                                        placeholder="Interest Rate",
+                                                                        className="form-control-lg",
+                                                                    ),
+                                                                ],
+                                                                className="mb-3",
+                                                            ),
+                                                        ],
+                                                        width=6,
+                                                    ),
+                                                ]
+                                            ),
+                                            dbc.Row(
+                                                [
+                                                    dbc.Col(
+                                                        [
+                                                            dbc.InputGroup(
+                                                                [
+                                                                    dbc.InputGroupText(
+                                                                        "#"
+                                                                    ),
+                                                                    dbc.Input(
+                                                                        id="loan-calc-payments-left",
+                                                                        type="number",
+                                                                        placeholder="Payments Left",
+                                                                        className="form-control-lg",
+                                                                    ),
+                                                                ],
+                                                                className="mb-3",
+                                                            ),
+                                                        ],
+                                                        width=6,
+                                                    ),
+                                                    dbc.Col(
+                                                        [
+                                                            dbc.InputGroup(
+                                                                [
+                                                                    dbc.InputGroupText(
+                                                                        "$"
+                                                                    ),
+                                                                    dbc.Input(
+                                                                        id="loan-calc-payment-amount",
+                                                                        type="number",
+                                                                        placeholder="Payment Amount",
+                                                                        className="form-control-lg",
+                                                                    ),
+                                                                ],
+                                                                className="mb-3",
+                                                            ),
+                                                        ],
+                                                        width=6,
+                                                    ),
+                                                ]
+                                            ),
+                                            html.Div(
+                                                id="loan-calc-output",
+                                            ),
+                                        ]
+                                    ),
+                                ],
+                                className="shadow",
+                            ),
+                        ],
+                        title="Loan Calculator",
                     ),
                 ],
                 start_collapsed=True,
                 always_open=True,
             ),
         ],
-        className="container",
+        fluid=True,
     )
 
 
@@ -299,16 +483,15 @@ def layout():
     [
         Output("budget-chart", "children"),
         Output("budget-chart-labels", "children"),
+        Output("budget-chart-line", "children"),
     ],
     [Input("budget-chart-button", "n_clicks")],
-    [State("budget-chart-input", "value"), State("budget-section-input", "value")],
+    [State("budget-chart-input", "value")],
     prevent_initial_call=True,
 )
-def update_budgetchart(n_clicks, input_value, budget_section):
+def update_budgetchart(n_clicks, input_value):
     """Provide budget info chart."""
-    if budget_section is None:
-        logger.error("Budget section input is not defined.")
-        return dash.no_update
+    budget_section = current_user.get_id()
     bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
@@ -319,23 +502,24 @@ def update_budgetchart(n_clicks, input_value, budget_section):
     len_label = len(budget_df[~budget_df["label"].isnull()])
     len_unlabel = len(budget_df[budget_df["label"].isnull()])
 
-    return dcc.Graph(
-        figure=budget_chart
-    ), f"Labeled: {len_label} | Unlabeled: {len_unlabel}"
+    budget_chart_labels = f"Labeled: {len_label} | Unlabeled: {len_unlabel}"
+    budget_chart_line = (
+        f"the following categories are not included in the budget: {bdgt.zero_txs}"
+    )
+
+    return dcc.Graph(figure=budget_chart), budget_chart_labels, budget_chart_line
 
 
 # income chart
 @callback(
     Output("income-chart", "children"),
     [Input("income-chart-button", "n_clicks")],
-    [State("budget-chart-input", "value"), State("budget-section-input", "value")],
+    [State("budget-chart-input", "value")],
     prevent_initial_call=True,
 )
-def update_incomeview(n_clicks, input_value, budget_section):
+def update_incomeview(n_clicks, input_value):
     """Provide income info chart."""
-    if budget_section is None:
-        logger.error("Budget section input is not defined.")
-        return dash
+    budget_section = current_user.get_id()
     bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
@@ -348,14 +532,12 @@ def update_incomeview(n_clicks, input_value, budget_section):
 @callback(
     Output("compare-chart", "children"),
     [Input("budget-compare-button", "n_clicks")],
-    [State("budget-chart-input", "value"), State("budget-section-input", "value")],
+    [State("budget-chart-input", "value")],
     prevent_initial_call=True,
 )
-def update_comparechart(n_clicks, input_value, budget_section):
+def update_comparechart(n_clicks, input_value):
     """Provide budget compare info chart."""
-    if budget_section is None:
-        logger.error("Budget section input is not defined.")
-        return dash.no_update
+    budget_section = current_user.get_id()
     bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
@@ -370,15 +552,12 @@ def update_comparechart(n_clicks, input_value, budget_section):
 @callback(
     Output("toast-update-db", "is_open"),
     [Input("budget-update-db-button", "n_clicks")],
-    State("budget-section-input", "value"),
     prevent_initial_call=True,
 )
-def update_budget_db(n_clicks, budget_section):
+def update_budget_db(n_clicks):
     """Provide budget compare info chart."""
     # get the unlabeled transactions
-    if budget_section is None:
-        logger.error("Budget section input is not defined.")
-        return dash.no_update
+    budget_section = current_user.get_id()
     bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     train_df = budget_df[~budget_df["label"].isna()]
@@ -392,7 +571,9 @@ def update_budget_db(n_clicks, budget_section):
     )
 
     # update the database with the predicted labels
-    bdgt.update_labels_db(tx_df=predict_df, label_column="predicted_label")
+    bdgt.update_db_column(
+        tx_df=predict_df, label_column="predicted_label", database_column="label"
+    )
 
     return True
 
@@ -401,14 +582,11 @@ def update_budget_db(n_clicks, budget_section):
     Output("expense-chart", "children"),
     Output("label-dropdown", "options"),
     [Input("label-chart-button", "n_clicks"), Input("label-dropdown", "value")],
-    State("budget-section-input", "value"),
     prevent_initial_call=True,
 )
-def update_category_chart(n_clicks, selected_label, budget_section):
+def update_category_chart(n_clicks, selected_label):
     """Display category chart."""
-    if budget_section is None:
-        logger.error("Budget section input is not defined.")
-        return dash.no_update
+    budget_section = current_user.get_id()
     bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df)
@@ -427,17 +605,13 @@ def update_category_chart(n_clicks, selected_label, budget_section):
 @callback(
     Output("expense-table", "children"),
     [Input("expense-chart-fig", "clickData"), Input("label-dropdown", "value")],
-    State("budget-section-input", "value"),
     prevent_initial_call=True,
 )
-def update_expenses_table(clickData, selected_label, budget_section):
+def update_expenses_table(clickData, selected_label):
     """Update the table with expenses for the selected label and month."""
     if clickData is None:
         return dash.no_update
-    if budget_section is None:
-        logger.error("Budget section input is not defined.")
-        return dash.no_update
-
+    budget_section = current_user.get_id()
     clicked_month = clickData["points"][0]["x"]
     clicked_month = pd.to_datetime(clicked_month).strftime("%Y-%m")
     logger.info(f"Selected month: {clicked_month}")
@@ -467,16 +641,13 @@ def update_expenses_table(clickData, selected_label, budget_section):
 @callback(
     Output("subscription-table", "children"),
     [Input("subscription-button", "n_clicks")],
-    State("budget-section-input", "value"),
     prevent_initial_call=True,
 )
-def update_subscription_table(clickData, budget_section):
+def update_subscription_table(clickData):
     """Update the table with possible subscriptions."""
     if clickData is None:
         return dash.no_update
-    if budget_section is None:
-        logger.error("Budget section input is not defined.")
-        return dash.no_update
+    budget_section = current_user.get_id()
 
     bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
@@ -501,16 +672,13 @@ def update_subscription_table(clickData, budget_section):
 @callback(
     [Output("assets-table", "children"), Output("assets-chart", "children")],
     [Input("assets-button", "n_clicks")],
-    State("budget-section-input", "value"),
     prevent_initial_call=True,
 )
-def update_assets_table(clickData, budget_section):
+def update_assets_table(clickData):
     """Update the table with assets."""
     if clickData is None:
         return dash.no_update
-    if budget_section is None:
-        logger.error("Budget section input is not defined.")
-        return dash.no_update
+    budget_section = current_user.get_id()
 
     engine = database.Engine(config_path="config.yml")
     # get asset_df
@@ -539,16 +707,13 @@ def update_assets_table(clickData, budget_section):
 @callback(
     Output("loans-table", "children"),
     [Input("loans-button", "n_clicks")],
-    State("budget-section-input", "value"),
     prevent_initial_call=True,
 )
-def update_loans_table(clickData, budget_section):
+def update_loans_table(clickData):
     """Update the table with loans."""
     if clickData is None:
         return dash.no_update
-    if budget_section is None:
-        logger.error("Budget section input is not defined.")
-        return dash.no_update
+    budget_section = current_user.get_id()
 
     engine = database.Engine(config_path="config.yml")
     # get loans in config
@@ -580,3 +745,79 @@ def retrieve_asset_values(clickData):
         return dash.no_update
     assets.update_asset_info(config_path="config.yml", db_write=True)
     return dash.no_update
+
+
+@callback(
+    Output("loan-calc-output", "children"),
+    [Input("loan-calc-button", "n_clicks")],
+    [
+        State("loan-calc-loan-amount", "value"),
+        State("loan-calc-interest", "value"),
+        State("loan-calc-payments-left", "value"),
+        State("loan-calc-payment-amount", "value"),
+    ],
+    prevent_initial_call=True,
+)
+def update_loan_calc(
+    clickData, loan_amount, interest_rate, payments_left, payment_amount
+):
+    """Calculate the loan values."""
+    if clickData is None:
+        return dash.no_update
+
+    missing_values = []
+    variables = [
+        ("loan_amount", loan_amount),
+        ("interest", interest_rate),
+        ("payments_left", payments_left),
+        ("payment_amount", payment_amount),
+    ]
+
+    for name, value in variables:
+        if value is None:
+            missing_values.append(name)
+
+    if len(missing_values) != 1 or missing_values[0] == "loan_amount":
+        return dash.no_update
+
+    if missing_values[0] == "interest":
+        calc_value = loans.get_interest(
+            current_loan=loan_amount,
+            payments_left=payments_left,
+            payment_amount=payment_amount,
+        )
+    elif missing_values[0] == "payments_left":
+        calc_value = loans.get_payments_left(
+            current_loan=loan_amount,
+            interest_rate=interest_rate,
+            payment_amount=payment_amount,
+        )
+    elif missing_values[0] == "payment_amount":
+        calc_value = loans.get_payment_amount(
+            current_loan=loan_amount,
+            interest_rate=interest_rate,
+            payments_left=payments_left,
+        )
+
+    total_paid = loans.get_total_paid(
+        current_loan=loan_amount,
+        interest_rate=interest_rate,
+        payments_left=payments_left,
+    )
+
+    loan_calc_output_div = html.Div(
+        [
+            html.P(
+                [
+                    html.B(f"{missing_values[0]}"),
+                    " was calculated to be ",
+                    html.B(f"${calc_value:,.2f}"),
+                    ". The total amount paid is ",
+                    html.B(f"${total_paid:,.2f}"),
+                    ".",
+                ]
+            )
+        ]
+    )
+
+    return loan_calc_output_div
