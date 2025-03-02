@@ -5,9 +5,14 @@ on:
     branches:
       - main
       - dev
+permissions: read-all
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v3
       - name: Install Python 3
