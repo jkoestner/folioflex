@@ -398,7 +398,7 @@ def layout():
                                                                     dbc.Input(
                                                                         id="loan-calc-interest",
                                                                         type="number",
-                                                                        placeholder="Interest Rate",
+                                                                        placeholder="Interest Rate (less than 1)",
                                                                         className="form-control-lg",
                                                                     ),
                                                                 ],
@@ -778,7 +778,10 @@ def update_loan_calc(
             missing_values.append(name)
 
     if len(missing_values) != 1 or missing_values[0] == "loan_amount":
+        logger.warning(f"Missing values: {missing_values}")
         return dash.no_update
+
+    logger.info(f"calculating `{missing_values[0]}`")
 
     if missing_values[0] == "interest":
         calc_value = loans.get_interest(
@@ -786,18 +789,21 @@ def update_loan_calc(
             payments_left=payments_left,
             payment_amount=payment_amount,
         )
+        interest_rate = calc_value
     elif missing_values[0] == "payments_left":
         calc_value = loans.get_payments_left(
             current_loan=loan_amount,
             interest_rate=interest_rate,
             payment_amount=payment_amount,
         )
+        payments_left = calc_value
     elif missing_values[0] == "payment_amount":
         calc_value = loans.get_payment_amount(
             current_loan=loan_amount,
             interest_rate=interest_rate,
             payments_left=payments_left,
         )
+        payment_amount = calc_value
 
     total_paid = loans.get_total_paid(
         current_loan=loan_amount,
@@ -811,7 +817,7 @@ def update_loan_calc(
                 [
                     html.B(f"{missing_values[0]}"),
                     " was calculated to be ",
-                    html.B(f"${calc_value:,.2f}"),
+                    html.B(f"{calc_value:,.2f}"),
                     ". The total amount paid is ",
                     html.B(f"${total_paid:,.2f}"),
                     ".",
