@@ -819,12 +819,20 @@ class Portfolio:
         pivot = price_history.pivot(index="date", columns="ticker", values="last_price")
         for tick in tickers:
             check = pivot[tick]
-            check = check[check.index >= check.first_valid_index()]
-            missing_dates = check[check.isnull()].index
-            if not missing_dates.empty:
+            first_valid_idx = check.first_valid_index()
+            if first_valid_idx is not None:
+                check = check[check.index >= first_valid_idx]
+                missing_dates = check[check.isnull()].index
+                if not missing_dates.empty:
+                    logger.warning(
+                        f"Missing price history for {tick},"
+                        f" first noticed on {missing_dates[0]}."
+                        " Most likely the ticker is delisted or not available in"
+                        " stock exchanges."
+                    )
+            else:
                 logger.warning(
-                    f"Missing price history for {tick},"
-                    f" first noticed on {missing_dates[0]}."
+                    f"No valid price data found for {tick}."
                     " Most likely the ticker is delisted or not available in"
                     " stock exchanges."
                 )
