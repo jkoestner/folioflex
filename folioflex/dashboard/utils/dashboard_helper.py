@@ -53,14 +53,7 @@ def make_dash_table(df):
 
 def unix_time_millis(dt):
     """Convert unix timestamp to seconds."""
-    # convert to datetime if not already
-    if not isinstance(dt, datetime.datetime):
-        dt = pd.to_datetime(dt)
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=datetime.UTC)
-
-    # get epoch
-    epoch = datetime.datetime.fromtimestamp(0, tz=datetime.UTC)
+    epoch = datetime.datetime.utcfromtimestamp(0)
     return (dt - epoch).total_seconds()
 
 
