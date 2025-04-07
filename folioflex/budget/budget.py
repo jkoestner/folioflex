@@ -581,14 +581,47 @@ class Budget:
             The budget view as a bar chart.
 
         """
-        grouped_data = tx_df.groupby(["month"])["amount"].sum().reset_index()
+        # calculate income, expense, net
+        income_df = (
+            tx_df[tx_df["label"] == "income"]
+            .groupby(["month"])["amount"]
+            .sum()
+            .reset_index()
+        )
+        income_df["category"] = "income"
+        expenses_df = (
+            tx_df[tx_df["label"] != "income"]
+            .groupby(["month"])["amount"]
+            .sum()
+            .reset_index()
+        )
+        expenses_df["category"] = "expense"
+        net_df = tx_df.groupby(["month"])["amount"].sum().reset_index()
+        net_df["category"] = "net"
+
+        # group data
+        grouped_data = pd.concat([income_df, expenses_df, net_df])
+
+        # plotting
         fig = px.line(
             grouped_data,
             x="month",
             y="amount",
-            title="Monthly Expenses",
-            labels={"month": "Month", "amount": "Amount"},
+            color="category",
+            title="Monthly Income and Expenses",
+            labels={"month": "Month", "amount": "Amount", "category": "Category"},
+            color_discrete_map={
+                "net": "#007BFF",  # Blue
+                "expense": "#ffb3b3",  # Red
+                "income": "#79d2a6",  # Green
+            },
         )
+        fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.7)
+        for trace in fig.data:
+            if trace.name == "net":
+                trace.visible = True
+            else:
+                trace.visible = "legendonly"
 
         return fig
 
