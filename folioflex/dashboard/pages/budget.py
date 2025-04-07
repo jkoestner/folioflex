@@ -9,18 +9,16 @@ import pandas as pd
 from dash import Input, Output, State, callback, dcc, html
 from flask_login import current_user
 
-from folioflex.budget import budget, models
+from folioflex.budget import budget
 from folioflex.dashboard.components import dash_formats
 from folioflex.dashboard.utils import dashboard_helper
 from folioflex.integrations.plaid import database
 from folioflex.portfolio import assets, loans
-from folioflex.utils import config_helper, custom_logger
+from folioflex.utils import custom_logger
 
 logger = custom_logger.setup_logging(__name__)
 
 dash.register_page(__name__, path="/budget", title="folioflex - Budget", order=5)
-
-budget_list = list(config_helper.get_config_options("config.yml", "budgets").keys())
 
 
 def layout():
@@ -56,18 +54,6 @@ def layout():
                                             ),
                                         ],
                                         width=3,
-                                    ),
-                                    dbc.Col(
-                                        [
-                                            dbc.Button(
-                                                "Update Budget Database",
-                                                id="budget-update-db-button",
-                                                color="secondary",
-                                                className="mt-4",
-                                            ),
-                                        ],
-                                        width=3,
-                                        className="d-flex justify-content-end",
                                     ),
                                 ],
                                 className="g-3",
@@ -118,20 +104,6 @@ def layout():
                                         ]
                                     ),
                                 ]
-                            ),
-                            dbc.Toast(
-                                "Updated database tables.",
-                                id="toast-update-db",
-                                header="Updated Database",
-                                is_open=False,
-                                duration=4000,
-                                icon="success",
-                                style={
-                                    "position": "fixed",
-                                    "top": 66,
-                                    "right": 10,
-                                    "width": 350,
-                                },
                             ),
                         ],
                         title="Budget Chart",
@@ -546,36 +518,6 @@ def update_comparechart(n_clicks, input_value):
     )
 
     return dcc.Graph(figure=compare_chart)
-
-
-# update budget db
-@callback(
-    Output("toast-update-db", "is_open"),
-    [Input("budget-update-db-button", "n_clicks")],
-    prevent_initial_call=True,
-)
-def update_budget_db(n_clicks):
-    """Provide budget compare info chart."""
-    # get the unlabeled transactions
-    budget_section = current_user.get_id()
-    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
-    budget_df = bdgt.get_transactions()
-    train_df = budget_df[~budget_df["label"].isna()]
-    unlabeled_df = budget_df[budget_df["label"].isna()]
-
-    # use trained model to predict labels
-    model = models.Classifier(train_df=train_df)
-    model.load_model(model_name=bdgt.model)
-    predict_df = model.predict_labels(
-        unlabeled_df=unlabeled_df, components=model.components
-    )
-
-    # update the database with the predicted labels
-    bdgt.update_db_column(
-        tx_df=predict_df, label_column="predicted_label", database_column="label"
-    )
-
-    return True
 
 
 @callback(
