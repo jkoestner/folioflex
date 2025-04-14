@@ -95,71 +95,52 @@ class Finviz:
 
         Parameters
         ----------
-        timeframe: str
+        timeframe : str
             Timeframe to get performance for
 
         Returns
         -------
-        pd.DataFrame
+        heatmap_data : pd.DataFrame
             Dataframe of tickers, changes and sectors
 
         """
         # dict of valid timeframes
         timeframe_map = {
-            "day": "",
-            "week": "w1",
-            "month": "w4",
-            "3month": "w13",
-            "6month": "w26",
-            "year": "w52",
-            "ytd": "ytd",
+            "day": "lastChange",
+            "week": "perf1w",
+            "month": "perf4w",
+            "3month": "perf13w",
+            "6month": "perf26w",
+            "year": "perf52w",
+            "ytd": "perfYtd",
         }
 
         if timeframe not in timeframe_map:
-            logger.warning("{timeframe} is an invalid timeframe")
+            logger.warning(f"{timeframe} is an invalid timeframe")
             return pd.DataFrame()
 
-        # get change percent data
-        r = requests.get(
-            f"https://finviz.com/api/map_perf.ashx?t=sec&st={timeframe_map[timeframe]}",
-            headers=_get_header(),
-            timeout=10,
+        url = (
+            f"https://finviz.com/api/bubbles.ashx"
+            f"?x=sector&y={timeframe_map[timeframe]}&size=marketCap&color=sector"
+            f"&idx=sp500&rangeX=&rangeY=&sec=&ind=&cap=&sh_avgvol=&tickers=&excludeTickers="
         )
-        r.raise_for_status()
 
-        df_change = pd.DataFrame.from_dict(r.json()["nodes"], orient="index")
-        df_change.columns = pd.Index(["return_pct"])
-        df_change["return_pct"] = df_change["return_pct"] / 100
+        # get data
+        request = requests.get(url, headers=_get_header(), timeout=10)
+        request.raise_for_status()
+        data = request.json()
 
-        # get sector and market cap data
-        r2 = requests.get(
-            "https://finviz.com/maps/sec.json?rev=316",
-            headers=_get_header(),
-            timeout=10,
-        )
-        r2.raise_for_status()
-
-        dfs_list = []
-        for sector_dict in r2.json()["children"]:
-            for industry_dict in sector_dict["children"]:
-                temp = pd.DataFrame(industry_dict["children"])
-                temp["sector"] = sector_dict["name"]
-                temp["industry"] = industry_dict["name"]
-                dfs_list.append(temp)
-        dfs = pd.concat(dfs_list, axis=0).reset_index(drop=True)
-
-        # merge dataframes
-        dfs = pd.merge(dfs, df_change, left_on="name", right_index=True)
-        dfs = dfs.rename(
+        # heatmap
+        heatmap_df = pd.DataFrame(data).rename(
             columns={
-                "name": "ticker",
-                "value": "market_value",
-                "sector": "sector",
-                "industry": "industry",
-                "return_pct": "return_pct",
+                "size": "market_value",
+                "color": "sector",
+                "y": "return_pct",
             }
         )
-        return dfs
+        heatmap_df["return_pct"] = heatmap_df["return_pct"] / 100
+
+        return heatmap_df
 
 
 class Fred:
