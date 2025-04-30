@@ -354,36 +354,36 @@ def format_transactions(transactions):
 
     Returns
     -------
-    transactions_formated : list
+    formatted : list
         The formatted transactions.
 
     """
-    formatted_transactions = [
-        {
-            "account_id": transaction["account_id"],
-            "plaid_transaction_id": transaction["transaction_id"],
-            "plaid_category_id": transaction["category_id"],
-            "category": transaction["category"][0],
-            "subcategory": transaction["category"][1]
-            if len(transaction["category"]) > 1
-            else None,
-            "type": transaction["transaction_type"],
-            "name": transaction["name"],
-            "amount": transaction["amount"],
-            "iso_currency_code": transaction["iso_currency_code"],
-            "unofficial_currency_code": transaction["unofficial_currency_code"],
-            "date": transaction["date"],
-            "pending": transaction["pending"],
-            "primary_category": transaction["personal_finance_category"]["primary"],
-            "detailed_category": transaction["personal_finance_category"]["detailed"],
-            "confidence_level": transaction["personal_finance_category"][
-                "confidence_level"
-            ],
-            "account_owner": transaction["account_owner"],
-        }
-        for transaction in transactions
-    ]
-    return formatted_transactions
+    formatted = []
+    for tx in transactions:
+        # coerce None -> empty list
+        cats = tx.get("category") or []
+        formatted.append(
+            {
+                "account_id": tx["account_id"],
+                "plaid_transaction_id": tx["transaction_id"],
+                "plaid_category_id": tx["category_id"],
+                "category": cats[0] if len(cats) >= 1 else None,
+                "subcategory": cats[1] if len(cats) >= 2 else None,
+                "type": tx["transaction_type"],
+                "name": tx["name"],
+                "amount": tx["amount"],
+                "iso_currency_code": tx["iso_currency_code"],
+                "unofficial_currency_code": tx["unofficial_currency_code"],
+                "date": tx["date"],
+                "pending": tx["pending"],
+                # personal_finance_category is always an object (never null)
+                "primary_category": tx["personal_finance_category"]["primary"],
+                "detailed_category": tx["personal_finance_category"]["detailed"],
+                "confidence_level": tx["personal_finance_category"]["confidence_level"],
+                "account_owner": tx.get("account_owner"),  # could be None
+            }
+        )
+    return formatted
 
 
 def get_item_info(access_token: str) -> dict:
