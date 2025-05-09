@@ -10,6 +10,7 @@ https://plaid.com/docs/api/
 import json
 from typing import Optional
 
+import pandas as pd
 import requests
 
 from folioflex.integrations.plaid import database
@@ -137,13 +138,16 @@ def handle_plaid_maintenance(user_data: dict) -> None:
         # get the ids to delete
         plaid_item_id = item_info["item"]["item_id"]
         item_id = engine.get_item_info(plaid_item_id=plaid_item_id)["id"]
-        plaid_account_ids = list(
-            engine.get_item_accounts(item_id=item_id).get("plaid_account_id") or []
-        )
-        plaid_transaction_ids = list(
-            engine.get_item_transactions(item_id=item_id).get("plaid_transaction_id")
-            or []
-        )
+
+        accounts_df = engine.get_item_accounts(item_id=item_id)
+        plaid_account_ids = accounts_df.get(
+            "plaid_account_id", pd.Series(dtype=object)
+        ).tolist()
+
+        transactions_df = engine.get_item_transactions(item_id=item_id)
+        plaid_transaction_ids = transactions_df.get(
+            "plaid_transaction_id", pd.Series(dtype=object)
+        ).tolist()
 
         # delete the item
         engine.delete_transactions(plaid_transaction_ids)
