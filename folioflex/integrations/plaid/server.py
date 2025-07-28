@@ -327,6 +327,9 @@ def format_accounts(accounts: dict) -> list:
         The formatted accounts.
 
     """
+    if "item" not in accounts:
+        print(f"[ERROR] Missing 'item' in accounts: {accounts}")
+        raise KeyError("Missing 'item' key in accounts")
     item_id = accounts["item"]["item_id"]
     formatted_accounts = [
         {
