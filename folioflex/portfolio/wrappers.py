@@ -7,7 +7,6 @@ from the larger portfolio project, and allows easier integration.
 """
 
 import re
-import ssl
 from datetime import datetime, time, timedelta
 from io import StringIO
 from typing import Any, Dict, List, Optional, Union
@@ -310,9 +309,12 @@ class Web:
 
         """
         url = r"https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-        context = ssl._create_unverified_context()
-        response = request.urlopen(url, context=context)
-        html = response.read()
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+        }
+        req = request.Request(url, headers=headers)
+        with request.urlopen(req) as response:
+            html = response.read()
 
         sp500_tickers = pd.read_html(html)[0][["Symbol", "GICS Sector"]]
 
