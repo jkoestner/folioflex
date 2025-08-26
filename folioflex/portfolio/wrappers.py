@@ -10,7 +10,6 @@ import re
 from datetime import datetime, time, timedelta
 from io import StringIO
 from typing import Any, Dict, List, Optional, Union
-from urllib import request
 from urllib.parse import urlencode
 
 import fredapi
@@ -309,14 +308,12 @@ class Web:
 
         """
         url = r"https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
-        }
-        req = request.Request(url, headers=headers)
-        with request.urlopen(req) as response:
-            html = response.read()
+        request = requests.get(url, headers=_get_header(), timeout=10)
+        request.raise_for_status()
 
-        sp500_tickers = pd.read_html(html)[0][["Symbol", "GICS Sector"]]
+        sp500_tickers = pd.read_html(StringIO(request.text))[0][
+            ["Symbol", "GICS Sector"]
+        ]
 
         sp500_tickers = sp500_tickers.rename(
             columns={
