@@ -114,7 +114,7 @@ def fidelity(
     broker_file: str, output_file: Optional[str] = None, broker: str = "fidelity"
 ) -> Union[pd.DataFrame, None]:
     """
-    Format the transactions made from Fidelity.
+    Format the transactions made from Fidelity - Stock account.
 
     Instructions for downloading transactions:
     ------------------------------------------
@@ -208,6 +208,189 @@ def fidelity(
                 default=df["quantity"],
             ),
             "cost": df["amount_($)"],
+            "broker": broker,
+        }
+    )
+
+    # check stock dates
+    trades = check_stock_dates(trades, fix=True)["fix_tx_df"]
+    logger.info(
+        f"There were {start_df_len} and now there are {len(trades)} rows in "
+        f"the {broker} transactions file after cleaning"
+    )
+
+    if output_file is not None:
+        if os.path.exists(output_file):
+            trades = append_trades(trades, output_file, broker)
+        else:
+            logger.warning(f"{output_file} does not exist. Creating new file.")
+        trades = trades.sort_values(by=["date", "ticker"], ascending=False)
+        trades.to_csv(output_file, index=False)
+
+    return trades
+
+
+def fidelity_retirement(
+    broker_file: str, output_file: Optional[str] = None, broker: str = "ybr"
+) -> Union[pd.DataFrame, None]:
+    """
+    Format the transactions made from Fidelity - Retirement account.
+
+    Instructions for downloading transactions:
+    ------------------------------------------
+    - go to www.fidelity.com/
+    - go to Activity & Orders
+    - download data to .csv
+
+    Notes
+    -----
+    - The headers seem to change, and if greater than 10 code should be updated
+    - the date has had a space at beggining of string, so need to strip
+
+    Parameters
+    ----------
+    broker_file : str
+        path to transactions file that was downloaded from Ally
+    output_file : str (optional)
+        path to trades file that will be created
+    broker : str (optional)
+        name of the broker
+
+    Returns
+    -------
+    trades : DataFrame
+        trades dataframe
+
+    """
+    # lookup table for types of transactions
+    type_lkup = pd.DataFrame(
+        {
+            "transaction_type": [
+                "Contributions",
+                "Transfer In",
+            ],
+            "type": [
+                "BUY",
+                "BUY",
+            ],
+        }
+    )
+
+    # lookup table for symbols
+    symbol_lkup = pd.DataFrame(
+        {
+            "investment": [
+                "BTC EQUITY INDEX J",
+                "BR LP INDEX 2050 F",
+                "SS RSL SMMDCP IDX II",
+            ],
+            "symbol": [
+                "BLKEQIX",
+                "LIPIX",
+                "SSRMIX",
+            ],
+            "relative": [
+                "WBREOX/P10080",
+                "P11540",
+                "",
+            ],
+        }
+    )
+
+    def find_header_row(broker_file):
+        with open(broker_file, "r") as file:
+            for i, line in enumerate(file):
+                if i >= 10:
+                    break
+                columns = [col.strip() for col in line.split(",")]
+                if "Date" in columns:
+                    logger.info(f"using header row at line {i}")
+                    return i
+        raise ValueError(
+            "Could not find column 'Date' in the first 10 lines of the file"
+        )
+
+    # read in the transactions file
+    try:
+        skiprows = find_header_row(broker_file) - 1
+        df = pd.read_csv(broker_file, skiprows=skiprows)
+    except FileNotFoundError:
+        logger.error("Transactions file not found")
+        return None
+
+    # cleaning dataframe by formatting columns and removing whitespace from strings
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+    df = df.apply(lambda x: x.strip() if isinstance(x, str) else x)
+    df = df.rename(
+        columns={
+            "amount_($)": "cost",
+            "shares/unit": "units",
+        },
+    )
+    df["price"] = df["cost"] / df["units"]
+
+    # remove footer of dataframe
+    df_end = df[df["transaction_type"].isna()].index.min()
+    if pd.notna(df_end):
+        df = df.loc[: df_end - 1]
+    else:
+        pass
+    start_df_len = len(df)
+
+    # update date column type
+    df["date"] = pd.to_datetime(df["date"], format="%m/%d/%Y").dt.date
+
+    # add in symbol and type if checks pass
+    missing_funds = df[~df["investment"].isin(symbol_lkup["investment"])][
+        "investment"
+    ].unique()
+    if missing_funds:
+        raise ValueError(
+            f"Not all funds are in the symbol lookup table for instance {missing_funds}"
+        )
+    missing_activity = df[~df["transaction_type"].isin(type_lkup["transaction_type"])][
+        "transaction_type"
+    ].unique()
+    if missing_activity:
+        raise ValueError(
+            f"Not all activity are in the activity lookup table "
+            f"for instance {missing_activity}"
+        )
+
+    df = df.merge(symbol_lkup, on="investment", how="left")
+    df = df.merge(type_lkup, on="transaction_type", how="left")
+
+    # change to types to standardize dataset
+    df["cost"] = np.where(df["type"].isin(["BUY", "SELL"]), df["cost"] * -1, df["cost"])
+    df["units"] = np.where(df["type"].isin(["DIVIDEND"]), df["cost"], df["units"])
+
+    # add cash from BUY types
+    cash = df[
+        df["transaction_type"].isin(
+            [
+                "Contributions",
+            ]
+        )
+    ].copy()
+    cash["type"] = "Cash"
+    cash["symbol"] = "Cash"
+    cash["cost"] = cash["cost"] * -1
+    cash["units"] = cash["cost"]
+    cash["price"] = 1
+    df = pd.concat([df, cash]).reset_index()
+
+    # SPAXX is actually cash
+    df = df.loc[~((df["symbol"] == "SPAXX") & (df["type"] == "BUY"))]
+    df.loc[(df["symbol"] == "SPAXX"), "symbol"] = "Cash"
+
+    # standardize column and data
+    trades = pd.DataFrame(
+        {
+            "ticker": np.where(df["type"] == "Cash", "Cash", df["symbol"]),
+            "date": df["date"],
+            "type": df["type"],
+            "units": df["units"],
+            "cost": df["cost"],
             "broker": broker,
         }
     )
