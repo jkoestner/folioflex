@@ -1540,12 +1540,12 @@ class Portfolio:
 
         # makes sure that ticker had transactions both negative
         # and positive to calculate return
-        dwrr_return_pct = np.NaN
-        dwrr_ann_return_pct = np.NaN
-        dwrr_div_return_pct = np.NaN
-        dwrr_div_ann_return_pct = np.NaN
-        mdrr_return_pct = np.NaN
-        mdrr_ann_return_pct = np.NaN
+        dwrr_return_pct = np.nan
+        dwrr_ann_return_pct = np.nan
+        dwrr_div_return_pct = np.nan
+        dwrr_div_ann_return_pct = np.nan
+        mdrr_return_pct = np.nan
+        mdrr_ann_return_pct = np.nan
         if return_transactions.empty:
             logger.debug(
                 f"There were no transactions for {ticker} to calculate the return"
@@ -1607,13 +1607,13 @@ class Portfolio:
                     -return_transactions["return_txs"].iloc[0]
                     - return_transactions["return_txs"].iloc[-1]
                 ) / return_transactions["return_txs"].iloc[-1]
-                dwrr_ann_return_pct = np.NaN
+                dwrr_ann_return_pct = np.nan
             elif dwrr_ann_return_pct > max_percentage:
                 logger.warning(
                     f"DWRR return for {ticker} is greater than {max_percentage}%"
                 )
                 dwrr_return_pct = (1 + dwrr_ann_return_pct) ** (days / 365) - 1
-                dwrr_ann_return_pct = np.NaN
+                dwrr_ann_return_pct = np.nan
             else:
                 dwrr_return_pct = (1 + dwrr_ann_return_pct) ** (days / 365) - 1
 
@@ -1630,7 +1630,7 @@ class Portfolio:
                     f"DWRR div return for {ticker} is greater than {max_percentage}%"
                 )
                 dwrr_div_return_pct = (1 + dwrr_div_ann_return_pct) ** (days / 365) - 1
-                dwrr_div_ann_return_pct = np.NaN
+                dwrr_div_ann_return_pct = np.nan
             else:
                 dwrr_div_return_pct = (1 + dwrr_div_ann_return_pct) ** (days / 365) - 1
 
