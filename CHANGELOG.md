@@ -1,5 +1,20 @@
 # Changelog
 
+## [v1.5.0](https://github.com/jkoestner/folioflex/tree/v1.5.0)
+
+[Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.4.0...v1.5.0)
+
+**Enhancements**
+- update amazon orders
+- add fidelity retirement
+- add exclude option for labels in budget
+- update security checks
+
+**Documentation**
+
+**Bug Fixes**
+- minor bug fixes
+
 ## [v1.4.0](https://github.com/jkoestner/folioflex/tree/v1.4.0)
 
 [Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.3.0...v1.4.0)

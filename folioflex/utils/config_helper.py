@@ -39,7 +39,8 @@ def get_config(path):
     """
     config = configparser.ConfigParser()
 
-    # test if path exists and try default directories (CONFIG_PATH, TESTS_PATH)
+    # test if path exists and try default directories
+    # (CONFIG_PATH, TESTS_PATH)
     paths_to_try = [
         path,
         os.path.join(CONFIG_PATH, path),

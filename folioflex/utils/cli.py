@@ -4,6 +4,7 @@ import argparse
 import ast
 from argparse import ArgumentDefaultsHelpFormatter
 
+from folioflex.chatbot import scraper
 from folioflex.dashboard import app
 from folioflex.portfolio.portfolio import Manager, Portfolio
 from folioflex.utils import mailer
@@ -229,6 +230,41 @@ def _create_argparser():
         help=("The scraper to use for the chatbot - 'bee' or 'selenium'"),
     )
 
+    # subparser: scraper
+    _scraper_parser = _subparsers.add_parser("scraper", help="scraper command")
+
+    _scraper_parser.add_argument(
+        "-u",
+        "--url",
+        type=str,
+        default=None,
+        help=("The URL to scrape"),
+    )
+
+    _scraper_parser.add_argument(
+        "-p",
+        "--proxy",
+        type=str,
+        default=None,
+        help=("The proxy to use for the scrape - user:password@ip:port"),
+    )
+
+    _scraper_parser.add_argument(
+        "-pt",
+        "--port",
+        type=int,
+        default=None,
+        help=("The remote debugging port to use for the scrape"),
+    )
+
+    _scraper_parser.add_argument(
+        "-s",
+        "--scraper",
+        type=str,
+        default="selenium",
+        help=("The scraper to use for the scrape - 'bee' or 'selenium'"),
+    )
+
     # subparser: dashboard
     _dash_parser = _subparsers.add_parser("dash", help="dashboard command")
 
@@ -270,6 +306,15 @@ def cli():
             scraper=args.scraper,
         )
         print(f"status sent: {email_status}")
+
+    elif args.command == "scraper":
+        scraper.scrape_html(
+            url=args.url,
+            proxy=args.proxy,
+            port=args.port,
+            scraper=args.scraper,
+        )
+        print("scraped html")
 
     elif args.command == "dash":
         app.app.run_server(debug=True)

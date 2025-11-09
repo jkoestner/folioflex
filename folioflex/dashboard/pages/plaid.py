@@ -8,6 +8,7 @@ from dash import Input, Output, State, callback, clientside_callback, dcc, html
 from flask import jsonify, request
 from flask_login import current_user
 
+from folioflex.budget import budget, models
 from folioflex.dashboard.components import dash_formats
 from folioflex.dashboard.utils import dashboard_helper
 from folioflex.integrations import plaid
@@ -153,6 +154,31 @@ def layout():
                             ),
                         ],
                         width="auto",
+                    ),
+                    dbc.Col(
+                        [
+                            dbc.Button(
+                                "Update Budget Database",
+                                id="budget-update-db-button",
+                                color="secondary",
+                                className="mb-3",
+                            ),
+                        ],
+                        width="auto",
+                        className="ms-auto",
+                    ),
+                    dbc.Toast(
+                        id="toast-update-db",
+                        header="Updated Database",
+                        is_open=False,
+                        duration=2000,
+                        icon="success",
+                        style={
+                            "position": "fixed",
+                            "top": 66,
+                            "right": 10,
+                            "width": 350,
+                        },
                     ),
                 ]
             ),
@@ -318,6 +344,42 @@ def update_data(n_clicks, stored_tx_data, stored_accounts_data, pathname):
         f"${total_credit:,.2f}",
         f"${net_worth:,.2f}",
     )
+
+
+# update budget db
+@callback(
+    [
+        Output("toast-update-db", "is_open"),
+        Output("toast-update-db", "children"),
+    ],
+    [Input("budget-update-db-button", "n_clicks")],
+    prevent_initial_call=True,
+)
+def update_budget_db(n_clicks):
+    """Provide budget compare info chart."""
+    # get the unlabeled transactions
+    budget_section = current_user.get_id()
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
+    budget_df = bdgt.get_transactions()
+    train_df = budget_df[~budget_df["label"].isna()]
+    unlabeled_df = budget_df[budget_df["label"].isna()]
+    if unlabeled_df.empty:
+        return True, "No unlabeled transactions found to update."
+
+    # use trained model to predict labels
+    model = models.Classifier(train_df=train_df)
+    model.load_model(model_name=bdgt.model)
+    predict_df = model.predict_labels(
+        unlabeled_df=unlabeled_df, components=model.components
+    )
+    preds_updated = len(predict_df)
+
+    # update the database with the predicted labels
+    bdgt.update_db_column(
+        tx_df=predict_df, label_column="predicted_label", database_column="label"
+    )
+
+    return True, f"Updated {preds_updated} transactions with predicted labels."
 
 
 @callback(

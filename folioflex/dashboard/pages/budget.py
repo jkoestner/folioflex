@@ -9,18 +9,16 @@ import pandas as pd
 from dash import Input, Output, State, callback, dcc, html
 from flask_login import current_user
 
-from folioflex.budget import budget, models
+from folioflex.budget import budget
 from folioflex.dashboard.components import dash_formats
 from folioflex.dashboard.utils import dashboard_helper
 from folioflex.integrations.plaid import database
 from folioflex.portfolio import assets, loans
-from folioflex.utils import config_helper, custom_logger
+from folioflex.utils import custom_logger
 
 logger = custom_logger.setup_logging(__name__)
 
 dash.register_page(__name__, path="/budget", title="folioflex - Budget", order=5)
-
-budget_list = list(config_helper.get_config_options("config.yml", "budgets").keys())
 
 
 def layout():
@@ -30,6 +28,13 @@ def layout():
 
     # get the current month
     current_month = (datetime.datetime.now()).strftime("%Y-%m")
+    budget_section = current_user.get_id()
+    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
+    budget_df = bdgt.get_transactions()
+    budget_df = bdgt.modify_transactions(budget_df, columns_to_zero=bdgt.zero_txs)
+    labels = budget_df["label"].dropna().unique()
+    labels.sort()
+    label_options = [{"label": label, "value": label} for label in labels]
 
     return dbc.Container(
         [
@@ -55,22 +60,25 @@ def layout():
                                                 className="form-control",
                                             ),
                                         ],
-                                        width=3,
+                                        width=4,
+                                        className="align-self-end",
                                     ),
                                     dbc.Col(
                                         [
-                                            dbc.Button(
-                                                "Update Budget Database",
-                                                id="budget-update-db-button",
-                                                color="secondary",
-                                                className="mt-4",
+                                            dbc.Label("Additional Labels to Zero"),
+                                            dcc.Dropdown(
+                                                id="zero-labels-dropdown",
+                                                options=label_options,
+                                                multi=True,
+                                                placeholder="Select labels to exclude",
+                                                className="mb-1",
                                             ),
                                         ],
-                                        width=3,
-                                        className="d-flex justify-content-end",
+                                        width=8,
+                                        className="align-self-end",
                                     ),
                                 ],
-                                className="g-3",
+                                className="g-3 align-items-end",
                             ),
                         ]
                     ),
@@ -119,20 +127,6 @@ def layout():
                                     ),
                                 ]
                             ),
-                            dbc.Toast(
-                                "Updated database tables.",
-                                id="toast-update-db",
-                                header="Updated Database",
-                                is_open=False,
-                                duration=4000,
-                                icon="success",
-                                style={
-                                    "position": "fixed",
-                                    "top": 66,
-                                    "right": 10,
-                                    "width": 350,
-                                },
-                            ),
                         ],
                         title="Budget Chart",
                     ),
@@ -162,6 +156,7 @@ def layout():
                                             dcc.Dropdown(
                                                 id="label-dropdown",
                                                 className="mb-3",
+                                                options=label_options,
                                             ),
                                             dbc.Row(
                                                 [
@@ -398,7 +393,7 @@ def layout():
                                                                     dbc.Input(
                                                                         id="loan-calc-interest",
                                                                         type="number",
-                                                                        placeholder="Interest Rate",
+                                                                        placeholder="Interest Rate (less than 1)",
                                                                         className="form-control-lg",
                                                                     ),
                                                                 ],
@@ -486,15 +481,17 @@ def layout():
         Output("budget-chart-line", "children"),
     ],
     [Input("budget-chart-button", "n_clicks")],
-    [State("budget-chart-input", "value")],
+    [State("budget-chart-input", "value"), State("zero-labels-dropdown", "value")],
     prevent_initial_call=True,
 )
-def update_budgetchart(n_clicks, input_value):
+def update_budgetchart(n_clicks, input_value, zero_labels):
     """Provide budget info chart."""
     budget_section = current_user.get_id()
     bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
+    zero_labels = zero_labels or []
+    columns_to_zero = list(set(bdgt.zero_txs) | set(zero_labels))
     budget_df = bdgt.get_transactions()
-    budget_df = bdgt.modify_transactions(budget_df)
+    budget_df = bdgt.modify_transactions(budget_df, columns_to_zero=columns_to_zero)
     budget_view = bdgt.budget_view(
         budget_df, target_date=input_value, exclude_labels=["income"]
     )
@@ -504,7 +501,7 @@ def update_budgetchart(n_clicks, input_value):
 
     budget_chart_labels = f"Labeled: {len_label} | Unlabeled: {len_unlabel}"
     budget_chart_line = (
-        f"the following categories are not included in the budget: {bdgt.zero_txs}"
+        f"the following categories are not included in the budget: {columns_to_zero}"
     )
 
     return dcc.Graph(figure=budget_chart), budget_chart_labels, budget_chart_line
@@ -514,15 +511,17 @@ def update_budgetchart(n_clicks, input_value):
 @callback(
     Output("income-chart", "children"),
     [Input("income-chart-button", "n_clicks")],
-    [State("budget-chart-input", "value")],
+    [State("budget-chart-input", "value"), State("zero-labels-dropdown", "value")],
     prevent_initial_call=True,
 )
-def update_incomeview(n_clicks, input_value):
+def update_incomeview(n_clicks, input_value, zero_labels):
     """Provide income info chart."""
     budget_section = current_user.get_id()
     bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
+    zero_labels = zero_labels or []
+    columns_to_zero = list(set(bdgt.zero_txs) | set(zero_labels))
     budget_df = bdgt.get_transactions()
-    budget_df = bdgt.modify_transactions(budget_df)
+    budget_df = bdgt.modify_transactions(budget_df, columns_to_zero=columns_to_zero)
     income_chart = bdgt.display_income_view(budget_df)
 
     return dcc.Graph(figure=income_chart)
@@ -532,15 +531,17 @@ def update_incomeview(n_clicks, input_value):
 @callback(
     Output("compare-chart", "children"),
     [Input("budget-compare-button", "n_clicks")],
-    [State("budget-chart-input", "value")],
+    [State("budget-chart-input", "value"), State("zero-labels-dropdown", "value")],
     prevent_initial_call=True,
 )
-def update_comparechart(n_clicks, input_value):
+def update_comparechart(n_clicks, input_value, zero_labels):
     """Provide budget compare info chart."""
     budget_section = current_user.get_id()
     bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
+    zero_labels = zero_labels or []
+    columns_to_zero = list(set(bdgt.zero_txs) | set(zero_labels))
     budget_df = bdgt.get_transactions()
-    budget_df = bdgt.modify_transactions(budget_df)
+    budget_df = bdgt.modify_transactions(budget_df, columns_to_zero=columns_to_zero)
     compare_chart = bdgt.display_compare_expenses_view(
         budget_df, target_date=input_value, avg_months=3
     )
@@ -548,39 +549,8 @@ def update_comparechart(n_clicks, input_value):
     return dcc.Graph(figure=compare_chart)
 
 
-# update budget db
-@callback(
-    Output("toast-update-db", "is_open"),
-    [Input("budget-update-db-button", "n_clicks")],
-    prevent_initial_call=True,
-)
-def update_budget_db(n_clicks):
-    """Provide budget compare info chart."""
-    # get the unlabeled transactions
-    budget_section = current_user.get_id()
-    bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
-    budget_df = bdgt.get_transactions()
-    train_df = budget_df[~budget_df["label"].isna()]
-    unlabeled_df = budget_df[budget_df["label"].isna()]
-
-    # use trained model to predict labels
-    model = models.Classifier(train_df=train_df)
-    model.load_model(model_name=bdgt.model)
-    predict_df = model.predict_labels(
-        unlabeled_df=unlabeled_df, components=model.components
-    )
-
-    # update the database with the predicted labels
-    bdgt.update_db_column(
-        tx_df=predict_df, label_column="predicted_label", database_column="label"
-    )
-
-    return True
-
-
 @callback(
     Output("expense-chart", "children"),
-    Output("label-dropdown", "options"),
     [Input("label-chart-button", "n_clicks"), Input("label-dropdown", "value")],
     prevent_initial_call=True,
 )
@@ -589,25 +559,20 @@ def update_category_chart(n_clicks, selected_label):
     budget_section = current_user.get_id()
     bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
-    budget_df = bdgt.modify_transactions(budget_df)
-
-    labels = budget_df["label"].dropna().unique()
-    labels.sort()
-    label_options = [{"label": label, "value": label} for label in labels]
-    if selected_label is None:
-        selected_label = labels[0]
+    budget_df = bdgt.modify_transactions(budget_df, columns_to_zero=bdgt.zero_txs)
 
     expense_chart = bdgt.display_category_trend(budget_df, selected_label)
 
-    return dcc.Graph(figure=expense_chart, id="expense-chart-fig"), label_options
+    return dcc.Graph(figure=expense_chart, id="expense-chart-fig")
 
 
 @callback(
     Output("expense-table", "children"),
     [Input("expense-chart-fig", "clickData"), Input("label-dropdown", "value")],
+    State("zero-labels-dropdown", "value"),
     prevent_initial_call=True,
 )
-def update_expenses_table(clickData, selected_label):
+def update_expenses_table(clickData, selected_label, zero_labels):
     """Update the table with expenses for the selected label and month."""
     if clickData is None:
         return dash.no_update
@@ -617,8 +582,10 @@ def update_expenses_table(clickData, selected_label):
     logger.info(f"Selected month: {clicked_month}")
 
     bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
+    zero_labels = zero_labels or []
+    columns_to_zero = list(set(bdgt.zero_txs) | set(zero_labels))
     budget_df = bdgt.get_transactions()
-    budget_df = bdgt.modify_transactions(budget_df)
+    budget_df = bdgt.modify_transactions(budget_df, columns_to_zero=columns_to_zero)
 
     expense_tbl = bdgt.category_tx_view(
         tx_df=budget_df, target_date=clicked_month, category=selected_label
@@ -651,7 +618,7 @@ def update_subscription_table(clickData):
 
     bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
-    budget_df = bdgt.modify_transactions(budget_df)
+    budget_df = bdgt.modify_transactions(budget_df, columns_to_zero=bdgt.zero_txs)
 
     subscription_tbl = bdgt.identify_subscriptions(tx_df=budget_df)
 
@@ -778,7 +745,10 @@ def update_loan_calc(
             missing_values.append(name)
 
     if len(missing_values) != 1 or missing_values[0] == "loan_amount":
+        logger.warning(f"Missing values: {missing_values}")
         return dash.no_update
+
+    logger.info(f"calculating `{missing_values[0]}`")
 
     if missing_values[0] == "interest":
         calc_value = loans.get_interest(
@@ -786,18 +756,21 @@ def update_loan_calc(
             payments_left=payments_left,
             payment_amount=payment_amount,
         )
+        interest_rate = calc_value
     elif missing_values[0] == "payments_left":
         calc_value = loans.get_payments_left(
             current_loan=loan_amount,
             interest_rate=interest_rate,
             payment_amount=payment_amount,
         )
+        payments_left = calc_value
     elif missing_values[0] == "payment_amount":
         calc_value = loans.get_payment_amount(
             current_loan=loan_amount,
             interest_rate=interest_rate,
             payments_left=payments_left,
         )
+        payment_amount = calc_value
 
     total_paid = loans.get_total_paid(
         current_loan=loan_amount,
@@ -811,7 +784,7 @@ def update_loan_calc(
                 [
                     html.B(f"{missing_values[0]}"),
                     " was calculated to be ",
-                    html.B(f"${calc_value:,.2f}"),
+                    html.B(f"{calc_value:,.2f}"),
                     ". The total amount paid is ",
                     html.B(f"${total_paid:,.2f}"),
                     ".",
