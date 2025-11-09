@@ -75,7 +75,8 @@ def layout():
                                 className="mb-3 text-center",
                             )
                         ],
-                        width=4,
+                        xs=12,
+                        md=4,
                     ),
                     dbc.Col(
                         [
@@ -101,7 +102,8 @@ def layout():
                                 className="mb-3 text-center",
                             )
                         ],
-                        width=4,
+                        xs=12,
+                        md=4,
                     ),
                     dbc.Col(
                         [
@@ -127,7 +129,8 @@ def layout():
                                 className="mb-3 text-center",
                             )
                         ],
-                        width=4,
+                        xs=12,
+                        md=4,
                     ),
                 ],
                 className="mb-3",
@@ -136,23 +139,25 @@ def layout():
             dbc.Row(
                 [
                     dbc.Col(
-                        [
-                            dbc.Button(
-                                "Refresh Data",
-                                id="refresh-button",
-                                color="primary",
-                                className="mb-3 me-2",
-                            ),
-                            dcc.Dropdown(
-                                id="label-filter",
-                                options=[{"label": "All", "value": "all"}],
-                                value="all",
-                                placeholder="Filter by Label",
-                                className="mb-3",
-                                style={"width": "200px", "display": "inline-block"},
-                            ),
-                        ],
-                        width="auto",
+                        dbc.Button(
+                            "Refresh Data",
+                            id="refresh-button",
+                            color="primary",
+                            className="mb-3 w-100",
+                        ),
+                        xs=12,
+                        md="auto",
+                    ),
+                    dbc.Col(
+                        dcc.Dropdown(
+                            id="label-filter",
+                            options=[{"label": "All", "value": "all"}],
+                            value="all",
+                            placeholder="Filter by Label",
+                            className="mb-3",
+                        ),
+                        xs=12,
+                        md=3,
                     ),
                 ]
             ),

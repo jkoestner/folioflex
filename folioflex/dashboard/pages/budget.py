@@ -55,7 +55,10 @@ def layout():
                                                 className="form-control",
                                             ),
                                         ],
-                                        width=3,
+                                        xs=12,
+                                        sm=6,
+                                        md=3,
+                                        className="mb-3 mb-md-0",
                                     ),
                                     dbc.Col(
                                         [
@@ -63,11 +66,13 @@ def layout():
                                                 "Update Budget Database",
                                                 id="budget-update-db-button",
                                                 color="secondary",
-                                                className="mt-4",
+                                                className="mt-0 mt-md-4 w-100 w-md-auto",
                                             ),
                                         ],
-                                        width=3,
-                                        className="d-flex justify-content-end",
+                                        xs=12,
+                                        sm=6,
+                                        md=3,
+                                        className="d-flex justify-content-start justify-content-md-end",
                                     ),
                                 ],
                                 className="g-3",
@@ -173,7 +178,9 @@ def layout():
                                                                 id="expense-chart"
                                                             ),
                                                         ),
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
+                                                        className="mb-3 mb-md-0",
                                                     ),
                                                     dbc.Col(
                                                         dcc.Loading(
@@ -183,7 +190,8 @@ def layout():
                                                                 id="expense-table"
                                                             ),
                                                         ),
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
                                                     ),
                                                 ]
                                             ),
@@ -273,16 +281,22 @@ def layout():
                                             "Assets Table",
                                             id="assets-button",
                                             color="primary",
-                                            className="mb-3",
+                                            className="mb-3 w-100",
                                         ),
+                                        xs=12,
+                                        sm=6,
+                                        md="auto",
                                     ),
                                     dbc.Col(
                                         dbc.Button(
                                             "Update Assets Values",
                                             id="assets-retrieve-button",
                                             color="secondary",
-                                            className="mb-3",
+                                            className="mb-3 w-100",
                                         ),
+                                        xs=12,
+                                        sm=6,
+                                        md="auto",
                                     ),
                                 ]
                             ),
@@ -300,7 +314,9 @@ def layout():
                                                                 id="assets-table"
                                                             ),
                                                         ),
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
+                                                        className="mb-3 mb-md-0",
                                                     ),
                                                     dbc.Col(
                                                         dcc.Loading(
@@ -310,7 +326,8 @@ def layout():
                                                                 id="assets-chart"
                                                             ),
                                                         ),
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
                                                     ),
                                                 ]
                                             ),
@@ -386,7 +403,8 @@ def layout():
                                                                 className="mb-3",
                                                             ),
                                                         ],
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
                                                     ),
                                                     dbc.Col(
                                                         [
@@ -405,7 +423,8 @@ def layout():
                                                                 className="mb-3",
                                                             ),
                                                         ],
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
                                                     ),
                                                 ]
                                             ),
@@ -428,7 +447,8 @@ def layout():
                                                                 className="mb-3",
                                                             ),
                                                         ],
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
                                                     ),
                                                     dbc.Col(
                                                         [
@@ -447,7 +467,8 @@ def layout():
                                                                 className="mb-3",
                                                             ),
                                                         ],
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
                                                     ),
                                                 ]
                                             ),

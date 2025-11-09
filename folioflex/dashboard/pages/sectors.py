@@ -44,8 +44,10 @@ def layout():
                                             id="sector-initialize",
                                             n_clicks=0,
                                             color="primary",
+                                            className="mb-3 mb-md-0 w-100",
                                         ),
-                                        width="auto",
+                                        xs=12,
+                                        md="auto",
                                     ),
                                     dbc.Col(
                                         dcc.RangeSlider(
@@ -61,6 +63,8 @@ def layout():
                                                 i: str(i) for i in range(0, 101, 10)
                                             },
                                         ),
+                                        xs=12,
+                                        md=True,
                                         className="mt-3",
                                     ),
                                 ],
