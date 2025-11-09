@@ -166,7 +166,7 @@ def scrape_selenium(
     # incognito=True, to avoid detection
     # xvfb=True, uc works better when display is shown and linux usually needs xvfb
     # headless2=False, uc works better when display is shown
-    if re.match(r"https://www\.w.j\.com/finance", url, re.IGNORECASE):
+    if re.match(r"https://www\.wsj\.com/finance", url, re.IGNORECASE):
         with SB(
             uc=True,
             incognito=True,

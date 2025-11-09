@@ -819,12 +819,20 @@ class Portfolio:
         pivot = price_history.pivot(index="date", columns="ticker", values="last_price")
         for tick in tickers:
             check = pivot[tick]
-            check = check[check.index >= check.first_valid_index()]
-            missing_dates = check[check.isnull()].index
-            if not missing_dates.empty:
+            first_valid_idx = check.first_valid_index()
+            if first_valid_idx is not None:
+                check = check[check.index >= first_valid_idx]
+                missing_dates = check[check.isnull()].index
+                if not missing_dates.empty:
+                    logger.warning(
+                        f"Missing price history for {tick},"
+                        f" first noticed on {missing_dates[0]}."
+                        " Most likely the ticker is delisted or not available in"
+                        " stock exchanges."
+                    )
+            else:
                 logger.warning(
-                    f"Missing price history for {tick},"
-                    f" first noticed on {missing_dates[0]}."
+                    f"No valid price data found for {tick}."
                     " Most likely the ticker is delisted or not available in"
                     " stock exchanges."
                 )
@@ -1103,9 +1111,10 @@ class Portfolio:
         )
 
         # average price
-        tx_hist_df = tx_hist_df.groupby("ticker", group_keys=False).apply(
-            self._calc_average_price_speed
-        )
+        tx_hist_df = tx_hist_df.groupby(
+            "ticker",
+            group_keys=False,
+        ).apply(self._calc_average_price_speed)
 
         tx_hist_df.loc[tx_hist_df["ticker"] == "Cash", "average_price"] = 1
 
@@ -1531,12 +1540,12 @@ class Portfolio:
 
         # makes sure that ticker had transactions both negative
         # and positive to calculate return
-        dwrr_return_pct = np.NaN
-        dwrr_ann_return_pct = np.NaN
-        dwrr_div_return_pct = np.NaN
-        dwrr_div_ann_return_pct = np.NaN
-        mdrr_return_pct = np.NaN
-        mdrr_ann_return_pct = np.NaN
+        dwrr_return_pct = np.nan
+        dwrr_ann_return_pct = np.nan
+        dwrr_div_return_pct = np.nan
+        dwrr_div_ann_return_pct = np.nan
+        mdrr_return_pct = np.nan
+        mdrr_ann_return_pct = np.nan
         if return_transactions.empty:
             logger.debug(
                 f"There were no transactions for {ticker} to calculate the return"
@@ -1598,13 +1607,13 @@ class Portfolio:
                     -return_transactions["return_txs"].iloc[0]
                     - return_transactions["return_txs"].iloc[-1]
                 ) / return_transactions["return_txs"].iloc[-1]
-                dwrr_ann_return_pct = np.NaN
+                dwrr_ann_return_pct = np.nan
             elif dwrr_ann_return_pct > max_percentage:
                 logger.warning(
                     f"DWRR return for {ticker} is greater than {max_percentage}%"
                 )
                 dwrr_return_pct = (1 + dwrr_ann_return_pct) ** (days / 365) - 1
-                dwrr_ann_return_pct = np.NaN
+                dwrr_ann_return_pct = np.nan
             else:
                 dwrr_return_pct = (1 + dwrr_ann_return_pct) ** (days / 365) - 1
 
@@ -1621,7 +1630,7 @@ class Portfolio:
                     f"DWRR div return for {ticker} is greater than {max_percentage}%"
                 )
                 dwrr_div_return_pct = (1 + dwrr_div_ann_return_pct) ** (days / 365) - 1
-                dwrr_div_ann_return_pct = np.NaN
+                dwrr_div_ann_return_pct = np.nan
             else:
                 dwrr_div_return_pct = (1 + dwrr_div_ann_return_pct) ** (days / 365) - 1
 

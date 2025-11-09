@@ -20,13 +20,14 @@ def get_amazon_tx(
     budget: str,
     max_pages: Optional[int] = 1,
     login: Optional[bool] = False,
+    year: Optional[int] = None,
     **kwargs,
 ):
     """
     Get transactions from Amazon.
 
     The transaction of date, amount and items are from website
-      - https://www.amazon.com/gp/css/order-history
+      - https://www.amazon.com/your-orders/orders
 
     Parameters
     ----------
@@ -38,6 +39,8 @@ def get_amazon_tx(
         The number of pages to get
     login : bool (optional)
         Whether to login to the website
+    year : int (optional)
+        The year to get the transactions for
     **kwargs : dict (optional)
         Keyword arguments for the driver
 
@@ -73,6 +76,9 @@ def get_amazon_tx(
         amazon_dir_full = os.path.join(
             config_helper.CONFIG_PATH, "data_dirs", amazon_dir
         )
+        amazon_url = "https://www.amazon.com/your-orders/orders"
+        if year:
+            amazon_url += f"?timeFilter=year-{year}"
         with SB(
             uc=True,
             user_data_dir=amazon_dir_full,
@@ -80,7 +86,7 @@ def get_amazon_tx(
             **kwargs,
         ) as sb:
             sb.uc_open_with_reconnect(
-                "https://www.amazon.com/gp/css/order-history",
+                amazon_url,
             )
             if login:
                 logger.info("login within 30 seconds.")
@@ -94,16 +100,33 @@ def get_amazon_tx(
                 sb.reconnect(timeout=30)
                 logger.info("reconnected")
             logger.info(f"getting data for `{max_pages}` max_pages")
-            while current_page <= max_pages:
+            while True:
+                # get page data
                 next_page = 'a:contains("→")'
                 page_data = extract_page_data(sb)
                 page_list.append(page_data)
                 current_page += 1
-                if not sb.is_element_clickable(next_page) or current_page > max_pages:
+                # check max page
+                if current_page > max_pages:
+                    logger.info("Reached max_pages limit.")
                     break
-                sb.click(next_page)
-                time.sleep(2)
-                sb.wait_for_element(next_page)
+                # check if next page is available
+                try:
+                    if not sb.is_element_clickable(next_page):
+                        logger.info("Next page arrow not available — stopping.")
+                        break
+                except Exception:
+                    logger.info("Next page arrow not available — stopping.")
+                    break
+                # click next page
+                try:
+                    sb.click(next_page)
+                    time.sleep(2)
+                    sb.wait_for_element(next_page)
+                except Exception as e:
+                    logger.info(f"Could not click next page ({e}) — stopping.")
+                    break
+
         logger.info(f"reached last page: `{current_page-1}`")
         user_amazon_tx = pd.concat(page_list, ignore_index=True)
         # remove na's

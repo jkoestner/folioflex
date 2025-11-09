@@ -176,6 +176,13 @@ def get_payments_left(
         )
         return None
 
+    if (current_loan * interest_rate) / payment_amount > 1:
+        logger.error(
+            "The interest can't be greater than the payment amount, as loan "
+            "will never be paid"
+        )
+        return None
+
     # get the payments left
     payments_left = math.log10(
         1 / (1 - (current_loan * interest_rate) / payment_amount)

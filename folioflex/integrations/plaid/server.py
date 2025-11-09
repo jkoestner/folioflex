@@ -10,6 +10,7 @@ https://plaid.com/docs/api/
 import json
 from typing import Optional
 
+import pandas as pd
 import requests
 
 from folioflex.integrations.plaid import database
@@ -137,13 +138,16 @@ def handle_plaid_maintenance(user_data: dict) -> None:
         # get the ids to delete
         plaid_item_id = item_info["item"]["item_id"]
         item_id = engine.get_item_info(plaid_item_id=plaid_item_id)["id"]
-        plaid_account_ids = list(
-            engine.get_item_accounts(item_id=item_id).get("plaid_account_id") or []
-        )
-        plaid_transaction_ids = list(
-            engine.get_item_transactions(item_id=item_id).get("plaid_transaction_id")
-            or []
-        )
+
+        accounts_df = engine.get_item_accounts(item_id=item_id)
+        plaid_account_ids = accounts_df.get(
+            "plaid_account_id", pd.Series(dtype=object)
+        ).tolist()
+
+        transactions_df = engine.get_item_transactions(item_id=item_id)
+        plaid_transaction_ids = transactions_df.get(
+            "plaid_transaction_id", pd.Series(dtype=object)
+        ).tolist()
 
         # delete the item
         engine.delete_transactions(plaid_transaction_ids)
@@ -323,6 +327,9 @@ def format_accounts(accounts: dict) -> list:
         The formatted accounts.
 
     """
+    if "item" not in accounts:
+        print(f"[ERROR] Missing 'item' in accounts: {accounts}")
+        raise KeyError("Missing 'item' key in accounts")
     item_id = accounts["item"]["item_id"]
     formatted_accounts = [
         {
@@ -354,36 +361,36 @@ def format_transactions(transactions):
 
     Returns
     -------
-    transactions_formated : list
+    formatted : list
         The formatted transactions.
 
     """
-    formatted_transactions = [
-        {
-            "account_id": transaction["account_id"],
-            "plaid_transaction_id": transaction["transaction_id"],
-            "plaid_category_id": transaction["category_id"],
-            "category": transaction["category"][0],
-            "subcategory": transaction["category"][1]
-            if len(transaction["category"]) > 1
-            else None,
-            "type": transaction["transaction_type"],
-            "name": transaction["name"],
-            "amount": transaction["amount"],
-            "iso_currency_code": transaction["iso_currency_code"],
-            "unofficial_currency_code": transaction["unofficial_currency_code"],
-            "date": transaction["date"],
-            "pending": transaction["pending"],
-            "primary_category": transaction["personal_finance_category"]["primary"],
-            "detailed_category": transaction["personal_finance_category"]["detailed"],
-            "confidence_level": transaction["personal_finance_category"][
-                "confidence_level"
-            ],
-            "account_owner": transaction["account_owner"],
-        }
-        for transaction in transactions
-    ]
-    return formatted_transactions
+    formatted = []
+    for tx in transactions:
+        # coerce None -> empty list
+        cats = tx.get("category") or []
+        formatted.append(
+            {
+                "account_id": tx["account_id"],
+                "plaid_transaction_id": tx["transaction_id"],
+                "plaid_category_id": tx["category_id"],
+                "category": cats[0] if len(cats) >= 1 else None,
+                "subcategory": cats[1] if len(cats) >= 2 else None,
+                "type": tx["transaction_type"],
+                "name": tx["name"],
+                "amount": tx["amount"],
+                "iso_currency_code": tx["iso_currency_code"],
+                "unofficial_currency_code": tx["unofficial_currency_code"],
+                "date": tx["date"],
+                "pending": tx["pending"],
+                # personal_finance_category is always an object (never null)
+                "primary_category": tx["personal_finance_category"]["primary"],
+                "detailed_category": tx["personal_finance_category"]["detailed"],
+                "confidence_level": tx["personal_finance_category"]["confidence_level"],
+                "account_owner": tx.get("account_owner"),  # could be None
+            }
+        )
+    return formatted
 
 
 def get_item_info(access_token: str) -> dict:

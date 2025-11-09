@@ -137,12 +137,13 @@ budgets:
       - credit card
       - transfer
       - one timers
-    # the plaid user if empty it will not limit by user
-    user: 
-    # the model to use
+    # the plaid user in db. if empty it will not limit by user
+    user: personal
+    # the model to use. inside the configs/models folder
     model: components.pkl
-    # the amazon user_data_dir to use
+    # the amazon user_data_dir to use. inside the configs/data_dirs folder
     amazon_dirs:
+      - user_data_personal
 
 #                         _       
 #      /\                | |      

@@ -27,9 +27,9 @@ dependencies = [
     "tzlocal>=5.2",
 
     # web
-    "dash>=2.18.2",
-    "dash-ag-grid>=31.2.0",
-    "dash_bootstrap_components>=1.6.0",
+    "dash>=3.0.2",
+    "dash-ag-grid>=31.3.1",
+    "dash_bootstrap_components>=2.0.0",
     "dash-core-components>=2.0.0",
     "dash-html-components>=2.0.0",
     "dash-renderer>=1.9.1",
