@@ -1,5 +1,7 @@
 """Ideas dashboard."""
 
+import textwrap
+
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -34,14 +36,21 @@ def layout():
                     dbc.CardBody(
                         [
                             dcc.Markdown(
-                                """
-                                Momentum and Value are 2 metrics that determine the viability of
-                                investing in the market. **12 mo Moving Average** - current price
-                                of market is greater than the 12 month moving average. **12 mo
-                                TMOM** - 12 month return is greater than the return of the 10
-                                year treasury bond It's recommended to do 50% of
-                                investment in one method and 50% in other
-                                """
+                                textwrap.dedent(
+                                    """
+                                    Momentum and Value are 2 metrics that determine the
+                                    viability of investing in the market.
+
+                                    **12 mo Moving Average** - current price of market
+                                    is greater than the 12 month moving average.
+
+                                    **12 mo TMOM** - 12 month return is greater than the
+                                    return of the 10 year treasury bond.
+
+                                    It's recommended to do 50% of investment in one
+                                    method and 50% in other.
+                                    """
+                                )
                             ),
                         ]
                     ),
@@ -121,7 +130,7 @@ def sma_value(n_clicks, input_value):
     if n_clicks == 0:
         sma_table = (None, None)
     else:
-        sma = wrappers.Yahoo().get_sma(ticker=input_value, days=365)
+        sma = wrappers.Yahoo().get_sma(ticker=input_value, days=365).iloc[0]
         latest_price = wrappers.Yahoo().fast_info(ticker=input_value)["lastPrice"]
         change_percent = wrappers.Yahoo().get_change_percent(
             ticker=input_value, days=365
@@ -129,6 +138,7 @@ def sma_value(n_clicks, input_value):
 
         # build table
         sma_table = [input_value, sma, latest_price, change_percent]
+        print(sma_table)
         df = pd.DataFrame(
             [sma_table], columns=["stock", "sma", "latest_price", "change_percent"]
         )
