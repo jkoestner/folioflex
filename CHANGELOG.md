@@ -10,6 +10,7 @@
 **Documentation**
 
 **Bug Fixes**
+- fix s&p heatmap
 
 ## [v1.5.0](https://github.com/jkoestner/folioflex/tree/v1.5.0)
 
