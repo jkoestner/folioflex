@@ -311,7 +311,7 @@ class Web:
         request = requests.get(url, headers=_get_header(), timeout=10)
         request.raise_for_status()
 
-        sp500_tickers = pd.read_html(StringIO(request.text))[0][
+        sp500_tickers = pd.read_html(StringIO(request.text))[1][
             ["Symbol", "GICS Sector"]
         ]
 
