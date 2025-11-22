@@ -344,14 +344,14 @@ def fidelity_retirement(
     missing_funds = df[~df["investment"].isin(symbol_lkup["investment"])][
         "investment"
     ].unique()
-    if missing_funds:
+    if len(missing_funds) > 0:
         raise ValueError(
             f"Not all funds are in the symbol lookup table for instance {missing_funds}"
         )
     missing_activity = df[~df["transaction_type"].isin(type_lkup["transaction_type"])][
         "transaction_type"
     ].unique()
-    if missing_activity:
+    if len(missing_activity) > 0:
         raise ValueError(
             f"Not all activity are in the activity lookup table "
             f"for instance {missing_activity}"
