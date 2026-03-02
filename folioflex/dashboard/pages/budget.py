@@ -32,8 +32,7 @@ def layout():
     bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df, columns_to_zero=bdgt.zero_txs)
-    labels = budget_df["label"].dropna().unique()
-    labels.sort()
+    labels = sorted(budget_df["label"].dropna().unique().tolist())
     label_options = [{"label": label, "value": label} for label in labels]
 
     return dbc.Container(

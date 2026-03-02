@@ -85,7 +85,7 @@ def update_asset_info(
             params = config_helper.get_config_options(
                 config_path, "assets", "houses", item
             )
-            value = wrappers.Zillow().get_value(params, proxy=proxy)
+            value = wrappers.Zillow().get_value(params)
         else:
             logger.error(f"Asset group '{asset_group}' not found.")
             return None
