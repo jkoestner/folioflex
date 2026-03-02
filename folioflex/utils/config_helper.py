@@ -176,6 +176,7 @@ USERNAME_PASSWORDS = _credentials_config.get("username_passwords", None)
 # apis
 _api_config = get_config_options(config_file, "config", "api")
 FRED_API = _api_config.get("fred_api", None)
+RAPIDAPI_API = _api_config.get("rapidapi_api", None)
 SCRAPINGBEE_API = _api_config.get("scrapingbee_api", None)
 YODLEE_CLIENT_ID = _api_config.get("yodlee_client_id", None)
 YODLEE_SECRET = _api_config.get("yodlee_secret", None)

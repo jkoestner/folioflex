@@ -9,6 +9,7 @@ from the larger portfolio project, and allows easier integration.
 import re
 from datetime import datetime, time, timedelta
 from io import StringIO
+from time import sleep
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urlencode
 
@@ -874,74 +875,86 @@ class Zillow:
     """
     Wrapper for Zillow data.
 
-    Class that provides functions that use data from Zillow data.
+    To get this data you will need a RapidAPI key.
+
+    You can sign up for a free key here: https://rapidapi.com
+    The api provider is: real-time-real-estate-data
 
     """
 
     def __init__(self) -> None:
         self.value: Optional[int] = None
 
-    def get_value(
-        self, params: Dict[str, Any], proxy: Optional[str] = None
-    ) -> Union[float, None]:
+    def get_value(self, params: Dict[str, Any]) -> Union[float, None]:
         """
-        Get the value of a home.
+        Get the zestimate of a home.
 
         Parameters
         ----------
         params : dict
             dictionary of home parameters
-        proxy : str, optional
-            proxy to use for requests
 
         Returns
         -------
         value : float
-            value of home
+            zestimate of home
 
         """
-        # headers
-        headers = {
-            "authority": "www.zillow.com",
-            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-            "accept-language": "en-US,en;q=0.9",
-            "cache-control": "max-age=0",
-            "dnt": "1",
-            "referer": "https://www.zillow.com/",
-            "sec-ch-ua": '"Google Chrome";v="122", "Chromium";v="122", "Not:A-Brand";v="99"',
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": '"Windows"',
-            "sec-fetch-dest": "document",
-            "sec-fetch-mode": "navigate",
-            "sec-fetch-site": "none",
-            "sec-fetch-user": "?1",
-            "upgrade-insecure-requests": "1",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        }
-        # creating the url
-        url = f"https://www.zillow.com/homes/{params['street']}-{params['city']}-{params['zipcd']}"
-
-        # set the proxy
-        proxies = None
-        if proxy:
-            proxies = {"http": proxy, "https": proxy}
-
-        # get the value
-        response = requests.get(url, headers=headers, proxies=proxies)
-        if response.status_code != 200:
-            logger.warning(f"Most likely denied.Error: {response.status_code}")
-            return None
-        match = re.search(r"<span>\$?([\d,]+)</span>", response.text)
-        try:
-            value = int(match.group(1).replace(",", ""))
-            logger.debug(f"url: {url}")
-            logger.debug(f"Home value: {value}")
-        except Exception as e:
-            logger.warning(f"Error: {e}")
+        value = None
+        # get api
+        if config_helper.RAPIDAPI_API is None:
             logger.warning(
-                f"value not found try different parameters and check url: {url}"
+                "No RapidAPI key found you can sign up free here https://rapidapi.com"
             )
-            value = None
+            return None
+
+        # querying the api
+        url = (
+            "https://real-time-real-estate-data.p.rapidapi.com/property-details-address"
+        )
+        querystring = {
+            "address": f"{params['street']} {params['city']} {params['zipcd']}"
+        }
+        headers = {
+            "x-rapidapi-key": config_helper.RAPIDAPI_API,
+            "x-rapidapi-host": "real-time-real-estate-data.p.rapidapi.com",
+        }
+
+        # retry logic with exponential backoff
+        response = None
+        for attempt in range(3):
+            try:
+                response = requests.get(
+                    url, headers=headers, params=querystring, timeout=15
+                )
+                if response.status_code == 200:
+                    break
+                elif response.status_code == 429:  # rate limited
+                    sleep(2**attempt)
+                else:
+                    logger.warning(
+                        f"Attempt {attempt + 1}: status {response.status_code}"
+                    )
+                    break  # don't retry on 4xx errors other than 429
+            except requests.exceptions.Timeout:
+                logger.warning(f"Attempt {attempt + 1} timed out, retrying...")
+                sleep(2**attempt)
+            except requests.exceptions.RequestException as e:
+                logger.warning(f"Request error: {e}")
+                break
+
+        # log the responses
+        if response.status_code == 200:
+            data = response.json().get("data", {})
+            value = data.get("zestimate")
+
+            if value:
+                value = float(value)
+                logger.debug(f"address: {querystring['address']}")
+                logger.debug(f"home value: ${value:,}")
+        else:
+            logger.warning(f"Error: {response.status_code} - {response.text}")
+
         self.value = value
 
         return value
