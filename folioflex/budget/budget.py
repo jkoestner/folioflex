@@ -112,6 +112,7 @@ class Budget:
             how="left",
             suffixes=[None, "_tmp"],
         )
+        tx_df = tx_df.drop(columns=["id_tmp"])
         tx_df = pd.merge(
             tx_df,
             item_df[["id", "plaid_institution_id", "user_id"]],
@@ -120,6 +121,7 @@ class Budget:
             how="left",
             suffixes=[None, "_tmp"],
         )
+        tx_df = tx_df.drop(columns=["id_tmp"])
         tx_df = pd.merge(
             tx_df,
             user_df[["id", "username"]],
@@ -128,6 +130,7 @@ class Budget:
             how="left",
             suffixes=[None, "_tmp"],
         )
+        tx_df = tx_df.drop(columns=["id_tmp"])
         if user is not None:
             tx_df = tx_df[tx_df["username"] == user]
         tx_df = tx_df[
