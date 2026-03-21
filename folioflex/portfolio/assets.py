@@ -207,16 +207,19 @@ def get_checking_value(engine: database.Engine, user: Optional[str] = None) -> f
         left_on="item_id",
         right_on="id",
         how="left",
-        suffixes=[None, "_tmp"],
+        suffixes=[None, "_item"],
     )
+    account_df.drop(columns=["id_item"], inplace=True)
+
     account_df = pd.merge(
         account_df,
         user_df[["id", "username"]],
         left_on="user_id",
         right_on="id",
         how="left",
-        suffixes=[None, "_tmp"],
+        suffixes=[None, "_user"],
     )
+    account_df.drop(columns=["id_user"], inplace=True)
     if user is not None:
         account_df = account_df[account_df["username"] == user]
     account_df = account_df[account_df["subtype"] == "checking"]
