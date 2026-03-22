@@ -7,29 +7,25 @@ import pandas as pd
 import pandas_market_calendars as mcal
 from pyxirr import xirr
 
-from folioflex.portfolio import portfolio
 from folioflex.utils import config_helper
 
 date = "05-02-2022"  # date to test for performance
 config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_config.yml"
 
-pf = portfolio.Portfolio(config_path=config_path, portfolio="test")
-config_dict = config_helper.get_config_options(config_path, "investments", "test")
 
-
-def test_portfolio_load():
+def test_portfolio_load(pf):
     """Checks if portfolio class can connect."""
     assert pf.file is not None, "Expected that portfolio connects."
 
 
-def test_transactions_load():
+def test_transactions_load(pf):
     """Checks if transactions load correctly."""
     assert len(pf.transactions) == len(
         pd.read_csv(pf.file, parse_dates=["date"])
     ), "Expected to have no differences in loading file."
 
 
-def test_calc_cumulative_units():
+def test_calc_cumulative_units(pf):
     """Checks calculations of performance - cumulative units."""
     performance = pf.get_performance(date=date)
     test_df = pd.read_csv(pf.file, parse_dates=["date"])
@@ -40,7 +36,7 @@ def test_calc_cumulative_units():
     ), "Expected cumulative_units to be sum of units"
 
 
-def test_calc_price():
+def test_calc_price(pf):
     """Checks calculations of performance - sale price."""
     transactions = pf.transactions_history
     transactions = transactions[
@@ -65,7 +61,7 @@ def test_calc_price():
     ), "Expected sale price to match transaction file"
 
 
-def test_calc_average_price():
+def test_calc_average_price(pf):
     """Checks calculations of performance - average price."""
     performance = pf.get_performance(date=date)
 
@@ -74,7 +70,7 @@ def test_calc_average_price():
     ), "Expected average price to match the weighted cost basis"
 
 
-def test_calc_return_pct():
+def test_calc_return_pct(pf):
     """Checks calculations of performance - return percent."""
     performance = pf.get_performance(date=date, prettify=False)
 
@@ -94,7 +90,7 @@ def test_calc_return_pct():
     ), "Expected return percentage to match dollar weight"
 
 
-def test_calc_div_return_pct():
+def test_calc_div_return_pct(pf):
     """Checks calculations of performance - return percent."""
     performance = pf.get_performance(date=date, prettify=False)
 
@@ -103,7 +99,7 @@ def test_calc_div_return_pct():
     ), "Expected dividend return percentage to match dollar weight"
 
 
-def test_calc_market_value():
+def test_calc_market_value(pf):
     """Checks calculations of performance - market value."""
     performance = pf.get_performance(date=date)
     performance = performance[~performance.index.str.contains("benchmark")].copy()
@@ -119,7 +115,7 @@ def test_calc_market_value():
     ), "Expected market_value to be last_price * cumulative_units"
 
 
-def test_calc_cumulative_cost():
+def test_calc_cumulative_cost(pf):
     """Checks calculations of performance - cumulative cost."""
     performance = pf.get_performance(date=date)
     test_df = pd.read_csv(pf.file, parse_dates=["date"])
@@ -132,7 +128,7 @@ def test_calc_cumulative_cost():
     ), "Expected cumulative_cost to be sum of cost"
 
 
-def test_calc_return():
+def test_calc_return(pf):
     """Checks calculations of performance - return."""
     performance = pf.get_performance(date=date)
     performance["test_return"] = (
@@ -144,7 +140,7 @@ def test_calc_return():
     ), "Expected return to be market_value - cumulative_cost"
 
 
-def test_calc_cash_return():
+def test_calc_cash_return(pf):
     """Checks calculations of performance - return."""
     cash_return = pf._get_return_pct("Cash", "9/21/2023", lookback=365)[
         "dwrr_return_pct"
@@ -157,7 +153,7 @@ def test_calc_cash_return():
     assert round(cash_div_return, 2) == 0.00, "Expected cash div return to be 0%"
 
 
-def test_calc_dividend():
+def test_calc_dividend(pf):
     """Checks calculations of performance - dividend."""
     performance = pf.get_performance(date=date)
     test_df = pd.read_csv(pf.file, parse_dates=["date"])
@@ -170,7 +166,7 @@ def test_calc_dividend():
     ), "Expected dividend to be sum of dividend transactions"
 
 
-def test_calc_unrealized_return():
+def test_calc_unrealized_return(pf):
     """Checks calculations of performance - unrealized return."""
     performance = pf.get_performance(date=date)
     performance = performance[~performance.index.str.contains("benchmark")].copy()
@@ -187,7 +183,7 @@ def test_calc_unrealized_return():
     ), "Expected unrealized to be market_value - average_price * cumulative units"
 
 
-def test_calc_realized_return():
+def test_calc_realized_return(pf):
     """Checks calculations of performance - realized return."""
     performance = pf.get_performance(date=date)
     performance["test_realized"] = (
@@ -201,7 +197,7 @@ def test_calc_realized_return():
     ), "Expected realized to be return - unrealized"
 
 
-def test_lookback():
+def test_lookback(pf):
     """Checks calculations of fund transactions."""
     lookback = 10
     ticker = "AMD"
@@ -268,7 +264,7 @@ def test_lookback():
     ), "Expected return for AMD to match the test return"
 
 
-def test_fund_trans():
+def test_fund_trans(pf):
     """Checks calculations of fund transactions."""
     performance = pf.get_performance(date="05-27-2022")
     test_units = pf.transactions[pf.transactions["ticker"] == "BLKRK"]["units"].sum()
@@ -290,7 +286,7 @@ def test_fund_trans():
     ), "Expected market_value to be last_price * cumulative_units"
 
 
-def test_delisted_trans():
+def test_delisted_trans(pf):
     """Checks calculations of delisted transactions."""
     performance = pf.get_performance(date="05-27-2022")
     performance["test_return"] = (
@@ -302,7 +298,7 @@ def test_delisted_trans():
     ), "Expected cumulative_units to be market_value - cumulative_cost"
 
 
-def test_benchmark():
+def test_benchmark(pf, config_dict):
     """Checks benchmark is calculating market value correctly."""
     performance = pf.get_performance(date=date)
     cash_tx = pf.transactions[pf.transactions["ticker"] == "Cash"].copy()
@@ -343,7 +339,7 @@ def test_benchmark():
     ), "Expected benchmark to be based on cash transactions"
 
 
-def test_yf_download():
+def test_yf_download(pf, config_dict):
     """Checks that yf is downloading the same data."""
     test_price_history = pd.read_csv(
         config_dict["history_offline"], index_col=0, parse_dates=["date"]

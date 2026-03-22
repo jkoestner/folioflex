@@ -5,23 +5,18 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 
-from folioflex.budget import budget, models
+from folioflex.budget import budget
 from folioflex.utils import config_helper
 
 config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_config.yml"
 test_csv = config_helper.ROOT_PATH / "tests" / "files" / "test_budget.csv"
 
-df = pd.read_csv(test_csv)
-train_df = df[df["label"].notnull()]
-model = models.Classifier(train_df=train_df)
-model.create_model()
 
-
-def test_create_features():
+def test_create_features(budget_model, budget_df):
     """Checks if features are created."""
-    train_df = df[df["label"].notnull()]
-    train_df = model.preprocess_data(train_df)
-    features, encoders = model._create_features(
+    train_df = budget_df[budget_df["label"].notnull()]
+    train_df = budget_model.preprocess_data(train_df)
+    features, encoders = budget_model._create_features(
         description=train_df["name"],
         amount=train_df["amount"],
         institution=train_df["plaid_institution_id"],
@@ -33,12 +28,12 @@ def test_create_features():
     assert features.format == "coo", "Sparse format mismatch"
 
 
-def test_predictions():
+def test_predictions(budget_model, budget_df):
     """Checks if predictions are made."""
-    unlabeled_df = df[df["label"].isnull()]
-    unlabeled_df = model.preprocess_data(unlabeled_df)
-    predict_df = model.predict_labels(
-        unlabeled_df=unlabeled_df, components=model.components
+    unlabeled_df = budget_df[budget_df["label"].isnull()]
+    unlabeled_df = budget_model.preprocess_data(unlabeled_df)
+    predict_df = budget_model.predict_labels(
+        unlabeled_df=unlabeled_df, components=budget_model.components
     )
 
     assert (
@@ -67,12 +62,15 @@ def test_feature_countvectorizer():
     ], "Second text has incorrect count, should be 1 'own' and 1 'pet'"
 
 
-def test_feature_embedding():
+def test_feature_embedding(budget_model):
     """Checks if the feature embedding is correct."""
     glove_model = api.load("glove-wiki-gigaword-50")  # large glove model
     description = ["purchase groceries", "buy food", "vacation"]
     results = np.array(
-        [model._document_to_avg_vector(text, glove_model) for text in description]
+        [
+            budget_model._document_to_avg_vector(text, glove_model)
+            for text in description
+        ]
     )
 
     # cosine similarity formula
@@ -89,11 +87,11 @@ def test_feature_embedding():
     )
 
 
-def test_subscription():
+def test_subscription(budget_df):
     """Checks if the subscription identification is correct."""
-    df["date"] = pd.to_datetime(df["date"]).dt.date
+    budget_df["date"] = pd.to_datetime(budget_df["date"]).dt.date
     bdgt = budget.Budget(config_path="test_config.yml", budget="test")
-    subscription_tbl = bdgt.identify_subscriptions(tx_df=df)
+    subscription_tbl = bdgt.identify_subscriptions(tx_df=budget_df)
     utils_occurs = subscription_tbl[subscription_tbl["Description"] == "utils"][
         "Occurrences"
     ]
