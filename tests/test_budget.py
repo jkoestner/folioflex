@@ -69,7 +69,7 @@ def test_feature_countvectorizer():
 
 def test_feature_embedding():
     """Checks if the feature embedding is correct."""
-    glove_model = api.load("glove-wiki-gigaword-50")
+    glove_model = api.load("glove-wiki-gigaword-50")  # large glove model
     description = ["purchase groceries", "buy food", "vacation"]
     results = np.array(
         [model._document_to_avg_vector(text, glove_model) for text in description]

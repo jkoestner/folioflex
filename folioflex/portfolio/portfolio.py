@@ -1111,10 +1111,11 @@ class Portfolio:
         )
 
         # average price
-        tx_hist_df = tx_hist_df.groupby(
-            "ticker",
-            group_keys=False,
-        ).apply(self._calc_average_price_speed)
+        tx_hist_df = (
+            tx_hist_df.groupby("ticker")
+            .apply(self._calc_average_price_speed)
+            .reset_index(level=0)
+        )
 
         tx_hist_df.loc[tx_hist_df["ticker"] == "Cash", "average_price"] = 1
 

@@ -722,15 +722,14 @@ def update_loans_table(clickData):
 
 
 @callback(
+    Output("assets-retrieve-button", "disabled"),
     [Input("assets-retrieve-button", "n_clicks")],
     prevent_initial_call=True,
 )
 def retrieve_asset_values(clickData):
     """Get new asset values."""
-    if clickData is None:
-        return dash.no_update
     assets.update_asset_info(config_path="config.yml", db_write=True)
-    return dash.no_update
+    return False
 
 
 @callback(

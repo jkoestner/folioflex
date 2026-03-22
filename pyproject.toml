@@ -15,47 +15,47 @@ dependencies = [
     "ipywidgets>=8.1.5",
     "fredapi>=0.5.2",
     "jupyter-dash>=0.4.2",
-    "jupyterlab>=4.3.0",
-    "kaleido>=0.1.0,<0.2.0",          # restricted from 0.2.1 due to performance issues
+    "jupyterlab>=4.5.6",
+    "kaleido>=0.1.0,<0.2.0",          # restricted from 0.2.1, performance issue
     "numpy>=1.26.4",
     "openpyxl>=3.1.5",
-    "pandas>=2.2.3",
-    "pandas-market-calendars>=4.4.1",
+    "pandas>=3.0.1",
+    "pandas-market-calendars>=5.3.1.2",
     "pyxirr>=0.10.6",
-    "sqlalchemy>=2.0.36",
+    "sqlalchemy>=2.0.48",
     "yfinance>=0.2.51",
     "tzlocal>=5.2",
 
     # web
-    "dash>=3.0.2",
-    "dash-ag-grid>=31.3.1",
+    "dash>=4.0.0",
+    "dash-ag-grid>=33.3.3",
     "dash_bootstrap_components>=2.0.0",
     "dash-core-components>=2.0.0",
     "dash-html-components>=2.0.0",
     "dash-renderer>=1.9.1",
     "dash-table>=5.0.0",
-    "Flask>=3.0.3",
+    "Flask>=3.1.3",
     "Flask-Compress>=1.17",
     "Flask-Login>=0.6.3",
-    "gunicorn>=23.0.0",
+    "gunicorn>=25.1.0",
     "lxml>=5.3.1",
 
     # worker
-    "celery>=5.4.0",
+    "celery>=5.6.2",
     "flower>=2.0.1",
-    "redis>=5.2.0",
+    "redis>=7.3.0",
 
     # gpt
-    "g4f>=0.3.3.3",         # this package has loose testing support
+    "g4f>=7.3.3",         # this package has loose testing support
     "hugchat>=0.4.12",
     "openai>=1.54.3",
     "pyautogui>=0.9.54",
-    "seleniumbase>=4.32.8",
+    "seleniumbase>=4.47.4",
 
     # budget
     "emoji>=2.14.0",
     "gensim>=4.3.3",
-    "scikit-learn>=1.5.2",
+    "scikit-learn>=1.8.0",
     "scipy<1.14",              # restricted from gensim
     "psycopg2-binary>=2.9.10",
 ]
@@ -65,7 +65,7 @@ dev = [
     "black>=24.10.0",
     "isort>=5.13.2",
     "jupyterlab-code-formatter>=3.0.2",
-    "pytest>=8.3.3",
+    "pytest>=9.0.2",
     "pytest-cov>=6.0.0",
     "ruff>=0.7.3",
     "sphinx>=8.1",
