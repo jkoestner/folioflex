@@ -6,8 +6,9 @@ import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 
 from folioflex.budget import budget
-from folioflex.utils import config_helper
+from folioflex.utils import config_helper, custom_logger
 
+logger = custom_logger.setup_logging(__name__)
 config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_config.yml"
 test_csv = config_helper.ROOT_PATH / "tests" / "files" / "test_budget.csv"
 
@@ -64,7 +65,9 @@ def test_feature_countvectorizer():
 
 def test_feature_embedding(budget_model):
     """Checks if the feature embedding is correct."""
+    logger.info("Loading GloVe model...")
     glove_model = api.load("glove-wiki-gigaword-50")  # large glove model
+    logger.info("GloVe model loaded.")
     description = ["purchase groceries", "buy food", "vacation"]
     results = np.array(
         [
