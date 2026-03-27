@@ -62,7 +62,7 @@ def unixToDatetime(unix):
     return pd.to_datetime(unix, unit="s")
 
 
-def getMarks(start, end, nth=365):
+def getMarks(start, end, nth=12):
     """
     Return Nth marks for labeling.
 
@@ -73,7 +73,7 @@ def getMarks(start, end, nth=365):
     end : date
         the maximum date of series
     nth : int
-        the range to create a new mark
+        the interval in months between marks (default 12 = yearly, 3 = quarterly)
 
     Returns
     -------
@@ -84,7 +84,7 @@ def getMarks(start, end, nth=365):
     result = []
     while start <= end:
         result.append(start)
-        start += relativedelta(years=1)
+        start += relativedelta(months=nth)
 
     marks = {
         int(unix_time_millis(date)): (str(date.strftime("%Y-%m"))) for date in result
@@ -93,7 +93,7 @@ def getMarks(start, end, nth=365):
     return marks
 
 
-def get_slider_values(daterange):
+def get_slider_values(daterange, nth=12):
     """
     Return slider values.
 
@@ -101,6 +101,8 @@ def get_slider_values(daterange):
     ----------
     daterange : series
         series of dates to calculate values on
+    nth : int
+        the interval in months between marks (default 12 = yearly, 3 = quarterly)
 
     Returns
     -------
@@ -121,9 +123,27 @@ def get_slider_values(daterange):
         unix_time_millis(daterange.min()),
         unix_time_millis(daterange.max()),
     ]
-    marks = getMarks(daterange.min(), daterange.max())
+    marks = getMarks(daterange.min(), daterange.max(), nth=nth)
 
     return min, max, value, marks
+
+
+def get_slider_tooltip(placement="bottom"):
+    """
+    Return a RangeSlider tooltip config that displays dates.
+
+    Parameters
+    ----------
+    placement : str
+        tooltip placement (default "bottom")
+
+    Returns
+    -------
+    tooltip : dict
+        tooltip config for dcc.RangeSlider
+
+    """
+    return None
 
 
 def update_graph(slide_value, view_return, view_cost, view_market, graph_type="change"):
@@ -150,7 +170,7 @@ def update_graph(slide_value, view_return, view_cost, view_market, graph_type="c
 
     """
     res = []
-    layout = go.Layout(hovermode="closest")
+    layout = go.Layout(hovermode="closest", uirevision="personal-graph")
 
     view_cost = view_cost * -1
 

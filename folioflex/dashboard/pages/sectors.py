@@ -52,10 +52,7 @@ def layout():
                                     dbc.Col(
                                         dcc.RangeSlider(
                                             id="slider",
-                                            tooltip={
-                                                "always_visible": True,
-                                                "placement": "bottom",
-                                            },
+                                            tooltip=dashboard_helper.get_slider_tooltip(),
                                             min=0,
                                             max=10,
                                             value=[0, 100],
@@ -65,10 +62,14 @@ def layout():
                                         ),
                                         xs=12,
                                         md=True,
-                                        className="mt-3",
+                                        className="mt-3 px-4",
                                     ),
                                 ],
                                 align="center",
+                            ),
+                            html.Div(
+                                id="slider-date-display",
+                                className="text-center text-muted small mt-4",
                             ),
                             html.Div(id="refresh_text", style={"display": "none"}),
                             dcc.Loading(
@@ -178,7 +179,7 @@ def update_SectorData(sector_status, yf_data):
     if sector_status == "ready":
         cq_sector_close = pd.read_json(StringIO(yf_data))
         min_value, max_value, value, marks = dashboard_helper.get_slider_values(
-            cq_sector_close.index
+            cq_sector_close.index, nth=3
         )
     else:
         min_value = 0
@@ -197,7 +198,15 @@ def update_SectorData(sector_status, yf_data):
 def update_SectorGraph(slider_value, sector_status, yf_data):
     """Update the sector performance graph based on slider."""
     res = []
-    layout = go.Layout(hovermode="closest")
+    layout = go.Layout(
+        hovermode="closest",
+        xaxis=dict(tickformat="%Y-%m-%d", type="date"),
+        yaxis=dict(ticksuffix="%", title="Return (%)"),
+        margin=dict(l=60, r=20, t=50, b=60),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        autosize=True,
+        uirevision="sector-graph",
+    )
 
     if sector_status == "ready" and slider_value != [0, 0]:
         cq_sector_close = pd.read_json(StringIO(yf_data))
@@ -225,6 +234,19 @@ def update_SectorGraph(slider_value, sector_status, yf_data):
 
     fig = go.Figure(data=res, layout=layout)
     return fig
+
+
+@callback(
+    Output("slider-date-display", "children"),
+    Input("slider", "value"),
+)
+def update_slider_display(slider_value):
+    """Display the selected date range from the slider."""
+    if not slider_value or slider_value == [0, 100]:
+        return ""
+    start = pd.to_datetime(slider_value[0], unit="s").strftime("%Y-%m-%d")
+    end = pd.to_datetime(slider_value[1], unit="s").strftime("%Y-%m-%d")
+    return f"{start} → {end}"
 
 
 # heatmap Graph

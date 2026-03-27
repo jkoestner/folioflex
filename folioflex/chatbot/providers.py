@@ -325,7 +325,7 @@ class OpenaiProvider(ChatBotProvider):
 
         return self.chatbot
 
-    def get_query(self, query, scrape_url=None, model="gpt-4-1106-preview", **kwargs):
+    def get_query(self, query, scrape_url=None, model="gpt-5-nano", **kwargs):
         """
         Get query from chatbot.
 

@@ -1,9 +1,7 @@
 """
 Building plotly dashboard.
 
-Builds plotly pages with call backs. There are 2 options the user has for running code.
-1. Fly.io build set up
-2. Local running
+Builds plotly pages with call backs.
 
 To run locally:
 1. cd into root directory
