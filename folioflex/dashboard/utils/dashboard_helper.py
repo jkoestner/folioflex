@@ -117,8 +117,8 @@ def get_slider_values(daterange, nth=12):
 
     """
     # due to range step granularity, range needs to be extended to be inclusive of ends
-    min = unix_time_millis(daterange.min()) - 1000000
-    max = unix_time_millis(daterange.max()) + 1000000
+    min = unix_time_millis(daterange.min())
+    max = unix_time_millis(daterange.max())
     value = [
         unix_time_millis(daterange.min()),
         unix_time_millis(daterange.max()),
