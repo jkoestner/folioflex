@@ -112,7 +112,7 @@ class G4FProvider(ChatBotProvider):
     """
 
     def get_chatbot(
-        self, g4f_provider=g4f.Provider.bing, auth=False, access_token=None
+        self, g4f_provider=g4f.Provider.BaseProvider, auth=False, access_token=None
     ):
         """
         G4F chatbot.

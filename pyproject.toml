@@ -9,14 +9,14 @@ dynamic = ["version"]
 authors = [{ name = "John Koestner", email = "johnkoestner@outlook.com" }]
 readme = 'README.md'
 license = { file = 'LICENSE.md' }
-requires-python = '>=3.10'
+requires-python = '>=3.11'
 
 dependencies = [
     "ipywidgets>=8.1.5",
     "fredapi>=0.5.2",
     "jupyter-dash>=0.4.2",
     "jupyterlab>=4.5.6",
-    "kaleido>=0.1.0,<0.2.0",          # restricted from 0.2.1, performance issue
+    "kaleido>=1.0.0",          
     "numpy>=1.26.4",
     "openpyxl>=3.1.5",
     "pandas>=3.0.1",
@@ -56,7 +56,7 @@ dependencies = [
     "emoji>=2.14.0",
     "gensim>=4.3.3",
     "scikit-learn>=1.8.0",
-    "scipy<1.14",              # restricted from gensim
+    "scipy",              
     "psycopg2-binary>=2.9.10",
 ]
 
