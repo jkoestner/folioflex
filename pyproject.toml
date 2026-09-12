@@ -32,6 +32,7 @@ dependencies = [
     "dash_bootstrap_components>=2.0.0",
     "dash-core-components>=2.0.0",
     "dash-html-components>=2.0.0",
+    "dash-mantine-components>=2.6.0",
     "dash-renderer>=1.9.1",
     "dash-table>=5.0.0",
     "Flask>=3.1.3",

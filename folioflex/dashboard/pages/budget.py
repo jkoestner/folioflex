@@ -5,6 +5,7 @@ import datetime
 import dash
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import pandas as pd
 from dash import Input, Output, State, callback, dcc, html
 from flask_login import current_user
@@ -118,8 +119,15 @@ def layout():
                                         [
                                             dcc.Loading(
                                                 id="loading-budget-chart",
-                                                type="dot",
-                                                children=html.Div(id="budget-chart"),
+                                                children=html.Div(
+                                                    id="budget-chart",
+                                                    style={"minHeight": "450px"},
+                                                ),
+                                                custom_spinner=dmc.Skeleton(
+                                                    visible=True,
+                                                    h=450,
+                                                    w="100%",
+                                                ),
                                             ),
                                             html.Div(
                                                 id="budget-chart-labels",
@@ -166,9 +174,16 @@ def layout():
                                                     dbc.Col(
                                                         dcc.Loading(
                                                             id="loading-expense-chart",
-                                                            type="dot",
                                                             children=html.Div(
-                                                                id="expense-chart"
+                                                                id="expense-chart",
+                                                                style={
+                                                                    "minHeight": "450px"
+                                                                },
+                                                            ),
+                                                            custom_spinner=dmc.Skeleton(
+                                                                visible=True,
+                                                                h=450,
+                                                                w="100%",
                                                             ),
                                                         ),
                                                         xs=12,
@@ -178,9 +193,16 @@ def layout():
                                                     dbc.Col(
                                                         dcc.Loading(
                                                             id="loading-expense-table",
-                                                            type="dot",
                                                             children=html.Div(
-                                                                id="expense-table"
+                                                                id="expense-table",
+                                                                style={
+                                                                    "minHeight": "300px"
+                                                                },
+                                                            ),
+                                                            custom_spinner=dmc.Skeleton(
+                                                                visible=True,
+                                                                h=300,
+                                                                w="100%",
                                                             ),
                                                         ),
                                                         xs=12,
@@ -209,8 +231,15 @@ def layout():
                                     dbc.CardBody(
                                         dcc.Loading(
                                             id="loading-income-chart",
-                                            type="dot",
-                                            children=html.Div(id="income-chart"),
+                                            children=html.Div(
+                                                id="income-chart",
+                                                style={"minHeight": "450px"},
+                                            ),
+                                            custom_spinner=dmc.Skeleton(
+                                                visible=True,
+                                                h=450,
+                                                w="100%",
+                                            ),
                                         ),
                                     ),
                                 ]
@@ -232,8 +261,15 @@ def layout():
                                     dbc.CardBody(
                                         dcc.Loading(
                                             id="loading-compare-chart",
-                                            type="dot",
-                                            children=html.Div(id="compare-chart"),
+                                            children=html.Div(
+                                                id="compare-chart",
+                                                style={"minHeight": "450px"},
+                                            ),
+                                            custom_spinner=dmc.Skeleton(
+                                                visible=True,
+                                                h=450,
+                                                w="100%",
+                                            ),
                                         ),
                                     ),
                                 ]
@@ -255,8 +291,15 @@ def layout():
                                     dbc.CardBody(
                                         dcc.Loading(
                                             id="loading-subscription-table",
-                                            type="dot",
-                                            children=html.Div(id="subscription-table"),
+                                            children=html.Div(
+                                                id="subscription-table",
+                                                style={"minHeight": "300px"},
+                                            ),
+                                            custom_spinner=dmc.Skeleton(
+                                                visible=True,
+                                                h=300,
+                                                w="100%",
+                                            ),
                                         ),
                                     ),
                                 ]
@@ -302,9 +345,16 @@ def layout():
                                                     dbc.Col(
                                                         dcc.Loading(
                                                             id="loading-assets-table",
-                                                            type="dot",
                                                             children=html.Div(
-                                                                id="assets-table"
+                                                                id="assets-table",
+                                                                style={
+                                                                    "minHeight": "300px"
+                                                                },
+                                                            ),
+                                                            custom_spinner=dmc.Skeleton(
+                                                                visible=True,
+                                                                h=300,
+                                                                w="100%",
                                                             ),
                                                         ),
                                                         xs=12,
@@ -314,9 +364,16 @@ def layout():
                                                     dbc.Col(
                                                         dcc.Loading(
                                                             id="loading-assets-chart",
-                                                            type="dot",
                                                             children=html.Div(
-                                                                id="assets-chart"
+                                                                id="assets-chart",
+                                                                style={
+                                                                    "minHeight": "450px"
+                                                                },
+                                                            ),
+                                                            custom_spinner=dmc.Skeleton(
+                                                                visible=True,
+                                                                h=450,
+                                                                w="100%",
                                                             ),
                                                         ),
                                                         xs=12,
@@ -345,8 +402,15 @@ def layout():
                                     dbc.CardBody(
                                         dcc.Loading(
                                             id="loading-loans-table",
-                                            type="dot",
-                                            children=html.Div(id="loans-table"),
+                                            children=html.Div(
+                                                id="loans-table",
+                                                style={"minHeight": "300px"},
+                                            ),
+                                            custom_spinner=dmc.Skeleton(
+                                                visible=True,
+                                                h=300,
+                                                w="100%",
+                                            ),
                                         ),
                                     ),
                                 ]

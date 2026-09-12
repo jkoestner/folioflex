@@ -4,6 +4,7 @@ from io import StringIO
 
 import dash
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import pandas as pd
 import plotly.graph_objs as go
 from celery.result import AsyncResult
@@ -74,8 +75,10 @@ def layout():
                             html.Div(id="refresh_text", style={"display": "none"}),
                             dcc.Loading(
                                 id="loading-sector-graph",
-                                type="default",
                                 children=dcc.Graph(id="Sector-Graph"),
+                                custom_spinner=dmc.Skeleton(
+                                    visible=True, h=450, w="100%"
+                                ),
                             ),
                         ]
                     ),
@@ -96,8 +99,10 @@ def layout():
                             ),
                             dcc.Loading(
                                 id="loading-heatmap-graph",
-                                type="default",
                                 children=dcc.Graph(id="Heatmap-Graph"),
+                                custom_spinner=dmc.Skeleton(
+                                    visible=True, h=450, w="100%"
+                                ),
                             ),
                         ]
                     ),

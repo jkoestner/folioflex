@@ -3,6 +3,7 @@
 import dash
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import pandas as pd
 from dash import Input, Output, State, callback, clientside_callback, dcc, html
 from flask import jsonify, request
@@ -194,8 +195,15 @@ def layout():
                         [
                             dcc.Loading(
                                 id="loading-transactions",
-                                type="dot",
-                                children=html.Div(id="transactions-table"),
+                                children=html.Div(
+                                    id="transactions-table",
+                                    style={"minHeight": "1000px"},
+                                ),
+                                custom_spinner=dmc.Skeleton(
+                                    visible=True,
+                                    h=1000,
+                                    w="100%",
+                                ),
                             ),
                             dbc.Toast(
                                 "Categories saved successfully!",
@@ -229,8 +237,15 @@ def layout():
                             ),
                             dcc.Loading(
                                 id="loading-accounts",
-                                type="dot",
-                                children=html.Div(id="accounts-table"),
+                                children=html.Div(
+                                    id="accounts-table",
+                                    style={"minHeight": "400px"},
+                                ),
+                                custom_spinner=dmc.Skeleton(
+                                    visible=True,
+                                    h=400,
+                                    w="100%",
+                                ),
                             ),
                         ],
                         title="Accounts Overview",

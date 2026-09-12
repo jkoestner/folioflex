@@ -4,6 +4,7 @@ from io import StringIO
 
 import dash
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import pandas as pd
 import plotly.graph_objs as go
 from celery.result import AsyncResult
@@ -91,8 +92,15 @@ def layout():
                             # manager table
                             dcc.Loading(
                                 id="loading-manager-table",
-                                type="default",
-                                children=html.Div(id="manager_table_container"),
+                                children=html.Div(
+                                    id="manager_table_container",
+                                    style={"minHeight": "450px"},
+                                ),
+                                custom_spinner=dmc.Skeleton(
+                                    visible=True,
+                                    h=450,
+                                    w="100%",
+                                ),
                             ),
                         ],
                     ),
@@ -161,8 +169,12 @@ def layout():
                             # graph
                             dcc.Loading(
                                 id="loading-personal-graph",
-                                type="default",
                                 children=dcc.Graph(id="personal_graph"),
+                                custom_spinner=dmc.Skeleton(
+                                    visible=True,
+                                    h=450,
+                                    w="100%",
+                                ),
                             ),
                             html.Br(),
                             dbc.Row(
@@ -197,9 +209,14 @@ def layout():
                                     dbc.CardBody(
                                         dcc.Loading(
                                             id="loading-performance-table",
-                                            type="default",
                                             children=html.Div(
-                                                id="personal_performance_table_container"
+                                                id="personal_performance_table_container",
+                                                style={"minHeight": "450px"},
+                                            ),
+                                            custom_spinner=dmc.Skeleton(
+                                                visible=True,
+                                                h=450,
+                                                w="100%",
                                             ),
                                         ),
                                     ),
@@ -214,9 +231,14 @@ def layout():
                                     dbc.CardBody(
                                         dcc.Loading(
                                             id="loading-transactions-table",
-                                            type="default",
                                             children=html.Div(
-                                                id="personal_transaction_table_container"
+                                                id="personal_transaction_table_container",
+                                                style={"minHeight": "450px"},
+                                            ),
+                                            custom_spinner=dmc.Skeleton(
+                                                visible=True,
+                                                h=450,
+                                                w="100%",
                                             ),
                                         ),
                                     ),

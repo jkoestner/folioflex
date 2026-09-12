@@ -13,6 +13,7 @@ with "standard font"
 
 import dash
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 from dash import Input, Output, State, callback, dcc, html
 from flask_login import current_user
 
@@ -131,13 +132,15 @@ navbar = dbc.Navbar(
     className="mb-3",
 )
 
-app.layout = html.Div(
-    [
-        html.Link(rel="shortcut icon", href="/assets/folioflex.png"),
-        dcc.Location(id="url", refresh=True),
-        navbar,
-        dash.page_container,
-    ]
+app.layout = dmc.MantineProvider(
+    html.Div(
+        [
+            html.Link(rel="shortcut icon", href="/assets/folioflex.png"),
+            dcc.Location(id="url", refresh=True),
+            navbar,
+            dash.page_container,
+        ]
+    )
 )
 
 
