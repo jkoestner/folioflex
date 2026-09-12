@@ -154,7 +154,7 @@ class Budget:
         logger.info(f"Number of transactions: {len(tx_df)}")
         logger.info(
             f"Number of transactions that are pending: "
-            f"{len(tx_df[tx_df['pending']==True])}"
+            f"{len(tx_df[tx_df['pending'] == True])}"
         )
 
         return tx_df
@@ -377,7 +377,13 @@ class Budget:
 
         return amazon_df
 
-    def identify_subscriptions(self, tx_df: pd.DataFrame) -> pd.DataFrame:
+    def identify_subscriptions(
+        self,
+        tx_df: pd.DataFrame,
+        active_only: bool = True,
+        as_of: Optional[Any] = None,
+        active_grace: float = 1.5,
+    ) -> pd.DataFrame:
         """
         Identify possible subscriptions in the transactions.
 
@@ -385,10 +391,22 @@ class Budget:
         the amount is similar for multiple transactions, and there are at least
         a set amount of transcations, then it is likely a subscription.
 
+        A subscription is active if its days_since_last_charge is more recent
+        than the mean interval * grace.
+
         Parameters
         ----------
         tx_df : DataFrame
             The transactions to identify subscriptions for.
+        active_only : bool
+            Whether to drop subscriptions that are no longer being charged.
+        as_of : str or datetime, optional
+            The date to measure activity against. Defaults to the most recent
+            transaction in `tx_df`.
+        active_grace : float
+            How many billing intervals a subscription may go unpaid before it
+            counts as inactive, e.g. 1.5 lets a monthly subscription run about
+            two weeks late.
 
         Returns
         -------
@@ -400,6 +418,21 @@ class Budget:
         min_transactions = 3
         interval_std_threshold = 5
         amount_std_threshold = 0.1
+        columns = [
+            "Description",
+            "Occurrences",
+            "Mean Interval (Days)",
+            "Amount Mean",
+            "Amount Std Dev",
+            "Last Date",
+            "Last Amount",
+            "Days Since Last",
+            "Active",
+        ]
+
+        tx_df = tx_df.copy()
+        tx_df["date"] = pd.to_datetime(tx_df["date"])
+        as_of = tx_df["date"].max() if as_of is None else pd.to_datetime(as_of)
 
         # group data by name
         grouped_df = tx_df.groupby("name")
@@ -410,6 +443,9 @@ class Budget:
             if len(group) < min_transactions:
                 continue
 
+            # get_transactions returns newest first, so sort before diffing
+            group = group.sort_values("date")
+
             # calculating the intervals and ensure they are regular
             intervals = group["date"].diff().dropna().dt.days
             regular = intervals.std() <= interval_std_threshold
@@ -418,27 +454,39 @@ class Budget:
             amount_mean = group["amount"].mean()
             if amount_mean == 0:
                 continue
-            relative_std = group["amount"].std() / amount_mean
+            # abs() so that a refund (negative mean) cannot flip the ratio
+            # negative and pass the threshold no matter how much it varies
+            relative_std = group["amount"].std() / abs(amount_mean)
             consistent_amount = relative_std <= amount_std_threshold
 
-            # get the last date and amount
-            last_date = group["date"].max()
-            last_amount = group[group["date"] == last_date]["amount"].values[0]
+            if not (regular and consistent_amount):
+                continue
 
-            if regular and consistent_amount:
-                subscriptions.append(
-                    {
-                        "Description": name,
-                        "Occurrences": len(group),
-                        "Mean Interval (Days)": intervals.mean(),
-                        "Amount Mean": group["amount"].mean(),
-                        "Amount Std Dev": group["amount"].std(),
-                        "Last Date": last_date,
-                        "Last Amount": last_amount,
-                    }
-                )
+            # a subscription in inactive if the last charge is more than
+            # the mean_interval * grace
+            mean_interval = intervals.mean()
+            last_date = group["date"].iloc[-1]
+            last_amount = group["amount"].iloc[-1]
+            days_since_last = (as_of - last_date).days
 
-        subscriptions_df = pd.DataFrame(subscriptions)
+            subscriptions.append(
+                {
+                    "Description": name,
+                    "Occurrences": len(group),
+                    "Mean Interval (Days)": mean_interval,
+                    "Amount Mean": amount_mean,
+                    "Amount Std Dev": group["amount"].std(),
+                    "Last Date": last_date,
+                    "Last Amount": last_amount,
+                    "Days Since Last": days_since_last,
+                    "Active": days_since_last <= mean_interval * active_grace,
+                }
+            )
+
+        # columns are set so that a sort doesn't raise an error
+        subscriptions_df = pd.DataFrame(subscriptions, columns=columns)
+        if active_only:
+            subscriptions_df = subscriptions_df[subscriptions_df["Active"].astype(bool)]
         subscriptions_df = subscriptions_df.sort_values(
             by="Occurrences", ascending=False
         )
@@ -509,9 +557,9 @@ class Budget:
 
         # calculating the amount remaining or over budget that has been spent
         budget_df["remaining_budget"] = budget_df.apply(
-            lambda row: min(row["budget"], row["amount_diff"])
-            if row["amount_diff"] >= 0
-            else 0,
+            lambda row: (
+                min(row["budget"], row["amount_diff"]) if row["amount_diff"] >= 0 else 0
+            ),
             axis=1,
         )
         budget_df["over_budget"] = budget_df["amount_diff"].apply(

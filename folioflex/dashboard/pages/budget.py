@@ -286,6 +286,12 @@ def layout():
                                 color="primary",
                                 className="mb-3",
                             ),
+                            dbc.Switch(
+                                id="subscription-active-only",
+                                label="Active subscriptions only",
+                                value=True,
+                                className="mb-3",
+                            ),
                             dbc.Card(
                                 [
                                     dbc.CardBody(
@@ -690,12 +696,15 @@ def update_expenses_table(clickData, selected_label, zero_labels):
 
 @callback(
     Output("subscription-table", "children"),
-    [Input("subscription-button", "n_clicks")],
+    [
+        Input("subscription-button", "n_clicks"),
+        Input("subscription-active-only", "value"),
+    ],
     prevent_initial_call=True,
 )
-def update_subscription_table(clickData):
+def update_subscription_table(n_clicks, active_only):
     """Update the table with possible subscriptions."""
-    if clickData is None:
+    if not n_clicks:
         return dash.no_update
     budget_section = current_user.get_id()
 
@@ -703,7 +712,9 @@ def update_subscription_table(clickData):
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df, columns_to_zero=bdgt.zero_txs)
 
-    subscription_tbl = bdgt.identify_subscriptions(tx_df=budget_df)
+    subscription_tbl = bdgt.identify_subscriptions(
+        tx_df=budget_df, active_only=active_only
+    )
 
     # create the table
     subscription_tbl_div = html.Div(
@@ -724,9 +735,9 @@ def update_subscription_table(clickData):
     [Input("assets-button", "n_clicks")],
     prevent_initial_call=True,
 )
-def update_assets_table(clickData):
+def update_assets_table(n_clicks):
     """Update the table with assets."""
-    if clickData is None:
+    if n_clicks is None:
         return dash.no_update
     budget_section = current_user.get_id()
 
@@ -759,9 +770,9 @@ def update_assets_table(clickData):
     [Input("loans-button", "n_clicks")],
     prevent_initial_call=True,
 )
-def update_loans_table(clickData):
+def update_loans_table(n_clicks):
     """Update the table with loans."""
-    if clickData is None:
+    if n_clicks is None:
         return dash.no_update
     budget_section = current_user.get_id()
 
@@ -790,7 +801,7 @@ def update_loans_table(clickData):
     [Input("assets-retrieve-button", "n_clicks")],
     prevent_initial_call=True,
 )
-def retrieve_asset_values(clickData):
+def retrieve_asset_values(n_clicks):
     """Get new asset values."""
     assets.update_asset_info(config_path="config.yml", db_write=True)
     return False
@@ -808,10 +819,10 @@ def retrieve_asset_values(clickData):
     prevent_initial_call=True,
 )
 def update_loan_calc(
-    clickData, loan_amount, interest_rate, payments_left, payment_amount
+    n_clicks, loan_amount, interest_rate, payments_left, payment_amount
 ):
     """Calculate the loan values."""
-    if clickData is None:
+    if n_clicks is None:
         return dash.no_update
 
     missing_values = []

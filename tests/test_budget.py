@@ -37,9 +37,9 @@ def test_predictions(budget_model, budget_df):
         unlabeled_df=unlabeled_df, components=budget_model.components
     )
 
-    assert (
-        predict_df.loc[3, "predicted_label"] == "groceries"
-    ), "A description of 'groceries' was not predicted correctly"
+    assert predict_df.loc[3, "predicted_label"] == "groceries", (
+        "A description of 'groceries' was not predicted correctly"
+    )
 
 
 def test_feature_countvectorizer():
@@ -100,6 +100,44 @@ def test_subscription(budget_df):
     ]
 
     assert utils_occurs.values[0] == 3, "Utilities have 3 occurrences"
+
+
+def test_subscription_active_only():
+    """Checks that canceled subscriptions are only shown when asked for."""
+    bdgt = budget.Budget(config_path="test_config.yml", budget="test")
+    tx_df = pd.DataFrame(
+        # billed monthly all year
+        [
+            {"date": f"2026-{m:02d}-05", "name": "current", "amount": 15.99}
+            for m in range(1, 13)
+        ]
+        # billed monthly, then cancelled in March
+        + [
+            {"date": f"2026-{m:02d}-12", "name": "cancelled", "amount": 40.00}
+            for m in range(1, 4)
+        ]
+    )
+
+    active = bdgt.identify_subscriptions(tx_df=tx_df)
+    assert set(active["Description"]) == {"current"}, (
+        "A subscription that stopped being charged should be excluded by default"
+    )
+
+    every = bdgt.identify_subscriptions(tx_df=tx_df, active_only=False)
+    assert set(every["Description"]) == {"current", "cancelled"}, (
+        "active_only=False should still show past subscriptions"
+    )
+    assert not every[every["Description"] == "cancelled"]["Active"].iloc[0]
+
+
+def test_subscription_no_matches():
+    """Checks an empty result returns a frame rather than raising."""
+    bdgt = budget.Budget(config_path="test_config.yml", budget="test")
+    tx_df = pd.DataFrame([{"date": "2026-01-01", "name": "one off", "amount": 5}])
+
+    subscriptions = bdgt.identify_subscriptions(tx_df=tx_df)
+    assert subscriptions.empty
+    assert "Occurrences" in subscriptions.columns
 
 
 def test_preprocess_emoji():
