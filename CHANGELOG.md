@@ -6,6 +6,8 @@
 
 **Enhancements**
 - enhance mobile dashboard layout
+- use skeleton loading on dashboard instead of dots
+- update subscriptions to identify only active subscriptions
 
 **Documentation**
 
