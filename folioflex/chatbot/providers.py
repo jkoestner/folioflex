@@ -112,7 +112,7 @@ class G4FProvider(ChatBotProvider):
     """
 
     def get_chatbot(
-        self, g4f_provider=g4f.Provider.bing, auth=False, access_token=None
+        self, g4f_provider=g4f.Provider.BaseProvider, auth=False, access_token=None
     ):
         """
         G4F chatbot.
@@ -325,7 +325,7 @@ class OpenaiProvider(ChatBotProvider):
 
         return self.chatbot
 
-    def get_query(self, query, scrape_url=None, model="gpt-4-1106-preview", **kwargs):
+    def get_query(self, query, scrape_url=None, model="gpt-5-nano", **kwargs):
         """
         Get query from chatbot.
 

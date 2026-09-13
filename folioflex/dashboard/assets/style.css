@@ -1,8 +1,179 @@
-/* used in the dash ag-grid */
+/* ==========================================================================
+   Responsive Dashboard Styles
+   ========================================================================== */
+
+/* Base Styles */
+:root {
+    --mobile-breakpoint: 768px;
+    --tablet-breakpoint: 992px;
+    --min-touch-target: 44px;
+}
+
+/* AG Grid Styling */
 .ag-theme-material .ag-row:nth-child(even) {
-    background-color: #f7f7f7; /* Light gray for even rows */
+    background-color: #f7f7f7;
 }
 
 .ag-theme-material .ag-row:nth-child(odd) {
-    background-color: #ffffff; /* White for odd rows */
+    background-color: #ffffff;
+}
+
+/* ==========================================================================
+   Mobile-First Responsive Styles
+   ========================================================================== */
+
+/* Mobile: Ensure all tables are horizontally scrollable */
+.dash-table-container,
+.ag-theme-material,
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile: Improve touch targets for buttons */
+@media (max-width: 767px) {
+    /* Button spacing and sizing */
+    .btn,
+    .dash-button,
+    button {
+        min-height: var(--min-touch-target);
+        padding: 12px 20px;
+        margin: 4px 2px;
+        font-size: 16px;
+    }
+
+    /* Button groups - stack vertically on mobile */
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-group > .btn {
+        width: 100%;
+        margin-bottom: 8px;
+        border-radius: 4px !important;
+    }
+
+    /* Input fields - larger for touch */
+    input[type="text"],
+    input[type="number"],
+    .form-control {
+        min-height: var(--min-touch-target);
+        font-size: 16px;
+        padding: 10px 12px;
+    }
+
+    /* Navbar adjustments */
+    .navbar-brand {
+        font-size: 1.25rem !important;
+    }
+
+    /* Card spacing on mobile */
+    .card {
+        margin-bottom: 1rem;
+    }
+
+    /* Ensure text is readable */
+    body {
+        font-size: 16px;
+    }
+
+    /* Headings responsive sizing */
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    h3 {
+        font-size: 1.25rem;
+    }
+
+    h4 {
+        font-size: 1.1rem;
+    }
+
+    /* Dropdown menus */
+    .dropdown-menu {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    /* Tables - reduce padding on mobile */
+    .dash-table-container table {
+        font-size: 14px;
+    }
+
+    .dash-table-container th,
+    .dash-table-container td {
+        padding: 8px 4px;
+    }
+
+    /* Ensure graphs are responsive */
+    .js-plotly-plot {
+        width: 100% !important;
+    }
+
+    /* Loading spinner sizing */
+    .dash-spinner {
+        width: 40px;
+        height: 40px;
+    }
+
+    /* Toast notifications positioning */
+    .toast {
+        width: 90% !important;
+        left: 5% !important;
+        right: 5% !important;
+    }
+
+    /* Accordion improvements */
+    .accordion-button {
+        font-size: 1rem;
+        padding: 12px;
+    }
+
+    /* Slider improvements for touch */
+    .rc-slider {
+        margin: 20px 0;
+    }
+
+    .rc-slider-handle {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* Tablet-specific adjustments */
+@media (min-width: 768px) and (max-width: 991px) {
+    .container-fluid {
+        padding: 0 15px;
+    }
+
+    .btn-group > .btn {
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+}
+
+/* Desktop - larger screens */
+@media (min-width: 992px) {
+    .container-fluid {
+        padding: 0 30px;
+    }
+}
+
+/* Print styles */
+@media print {
+    .navbar,
+    .btn,
+    .accordion-button {
+        display: none;
+    }
+
+    .card {
+        break-inside: avoid;
+    }
 }

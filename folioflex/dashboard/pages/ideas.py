@@ -1,5 +1,7 @@
 """Ideas dashboard."""
 
+import textwrap
+
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -23,45 +25,88 @@ dash.register_page(__name__, path="/ideas", title="folioflex - Ideas", order=3)
 
 def layout():
     """Ideas layout."""
-    return html.Div(
+    return dbc.Container(
         [
             # adding variables needed that are used in callbacks.
             *dashboard_helper.get_defaults(),
+            html.H2("Investment Ideas Dashboard", className="text-center my-4"),
             # ---------------------------------------------------------------
-            dcc.Markdown(
-                """
-                    Momentum and Value are 2 metrics that determine the viability of
-                    investing in the market. **12 mo Moving Average** - current price
-                    of market is greater than the 12 month moving average. **12 mo
-                    TMOM** - 12 month return is greater than the return of the 10
-                    year treasury bond It's recommended to do 50% of
-                    investment in one method and 50% in other
-                    """
-            ),
-            html.P(),
-            dbc.Col(
+            dbc.Card(
                 [
-                    dcc.Input(
-                        id="idea-input",
-                        placeholder="Enter Stock...",
-                        type="text",
+                    dbc.CardBody(
+                        [
+                            dcc.Markdown(
+                                textwrap.dedent(
+                                    """
+                                    Momentum and Value are 2 metrics that determine the
+                                    viability of investing in the market.
+
+                                    **12 mo Moving Average** - current price of market
+                                    is greater than the 12 month moving average.
+
+                                    **12 mo TMOM** - 12 month return is greater than the
+                                    return of the 10 year treasury bond.
+
+                                    It's recommended to do 50% of investment in one
+                                    method and 50% in other.
+                                    """
+                                )
+                            ),
+                        ]
                     ),
-                    html.Button("SMA Submit", id="sma-button", n_clicks=0),
-                ]
+                ],
+                className="mb-4",
             ),
-            html.P(),
-            # creating fed fund rate
-            html.A(
-                "10-Year Treasury",
-                href="https://fred.stlouisfed.org/series/DGS10",
-                target="_blank",
+            dbc.Card(
+                [
+                    dbc.CardHeader(html.H4("Simple Moving Average Analysis")),
+                    dbc.CardBody(
+                        [
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        dcc.Input(
+                                            id="idea-input",
+                                            placeholder="Enter Stock Symbol...",
+                                            type="text",
+                                            className="form-control",
+                                        ),
+                                        xs=12,
+                                        md=6,
+                                        className="mb-2 mb-md-0",
+                                    ),
+                                    dbc.Col(
+                                        dbc.Button(
+                                            "Calculate SMA",
+                                            id="sma-button",
+                                            n_clicks=0,
+                                            color="primary",
+                                            className="w-100",
+                                        ),
+                                        xs=12,
+                                        md="auto",
+                                    ),
+                                ],
+                                className="mb-3",
+                            ),
+                            html.A(
+                                "10-Year Treasury Reference",
+                                href="https://fred.stlouisfed.org/series/DGS10",
+                                target="_blank",
+                                className="mb-3 d-block",
+                            ),
+                            # simple moving average
+                            dash_table.DataTable(
+                                id="sma-table",
+                                page_action="native",
+                                style_table={"overflowX": "auto"},
+                            ),
+                        ]
+                    ),
+                ],
             ),
-            # simple moving average
-            dash_table.DataTable(
-                id="sma-table",
-                page_action="native",
-            ),
-        ]
+        ],
+        fluid=True,
     )
 
 
@@ -85,7 +130,7 @@ def sma_value(n_clicks, input_value):
     if n_clicks == 0:
         sma_table = (None, None)
     else:
-        sma = wrappers.Yahoo().get_sma(ticker=input_value, days=365)
+        sma = wrappers.Yahoo().get_sma(ticker=input_value, days=365).iloc[0]
         latest_price = wrappers.Yahoo().fast_info(ticker=input_value)["lastPrice"]
         change_percent = wrappers.Yahoo().get_change_percent(
             ticker=input_value, days=365
@@ -93,6 +138,7 @@ def sma_value(n_clicks, input_value):
 
         # build table
         sma_table = [input_value, sma, latest_price, change_percent]
+        print(sma_table)
         df = pd.DataFrame(
             [sma_table], columns=["stock", "sma", "latest_price", "change_percent"]
         )

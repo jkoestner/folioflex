@@ -6,10 +6,9 @@ from folioflex.dashboard.utils import dashboard_helper
 from folioflex.utils import config_helper
 
 config_path = config_helper.ROOT_PATH / "tests" / "files" / "test_config.yml"
-config_dict = config_helper.get_config_options(config_path, "investments", "test")
 
 
-def test_config_load():
+def test_config_load(config_dict):
     """Checks if config loads correctly."""
     assert (
         config_dict["tx_file"] == "tests/files/test_transactions.csv"

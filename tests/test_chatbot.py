@@ -13,11 +13,13 @@ from folioflex.chatbot import providers
 def test_g4f():
     """Checks g4f initialize."""
     chatbot = providers.GPTchat()
-    assert isinstance(
-        chatbot.provider, providers.G4FProvider
-    ), "Default provider - G4F - not initialized correctly."
+    assert isinstance(chatbot.provider, providers.G4FProvider), (
+        "Default provider - G4F - not initialized correctly."
+    )
     assert chatbot.chatbot["model"] == g4f.models.default, "Default model not set."
-    assert chatbot.chatbot["provider"] == g4f.Provider.bing, "Default provider not set."
+    assert chatbot.chatbot["provider"] == g4f.Provider.BaseProvider, (
+        "Default provider not set."
+    )
     assert chatbot.chatbot["auth"] == False, "Default auth not set."
     assert chatbot.chatbot["access_token"] is None, "Default access token not set."
 
@@ -47,9 +49,9 @@ def test_hugchat():
         hugchat_login=hugchat_login,
         hugchat_password=hugchat_password,
     )
-    assert isinstance(
-        chatbot.provider, providers.HugChatProvider
-    ), "Default provider - HugChat - not initialized correctly."
+    assert isinstance(chatbot.provider, providers.HugChatProvider), (
+        "Default provider - HugChat - not initialized correctly."
+    )
     assert isinstance(chatbot.chatbot, hugchat.ChatBot), "Default model not set."
     response = chatbot.chat("return back 'test' for test purpose")
     assert response is not None, "Response not as expected."

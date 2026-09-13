@@ -76,27 +76,27 @@ To install, this repository can be installed by running the following command in
 the environment of choice.
 
 ```
-pip install folioflex
+uv pip install folioflex
 ```
 
 Other options can be installed if using more functionality
 
 ```
-pip install folioflex
-pip install folioflex[dev]    # if needing to develop or lint
+uv pip install folioflex
+uv pip install folioflex[dev]    # if needing to develop or lint
 ``````
 
 Or could be done using GitHub.
 
 ```
-pip install git+https://github.com/jkoestner/folioflex.git
+uv pip install git+https://github.com/jkoestner/folioflex.git
 ```
 
 If wanting to do more and develop on the code, the following command can be run to install the packages in the requirements.txt file.
 
 ```
-pip install -e .
-pip install -e .[dev]
+uv sync
+uv sync --extra dev
 ```
 
 ### Docker Install
@@ -164,11 +164,9 @@ When using the portfolio class, the following code can be used to get the return
 
 ```python
 from folioflex.portfolio.portfolio import Portfolio
+
 config_path = "portfolio_demo.yml"
-pf = Portfolio(
-    config_path=config_path, 
-    portfolio='company_a'
-)
+pf = Portfolio(config_path=config_path, portfolio="company_a")
 pf.get_performance()
 ```
 
@@ -224,6 +222,7 @@ python -m ipykernel install --user --name=folioflex
 If wanting to get more detail in output of messages the logging can increased
 ```python
 from folioflex.utils import config_helper
+
 config_helper.set_log_level("DEBUG")
 ```
 

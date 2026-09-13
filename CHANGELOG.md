@@ -1,5 +1,19 @@
 # Changelog
 
+## [v1.5.1](https://github.com/jkoestner/folioflex/tree/v1.5.1)
+
+[Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.5.0...v1.5.1)
+
+**Enhancements**
+- enhance mobile dashboard layout
+- use skeleton loading on dashboard instead of dots
+- update subscriptions to identify only active subscriptions
+
+**Documentation**
+
+**Bug Fixes**
+- fix s&p heatmap
+
 ## [v1.5.0](https://github.com/jkoestner/folioflex/tree/v1.5.0)
 
 [Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.4.0...v1.5.0)

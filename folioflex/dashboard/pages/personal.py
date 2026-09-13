@@ -4,6 +4,7 @@ from io import StringIO
 
 import dash
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import pandas as pd
 import plotly.graph_objs as go
 from celery.result import AsyncResult
@@ -55,7 +56,9 @@ def layout():
                                 style={"marginRight": "10px"},
                             ),
                         ],
-                        width=3,
+                        xs=12,
+                        sm=6,
+                        md=3,
                     ),
                 ],
                 className="mb-4",
@@ -89,8 +92,15 @@ def layout():
                             # manager table
                             dcc.Loading(
                                 id="loading-manager-table",
-                                type="default",
-                                children=html.Div(id="manager_table_container"),
+                                children=html.Div(
+                                    id="manager_table_container",
+                                    style={"minHeight": "450px"},
+                                ),
+                                custom_spinner=dmc.Skeleton(
+                                    visible=True,
+                                    h=450,
+                                    w="100%",
+                                ),
                             ),
                         ],
                     ),
@@ -129,7 +139,10 @@ def layout():
                                                 id="personal-dropdown",
                                             ),
                                         ],
-                                        width=3,
+                                        xs=12,
+                                        sm=6,
+                                        md=3,
+                                        className="mb-3 mb-md-0",
                                     ),
                                     dbc.Col(
                                         [
@@ -145,7 +158,9 @@ def layout():
                                                 id="personal-view-type",
                                             ),
                                         ],
-                                        width=3,
+                                        xs=12,
+                                        sm=6,
+                                        md=3,
                                     ),
                                 ],
                                 align="center",
@@ -154,8 +169,12 @@ def layout():
                             # graph
                             dcc.Loading(
                                 id="loading-personal-graph",
-                                type="default",
                                 children=dcc.Graph(id="personal_graph"),
+                                custom_spinner=dmc.Skeleton(
+                                    visible=True,
+                                    h=450,
+                                    w="100%",
+                                ),
                             ),
                             html.Br(),
                             dbc.Row(
@@ -165,16 +184,17 @@ def layout():
                                             dbc.Label("Time Period"),
                                             dcc.RangeSlider(
                                                 id="personal_slider",
-                                                tooltip={
-                                                    "always_visible": True,
-                                                    "placement": "bottom",
-                                                },
+                                                tooltip=dashboard_helper.get_slider_tooltip(),
                                                 min=0,
                                                 max=10,
                                                 value=[0, 100],
                                                 marks={
                                                     i: str(i) for i in range(0, 101, 10)
                                                 },
+                                            ),
+                                            html.Div(
+                                                id="personal-slider-date-display",
+                                                className="text-center text-muted small mt-4",
                                             ),
                                         ],
                                         width=12,
@@ -189,9 +209,14 @@ def layout():
                                     dbc.CardBody(
                                         dcc.Loading(
                                             id="loading-performance-table",
-                                            type="default",
                                             children=html.Div(
-                                                id="personal_performance_table_container"
+                                                id="personal_performance_table_container",
+                                                style={"minHeight": "450px"},
+                                            ),
+                                            custom_spinner=dmc.Skeleton(
+                                                visible=True,
+                                                h=450,
+                                                w="100%",
                                             ),
                                         ),
                                     ),
@@ -206,9 +231,14 @@ def layout():
                                     dbc.CardBody(
                                         dcc.Loading(
                                             id="loading-transactions-table",
-                                            type="default",
                                             children=html.Div(
-                                                id="personal_transaction_table_container"
+                                                id="personal_transaction_table_container",
+                                                style={"minHeight": "450px"},
+                                            ),
+                                            custom_spinner=dmc.Skeleton(
+                                                visible=True,
+                                                h=450,
+                                                w="100%",
                                             ),
                                         ),
                                     ),
@@ -444,3 +474,16 @@ def update_PersonalSlider(personal_task_status, personal_task_id):
         value = [0, 100]
         marks = {i: str(i) for i in range(0, 101, 10)}
         return min_value, max_value, value, marks
+
+
+@callback(
+    Output("personal-slider-date-display", "children"),
+    Input("personal_slider", "value"),
+)
+def update_personal_slider_display(slider_value):
+    """Display the selected date range from the personal slider."""
+    if not slider_value or slider_value == [0, 100]:
+        return ""
+    start = pd.to_datetime(slider_value[0], unit="s").strftime("%Y-%m-%d")
+    end = pd.to_datetime(slider_value[1], unit="s").strftime("%Y-%m-%d")
+    return f"{start} → {end}"

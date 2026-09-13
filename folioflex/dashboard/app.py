@@ -1,9 +1,7 @@
 """
 Building plotly dashboard.
 
-Builds plotly pages with call backs. There are 2 options the user has for running code.
-1. Fly.io build set up
-2. Local running
+Builds plotly pages with call backs.
 
 To run locally:
 1. cd into root directory
@@ -15,7 +13,8 @@ with "standard font"
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import Input, Output, callback, dcc, html
+import dash_mantine_components as dmc
+from dash import Input, Output, State, callback, dcc, html
 from flask_login import current_user
 
 from folioflex.dashboard.components import auth
@@ -77,12 +76,14 @@ page_links = [
 navbar = dbc.Navbar(
     dbc.Container(
         [
+            # Brand section with logo and name
             dbc.Row(
                 [
                     dbc.Col(
                         html.Img(
                             src=app.get_asset_url("folioflex_logo.png"), height="40px"
-                        )
+                        ),
+                        width="auto",
                     ),
                     dbc.Col(
                         [
@@ -101,16 +102,26 @@ navbar = dbc.Navbar(
                             "display": "flex",
                             "alignItems": "center",
                         },
+                        width="auto",
                     ),
                 ],
                 align="center",
-                className="g-0",
+                className="g-0 flex-nowrap",
             ),
-            dbc.Nav(page_links, navbar=True, className="ms-auto"),
-            dbc.Nav(
-                [
-                    html.Div(id="user-auth-status"),
-                ],
+            # Hamburger menu toggle button
+            dbc.NavbarToggler(id="navbar-toggler", n_clicks=0),
+            # Collapsible navigation menu
+            dbc.Collapse(
+                dbc.Nav(
+                    [
+                        *page_links,
+                        dbc.NavItem(html.Div(id="user-auth-status")),
+                    ],
+                    navbar=True,
+                    className="ms-auto",
+                ),
+                id="navbar-collapse",
+                is_open=False,
                 navbar=True,
             ),
         ],
@@ -118,15 +129,18 @@ navbar = dbc.Navbar(
     ),
     color="primary",
     dark=True,
+    className="mb-3",
 )
 
-app.layout = html.Div(
-    [
-        html.Link(rel="shortcut icon", href="/assets/folioflex.png"),
-        dcc.Location(id="url", refresh=True),
-        navbar,
-        dash.page_container,
-    ]
+app.layout = dmc.MantineProvider(
+    html.Div(
+        [
+            html.Link(rel="shortcut icon", href="/assets/folioflex.png"),
+            dcc.Location(id="url", refresh=True),
+            navbar,
+            dash.page_container,
+        ]
+    )
 )
 
 
@@ -183,6 +197,18 @@ def toggle_interval_speed(
 
 
 @callback(
+    Output("navbar-collapse", "is_open"),
+    Input("navbar-toggler", "n_clicks"),
+    State("navbar-collapse", "is_open"),
+)
+def toggle_navbar_collapse(n_clicks, is_open):
+    """Toggle the navbar collapse on mobile devices."""
+    if n_clicks:
+        return not is_open
+    return is_open
+
+
+@callback(
     Output("user-auth-status", "children"),
     Input("url", "pathname"),
 )
@@ -191,18 +217,14 @@ def update_auth_status(pathname):
     try:
         if current_user.is_authenticated:
             return [
-                dbc.NavItem(
-                    [
-                        html.A(
-                            f"Logout ({current_user.id})",
-                            href="/logout",
-                            className="nav-link me-2",
-                        ),
-                    ]
-                )
+                html.A(
+                    f"Logout ({current_user.id})",
+                    href="/logout",
+                    className="nav-link me-2",
+                ),
             ]
         else:
-            return [dbc.NavItem(dbc.NavLink("Login", href="/login", className="me-2"))]
+            return [dbc.NavLink("Login", href="/login", className="me-2")]
     except Exception as e:
         logger.error(f"Error in update_auth_status: {e}")
         return []

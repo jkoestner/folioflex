@@ -5,6 +5,7 @@ import datetime
 import dash
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import pandas as pd
 from dash import Input, Output, State, callback, dcc, html
 from flask_login import current_user
@@ -32,8 +33,7 @@ def layout():
     bdgt = budget.Budget(config_path="config.yml", budget=budget_section)
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df, columns_to_zero=bdgt.zero_txs)
-    labels = budget_df["label"].dropna().unique()
-    labels.sort()
+    labels = sorted(budget_df["label"].dropna().unique().tolist())
     label_options = [{"label": label, "value": label} for label in labels]
 
     return dbc.Container(
@@ -60,8 +60,10 @@ def layout():
                                                 className="form-control",
                                             ),
                                         ],
-                                        width=4,
-                                        className="align-self-end",
+                                        xs=12,
+                                        sm=6,
+                                        md=3,
+                                        className="mb-3 mb-md-0",
                                     ),
                                     dbc.Col(
                                         [
@@ -74,11 +76,13 @@ def layout():
                                                 className="mb-1",
                                             ),
                                         ],
-                                        width=8,
-                                        className="align-self-end",
+                                        xs=12,
+                                        sm=12,
+                                        md=9,
+                                        className="mb-3",
                                     ),
                                 ],
-                                className="g-3 align-items-end",
+                                className="g-3",
                             ),
                         ]
                     ),
@@ -115,8 +119,15 @@ def layout():
                                         [
                                             dcc.Loading(
                                                 id="loading-budget-chart",
-                                                type="dot",
-                                                children=html.Div(id="budget-chart"),
+                                                children=html.Div(
+                                                    id="budget-chart",
+                                                    style={"minHeight": "450px"},
+                                                ),
+                                                custom_spinner=dmc.Skeleton(
+                                                    visible=True,
+                                                    h=450,
+                                                    w="100%",
+                                                ),
                                             ),
                                             html.Div(
                                                 id="budget-chart-labels",
@@ -163,22 +174,39 @@ def layout():
                                                     dbc.Col(
                                                         dcc.Loading(
                                                             id="loading-expense-chart",
-                                                            type="dot",
                                                             children=html.Div(
-                                                                id="expense-chart"
+                                                                id="expense-chart",
+                                                                style={
+                                                                    "minHeight": "450px"
+                                                                },
+                                                            ),
+                                                            custom_spinner=dmc.Skeleton(
+                                                                visible=True,
+                                                                h=450,
+                                                                w="100%",
                                                             ),
                                                         ),
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
+                                                        className="mb-3 mb-md-0",
                                                     ),
                                                     dbc.Col(
                                                         dcc.Loading(
                                                             id="loading-expense-table",
-                                                            type="dot",
                                                             children=html.Div(
-                                                                id="expense-table"
+                                                                id="expense-table",
+                                                                style={
+                                                                    "minHeight": "300px"
+                                                                },
+                                                            ),
+                                                            custom_spinner=dmc.Skeleton(
+                                                                visible=True,
+                                                                h=300,
+                                                                w="100%",
                                                             ),
                                                         ),
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
                                                     ),
                                                 ]
                                             ),
@@ -203,8 +231,15 @@ def layout():
                                     dbc.CardBody(
                                         dcc.Loading(
                                             id="loading-income-chart",
-                                            type="dot",
-                                            children=html.Div(id="income-chart"),
+                                            children=html.Div(
+                                                id="income-chart",
+                                                style={"minHeight": "450px"},
+                                            ),
+                                            custom_spinner=dmc.Skeleton(
+                                                visible=True,
+                                                h=450,
+                                                w="100%",
+                                            ),
                                         ),
                                     ),
                                 ]
@@ -226,8 +261,15 @@ def layout():
                                     dbc.CardBody(
                                         dcc.Loading(
                                             id="loading-compare-chart",
-                                            type="dot",
-                                            children=html.Div(id="compare-chart"),
+                                            children=html.Div(
+                                                id="compare-chart",
+                                                style={"minHeight": "450px"},
+                                            ),
+                                            custom_spinner=dmc.Skeleton(
+                                                visible=True,
+                                                h=450,
+                                                w="100%",
+                                            ),
                                         ),
                                     ),
                                 ]
@@ -244,13 +286,26 @@ def layout():
                                 color="primary",
                                 className="mb-3",
                             ),
+                            dbc.Switch(
+                                id="subscription-active-only",
+                                label="Active subscriptions only",
+                                value=True,
+                                className="mb-3",
+                            ),
                             dbc.Card(
                                 [
                                     dbc.CardBody(
                                         dcc.Loading(
                                             id="loading-subscription-table",
-                                            type="dot",
-                                            children=html.Div(id="subscription-table"),
+                                            children=html.Div(
+                                                id="subscription-table",
+                                                style={"minHeight": "300px"},
+                                            ),
+                                            custom_spinner=dmc.Skeleton(
+                                                visible=True,
+                                                h=300,
+                                                w="100%",
+                                            ),
                                         ),
                                     ),
                                 ]
@@ -268,16 +323,22 @@ def layout():
                                             "Assets Table",
                                             id="assets-button",
                                             color="primary",
-                                            className="mb-3",
+                                            className="mb-3 w-100",
                                         ),
+                                        xs=12,
+                                        sm=6,
+                                        md="auto",
                                     ),
                                     dbc.Col(
                                         dbc.Button(
                                             "Update Assets Values",
                                             id="assets-retrieve-button",
                                             color="secondary",
-                                            className="mb-3",
+                                            className="mb-3 w-100",
                                         ),
+                                        xs=12,
+                                        sm=6,
+                                        md="auto",
                                     ),
                                 ]
                             ),
@@ -290,22 +351,39 @@ def layout():
                                                     dbc.Col(
                                                         dcc.Loading(
                                                             id="loading-assets-table",
-                                                            type="dot",
                                                             children=html.Div(
-                                                                id="assets-table"
+                                                                id="assets-table",
+                                                                style={
+                                                                    "minHeight": "300px"
+                                                                },
+                                                            ),
+                                                            custom_spinner=dmc.Skeleton(
+                                                                visible=True,
+                                                                h=300,
+                                                                w="100%",
                                                             ),
                                                         ),
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
+                                                        className="mb-3 mb-md-0",
                                                     ),
                                                     dbc.Col(
                                                         dcc.Loading(
                                                             id="loading-assets-chart",
-                                                            type="dot",
                                                             children=html.Div(
-                                                                id="assets-chart"
+                                                                id="assets-chart",
+                                                                style={
+                                                                    "minHeight": "450px"
+                                                                },
+                                                            ),
+                                                            custom_spinner=dmc.Skeleton(
+                                                                visible=True,
+                                                                h=450,
+                                                                w="100%",
                                                             ),
                                                         ),
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
                                                     ),
                                                 ]
                                             ),
@@ -330,8 +408,15 @@ def layout():
                                     dbc.CardBody(
                                         dcc.Loading(
                                             id="loading-loans-table",
-                                            type="dot",
-                                            children=html.Div(id="loans-table"),
+                                            children=html.Div(
+                                                id="loans-table",
+                                                style={"minHeight": "300px"},
+                                            ),
+                                            custom_spinner=dmc.Skeleton(
+                                                visible=True,
+                                                h=300,
+                                                w="100%",
+                                            ),
                                         ),
                                     ),
                                 ]
@@ -381,7 +466,8 @@ def layout():
                                                                 className="mb-3",
                                                             ),
                                                         ],
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
                                                     ),
                                                     dbc.Col(
                                                         [
@@ -400,7 +486,8 @@ def layout():
                                                                 className="mb-3",
                                                             ),
                                                         ],
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
                                                     ),
                                                 ]
                                             ),
@@ -423,7 +510,8 @@ def layout():
                                                                 className="mb-3",
                                                             ),
                                                         ],
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
                                                     ),
                                                     dbc.Col(
                                                         [
@@ -442,7 +530,8 @@ def layout():
                                                                 className="mb-3",
                                                             ),
                                                         ],
-                                                        width=6,
+                                                        xs=12,
+                                                        md=6,
                                                     ),
                                                 ]
                                             ),
@@ -607,12 +696,15 @@ def update_expenses_table(clickData, selected_label, zero_labels):
 
 @callback(
     Output("subscription-table", "children"),
-    [Input("subscription-button", "n_clicks")],
+    [
+        Input("subscription-button", "n_clicks"),
+        Input("subscription-active-only", "value"),
+    ],
     prevent_initial_call=True,
 )
-def update_subscription_table(clickData):
+def update_subscription_table(n_clicks, active_only):
     """Update the table with possible subscriptions."""
-    if clickData is None:
+    if not n_clicks:
         return dash.no_update
     budget_section = current_user.get_id()
 
@@ -620,7 +712,9 @@ def update_subscription_table(clickData):
     budget_df = bdgt.get_transactions()
     budget_df = bdgt.modify_transactions(budget_df, columns_to_zero=bdgt.zero_txs)
 
-    subscription_tbl = bdgt.identify_subscriptions(tx_df=budget_df)
+    subscription_tbl = bdgt.identify_subscriptions(
+        tx_df=budget_df, active_only=active_only
+    )
 
     # create the table
     subscription_tbl_div = html.Div(
@@ -641,9 +735,9 @@ def update_subscription_table(clickData):
     [Input("assets-button", "n_clicks")],
     prevent_initial_call=True,
 )
-def update_assets_table(clickData):
+def update_assets_table(n_clicks):
     """Update the table with assets."""
-    if clickData is None:
+    if n_clicks is None:
         return dash.no_update
     budget_section = current_user.get_id()
 
@@ -676,9 +770,9 @@ def update_assets_table(clickData):
     [Input("loans-button", "n_clicks")],
     prevent_initial_call=True,
 )
-def update_loans_table(clickData):
+def update_loans_table(n_clicks):
     """Update the table with loans."""
-    if clickData is None:
+    if n_clicks is None:
         return dash.no_update
     budget_section = current_user.get_id()
 
@@ -703,15 +797,14 @@ def update_loans_table(clickData):
 
 
 @callback(
+    Output("assets-retrieve-button", "disabled"),
     [Input("assets-retrieve-button", "n_clicks")],
     prevent_initial_call=True,
 )
-def retrieve_asset_values(clickData):
+def retrieve_asset_values(n_clicks):
     """Get new asset values."""
-    if clickData is None:
-        return dash.no_update
     assets.update_asset_info(config_path="config.yml", db_write=True)
-    return dash.no_update
+    return False
 
 
 @callback(
@@ -726,10 +819,10 @@ def retrieve_asset_values(clickData):
     prevent_initial_call=True,
 )
 def update_loan_calc(
-    clickData, loan_amount, interest_rate, payments_left, payment_amount
+    n_clicks, loan_amount, interest_rate, payments_left, payment_amount
 ):
     """Calculate the loan values."""
-    if clickData is None:
+    if n_clicks is None:
         return dash.no_update
 
     missing_values = []
