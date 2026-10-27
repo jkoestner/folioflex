@@ -7,6 +7,7 @@ from the larger portfolio project, and allows easier integration.
 """
 
 import re
+import warnings
 from datetime import datetime, time, timedelta
 from io import StringIO
 from time import sleep
@@ -18,9 +19,12 @@ import pandas as pd
 import requests
 import yfinance as yf
 from bs4 import BeautifulSoup
+from pandas.errors import Pandas4Warning  # for warnings filter
 
 from folioflex.portfolio import helper
 from folioflex.utils import config_helper, custom_logger
+
+warnings.filterwarnings("ignore", category=Pandas4Warning)
 
 pd.options.display.float_format = "{:,.2f}".format
 
