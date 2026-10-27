@@ -9,8 +9,11 @@ data from brokers as it is already connecting to the brokers automatically.
 
 """
 
+import datetime as dt
+import getpass
 import os
 import re
+from pathlib import Path
 from typing import List, Optional, Union
 
 import numpy as np
@@ -1189,5 +1192,598 @@ def append_trades(trades, output_file: str, broker: str) -> pd.DataFrame:
         f"Appended {len(new_trades)} rows to the {broker} trades to {output_file} "
         f"that were greater than {max_date}"
     )
+
+    return trades
+
+
+class Robinhood:
+    """
+    Pull account activity from Robinhood using the unofficial pyhood client.
+
+    Security notes
+    --------------
+    - Tokens are cached as plain JSON in ~/.pyhood/session.json. Call
+      `logout()` when done so the tokens are revoked and the file is deleted.
+
+    Parameters
+    ----------
+    token_path : str (optional)
+        where pyhood caches the session, default ~/.pyhood/session.json.
+
+    """
+
+    def __init__(self, token_path: Optional[str] = None) -> None:
+        """Initialize the Robinhood class."""
+        from pyhood.auth import DEFAULT_TOKEN_DIR, DEFAULT_TOKEN_FILE
+
+        self.token_path = (
+            Path(token_path) if token_path else DEFAULT_TOKEN_DIR / DEFAULT_TOKEN_FILE
+        )
+        self.session = None
+        self.client = None
+
+    def login(self, username: Optional[str] = None, timeout: int = 120) -> None:
+        """
+        Log in to Robinhood.
+
+        Reuses a cached session if one exists. Otherwise prompts for the
+        password (hidden input) and, the first time on a device, waits for
+        you to tap "Yes, it's me" in the Robinhood app.
+
+        Parameters
+        ----------
+        username : str (optional)
+            Robinhood email, prompted for if needed and not given
+        timeout : int (optional), default 120
+            seconds to wait for device approval
+
+        """
+        import pyhood
+        from pyhood.client import PyhoodClient
+        from pyhood.exceptions import AuthError, MFARequiredError
+
+        try:
+            self.session = pyhood.login(token_path=self.token_path, timeout=timeout)
+            logger.info("Using cached Robinhood session")
+        except MFARequiredError:
+            raise
+        except AuthError:
+            username = username or input("Robinhood username (email): ")
+            password = getpass.getpass("Robinhood password: ")
+            logger.info("Check the Robinhood app to approve this device if prompted")
+            try:
+                self.session = pyhood.login(
+                    username=username,
+                    password=password,
+                    token_path=self.token_path,
+                    timeout=timeout,
+                )
+            except MFARequiredError:
+                code = input("MFA code: ")
+                self.session = pyhood.login(
+                    username=username,
+                    password=password,
+                    mfa_code=code,
+                    token_path=self.token_path,
+                    timeout=timeout,
+                )
+            finally:
+                del password
+
+        self.client = PyhoodClient(self.session)
+        logger.info(f"Logged in to Robinhood, session cached at {self.token_path}")
+
+    def logout(self, verify: bool = True) -> dict:
+        """
+        Revoke the Robinhood tokens and delete the cached session file.
+
+        With `verify=True` each token is tested afterwards:
+        - access token: a read request should now be rejected (401)
+        - refresh token: a refresh grant should now be refused
+
+        If the refresh token still works, the test itself mints a new token
+        pair; its access token is revoked immediately and a warning tells you
+        to remove the device in the Robinhood app's security settings.
+
+        Parameters
+        ----------
+        verify : bool (optional)
+            test that the tokens are dead after revoking, default True
+
+        Returns
+        -------
+        status : dict
+            {"access_token": ..., "refresh_token": ...} with one of
+            "revoked" (rejected with 401/403 or invalid_grant),
+            "alive" (accepted with 200), "unverified" (any other response,
+            or verify=False), or "missing" (no token in the session file)
+
+        """
+        import pyhood
+        from pyhood.auth import TokenStore
+
+        store = TokenStore(self.token_path)
+        cached = store.load() or {}
+        status = {}
+
+        # access token first: the refresh token can mint new access tokens,
+        # but not the other way round, so this order leaves nothing usable
+        # even if the refresh revoke is the call that fails
+        for kind in ("access_token", "refresh_token"):
+            token = cached.get(kind)
+            if not token:
+                status[kind] = "missing"
+                continue
+            code = self._revoke(token, kind)
+            logger.info(f"Revoke {kind}: returned {code}")
+            status[kind] = "unverified"
+
+        if verify and cached:
+            if status["access_token"] != "missing":
+                status["access_token"] = self._check_access(cached)
+            if status["refresh_token"] != "missing":
+                status["refresh_token"] = self._check_refresh(cached)
+            if "alive" in status.values():
+                logger.warning(
+                    "A token is still usable. Remove this device from the device "
+                    "list in the Robinhood app's security settings to kill the session."
+                )
+            elif "unverified" in status.values():
+                logger.warning(
+                    "Could not confirm every token is dead (see status codes above). "
+                    "Removing this device in the Robinhood app's security settings "
+                    "will end the session for certain."
+                )
+
+        pyhood.logout()
+        store.clear()
+        self.session = None
+        self.client = None
+
+        if self.token_path.exists():
+            logger.warning(f"Session file still exists at {self.token_path}")
+        else:
+            logger.info(f"Deleted {self.token_path}")
+        return status
+
+    @staticmethod
+    def _headers() -> dict:
+        """Robinhood request headers pyhood uses, without any auth."""
+        from pyhood.http import Session
+
+        headers = Session().headers
+        headers.pop("Authorization", None)
+        return headers
+
+    def _revoke(self, token: str, kind: str) -> Union[int, str]:
+        """POST the token to the revoke endpoint; return the status code."""
+        from pyhood import urls
+        from pyhood.auth import CLIENT_ID
+
+        try:
+            resp = requests.post(
+                urls.LOGOUT,
+                data={"client_id": CLIENT_ID, "token": token, "token_type_hint": kind},
+                headers=self._headers(),
+                timeout=15,
+            )
+            return resp.status_code
+        except requests.RequestException as e:
+            return f"error ({e})"
+
+    @staticmethod
+    def _error_detail(resp: "requests.Response") -> str:
+        """Short, token-free description of a Robinhood error response."""
+        try:
+            body = resp.json()
+        except ValueError:
+            return ""
+        if not isinstance(body, dict):
+            return ""
+        parts = [str(body[k]) for k in ("error", "detail") if body.get(k)]
+        return f" ({'; '.join(parts)[:120]})" if parts else ""
+
+    def _check_access(self, cached: dict) -> str:
+        """
+        Test the access token with a read request.
+
+        200 -> "alive", 401/403 -> "revoked", anything else -> "unverified".
+        """
+        from pyhood import urls
+
+        headers = self._headers()
+        headers["Authorization"] = (
+            f"{cached.get('token_type', 'Bearer')} " + cached["access_token"]
+        )
+        try:
+            resp = requests.get(
+                urls.POSITIONS, params={"nonzero": "true"}, headers=headers, timeout=15
+            )
+        except requests.RequestException as e:
+            logger.warning(f"access_token check: request failed ({e})")
+            return "unverified"
+
+        code = resp.status_code
+        if code == 200:
+            state = "alive"
+        elif code in (401, 403):
+            state = "revoked"
+        else:
+            state = "unverified"
+        logger.info(
+            f"access_token check: GET positions returned {code}"
+            f"{self._error_detail(resp) if code != 200 else ''} -> {state}"
+        )
+        return state
+
+    def _check_refresh(self, cached: dict) -> str:
+        """
+        Test the refresh token with a refresh grant.
+
+        200 -> "alive" (the new pair it minted is revoked straight away),
+        400/401 with an OAuth `invalid_grant` error -> "revoked",
+        anything else -> "unverified".
+        """
+        from pyhood import urls
+        from pyhood.auth import CLIENT_ID
+
+        try:
+            resp = requests.post(
+                urls.LOGIN,
+                data={
+                    "grant_type": "refresh_token",
+                    "refresh_token": cached["refresh_token"],
+                    "scope": "internal",
+                    "client_id": CLIENT_ID,
+                    "device_token": cached.get("device_token", ""),
+                    "expires_in": 60,
+                },
+                headers=self._headers(),
+                timeout=15,
+            )
+        except requests.RequestException as e:
+            logger.warning(f"refresh_token check: request failed ({e})")
+            return "unverified"
+
+        code = resp.status_code
+        detail = self._error_detail(resp) if code != 200 else ""
+        if code == 200:
+            state = "alive"
+        elif code in (400, 401) and "invalid_grant" in detail:
+            state = "revoked"
+        else:
+            state = "unverified"
+        logger.info(
+            f"refresh_token check: refresh grant returned {code}{detail} -> {state}"
+        )
+
+        if state == "alive":
+            # the test just minted a new pair, so revoke those too
+            new = resp.json()
+            for kind in ("access_token", "refresh_token"):
+                if new.get(kind):
+                    code = self._revoke(new[kind], kind)
+                    logger.info(f"Revoke new {kind} from check: returned {code}")
+        return state
+
+    def _require_login(self) -> None:
+        if self.client is None:
+            raise RuntimeError("Not logged in. Call `login()` first.")
+
+    def accounts(self) -> pd.DataFrame:
+        """
+        List every account on the login.
+
+        Returns
+        -------
+        accounts : DataFrame
+            one row per account, raw fields from Robinhood
+
+        """
+        self._require_login()
+        return pd.json_normalize(self.client.get_all_accounts())
+
+    def find_account(self, keyword: str = "roth") -> str:
+        """
+        Find an account number by its brokerage account type.
+
+        Parameters
+        ----------
+        keyword : str (optional)
+            text to look for in `brokerage_account_type` (case-insensitive),
+            e.g. "roth" matches "ira_roth"
+
+        Returns
+        -------
+        account_number : str
+            the matching account number
+
+        """
+        accounts = self.accounts()
+        acct_type = (
+            accounts["brokerage_account_type"].fillna("").astype(str).str.lower()
+        )
+        matches = accounts[acct_type.str.contains(keyword.lower(), regex=False)]
+
+        if len(matches) != 1:
+            raise ValueError(
+                f"Found {len(matches)} accounts with '{keyword}' in "
+                f"brokerage_account_type: {accounts['brokerage_account_type'].tolist()}"
+            )
+
+        account_number = str(matches.iloc[0]["account_number"])
+        logger.info(
+            f"Matched '{keyword}' to {matches.iloc[0]['brokerage_account_type']} "
+            f"account ending {account_number[-4:]}"
+        )
+        return account_number
+
+    def get_df(
+        self,
+        account_number: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        include_dividends: bool = True,
+        output_file: Optional[str] = None,
+    ) -> pd.DataFrame:
+        """
+        Get filled stock trades and paid dividends for one account.
+
+        Notes
+        -----
+        - pyhood's `get_stock_orders` can't filter by account and drops the
+          account field, so the orders endpoint is called directly with
+          `account_number`, and each order's account is checked as a guard.
+        - Only executed quantity is used, so partial fills are handled and
+          cancelled/unfilled orders are dropped.
+        - Option orders and cash contributions/transfers are NOT included.
+
+        Parameters
+        ----------
+        account_number : str
+            Robinhood account number (e.g. the Roth IRA number)
+        start_date : str (optional), default is YTD
+            ISO date to pull from (inclusive)
+        end_date : str (optional), default is YTD
+            ISO date to pull through (inclusive)
+        include_dividends : bool (optional)
+            whether to include dividend rows, default is True
+        output_file : str (optional)
+            path to save the activity csv (the `broker_file` for `robinhood`)
+
+        Returns
+        -------
+        activity : DataFrame
+            columns: date, symbol, activity, quantity, price, amount, fees, id
+            where amount is the signed cash impact (buys negative)
+
+        """
+        from pyhood import urls
+
+        self._require_login()
+        session = self.session
+
+        if start_date is None:
+            start_date = f"{dt.date.today().year}-01-01"
+        start_ts = pd.Timestamp(start_date, tz="America/New_York")
+        end_ts = (
+            pd.Timestamp(end_date, tz="America/New_York") + pd.Timedelta(days=1)
+            if end_date
+            else None
+        )
+
+        def in_range(ts: pd.Timestamp) -> bool:
+            return ts >= start_ts and (end_ts is None or ts < end_ts)
+
+        # stock orders
+        raw_orders = session.get_paginated(
+            urls.ORDERS,
+            params={
+                "account_number": account_number,
+                "created_at[gte]": start_ts.tz_convert("UTC").strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                ),
+            },
+        )
+        rows = []
+        for o in raw_orders:
+            filled_qty = float(o.get("cumulative_quantity") or 0)
+            if o.get("legs") or filled_qty == 0:
+                continue  # option orders and anything that never executed
+            if account_number not in (o.get("account") or ""):
+                continue  # guard in case the server ignored the account filter
+            executions = o.get("executions") or []
+            exec_time = min(
+                (e.get("timestamp") for e in executions if e.get("timestamp")),
+                default=o.get("last_transaction_at") or o.get("created_at"),
+            )
+            ts = pd.Timestamp(exec_time).tz_convert("America/New_York")
+            if not in_range(ts):
+                continue
+            notional = (
+                sum(
+                    float(e.get("price") or 0) * float(e.get("quantity") or 0)
+                    for e in executions
+                )
+                or float(o.get("average_price") or 0) * filled_qty
+            )
+            fees = float(o.get("fees") or 0)
+            is_buy = o.get("side") == "buy"
+            rows.append(
+                {
+                    "date": ts,
+                    "symbol": (o.get("symbol") or "").upper(),
+                    "activity": "BUY" if is_buy else "SELL",
+                    "quantity": filled_qty,
+                    "price": notional / filled_qty,
+                    "amount": -(notional + fees) if is_buy else notional - fees,
+                    "fees": fees,
+                    "id": o.get("id"),
+                    "instrument": o.get("instrument"),
+                }
+            )
+        logger.info(f"Pulled {len(rows)} filled orders")
+
+        # dividends
+        if include_dividends:
+            n_orders = len(rows)
+            for d in session.get_paginated(urls.DIVIDENDS):
+                if d.get("state") != "paid":
+                    continue
+                if account_number not in (d.get("account") or ""):
+                    continue
+                paid = pd.Timestamp(d.get("paid_at") or d.get("payable_date"))
+                paid = (
+                    paid.tz_localize("America/New_York")
+                    if paid.tzinfo is None
+                    else paid.tz_convert("America/New_York")
+                )
+                if not in_range(paid):
+                    continue
+                amount = float(d.get("amount") or 0)
+                rows.append(
+                    {
+                        "date": paid,
+                        "symbol": "",
+                        "activity": "DIVIDEND",
+                        "quantity": float(d.get("position") or 0),
+                        "price": float(d.get("rate") or 0),
+                        "amount": amount,
+                        "fees": 0.0,
+                        "id": d.get("id"),
+                        "instrument": d.get("instrument"),
+                    }
+                )
+            logger.info(f"Pulled {len(rows) - n_orders} paid dividends")
+
+        cols = [
+            "date",
+            "symbol",
+            "activity",
+            "quantity",
+            "price",
+            "amount",
+            "fees",
+            "id",
+        ]
+        activity = pd.DataFrame(rows, columns=[*cols, "instrument"])
+
+        # resolve missing symbols (dividends, older orders) from instrument urls
+        missing = activity["symbol"] == ""
+        if missing.any():
+            lkup = {
+                url: session.get(url).get("symbol", "")
+                for url in activity.loc[missing, "instrument"].dropna().unique()
+            }
+            activity.loc[missing, "symbol"] = activity.loc[missing, "instrument"].map(
+                lkup
+            )
+        activity = activity[cols]
+
+        if activity.empty:
+            logger.warning(
+                f"No activity found for account ending {account_number[-4:]} "
+                f"since {start_date}. If you expected trades, the orders endpoint "
+                "may be ignoring account_number for this account."
+            )
+        else:
+            activity["date"] = activity["date"].dt.date
+            activity = activity.sort_values(["date", "symbol"]).reset_index(drop=True)
+            activity["amount"] = activity["amount"].round(2)
+
+        if output_file is not None:
+            activity.to_csv(output_file, index=False)
+            logger.info(f"Saved {len(activity)} rows to {output_file}")
+
+        return activity
+
+
+def robinhood(
+    broker_file: str, output_file: Optional[str] = None, broker: str = "robinhood"
+) -> Union[pd.DataFrame, None]:
+    """
+    Format the transactions made from Robinhood.
+
+    Instructions for downloading transactions:
+    ------------------------------------------
+    - use the `Robinhood` class in this module:
+      login() -> find_account() -> get_df(output_file=...) -> logout()
+    - the saved csv is the `broker_file` for this function
+
+    Parameters
+    ----------
+    broker_file : str
+        path to activity file
+    output_file : str (optional)
+        path to trades file that will be created
+    broker : str (optional)
+        name of the broker
+
+    Returns
+    -------
+    trades : DataFrame
+        trades dataframe
+
+    """
+    # lookup table for types of transactions
+    type_lkup = {
+        "BUY": "BUY",
+        "SELL": "SELL",
+        "DIVIDEND": "DIVIDEND",
+    }
+
+    # read in the transactions file
+    try:
+        df = pd.read_csv(broker_file)
+    except FileNotFoundError:
+        logger.error("Transactions file not found")
+        return None
+    start_df_len = len(df)
+
+    # cleaning dataframe by formatting columns and removing whitespace
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+    df = df.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
+
+    missing_activity = df.loc[~df["activity"].isin(type_lkup), "activity"].unique()
+    if len(missing_activity) > 0:
+        raise ValueError(
+            f"Not all activity are in the activity lookup table "
+            f"for instance {missing_activity}"
+        )
+
+    # update date column type and lookup type column
+    df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d").dt.date
+    df["type"] = df["activity"].map(type_lkup)
+
+    # standardize column and data
+    trades = pd.DataFrame(
+        {
+            "ticker": df["symbol"],
+            "date": df["date"],
+            "type": df["type"],
+            "units": np.select(
+                [df["type"] == "DIVIDEND", df["type"] == "SELL"],
+                [df["amount"], -df["quantity"]],
+                default=df["quantity"],
+            ),
+            "cost": df["amount"],
+            "broker": broker,
+        }
+    )
+
+    # check stock dates
+    trades = check_stock_dates(trades, fix=True)["fix_tx_df"]
+    logger.info(
+        f"There were {start_df_len} and now there are {len(trades)} rows in "
+        f"the {broker} transactions file after cleaning"
+    )
+
+    if output_file is not None:
+        if os.path.exists(output_file):
+            trades = append_trades(trades, output_file, broker)
+        else:
+            logger.warning(f"{output_file} does not exist. Creating new file.")
+        trades = trades.sort_values(by=["date", "ticker"], ascending=False)
+        trades.to_csv(output_file, index=False)
 
     return trades
