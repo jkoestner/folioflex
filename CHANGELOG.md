@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.5.2](https://github.com/jkoestner/folioflex/tree/v1.5.2)
+
+[Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.5.1...v1.5.2)
+
+**Enhancements**
+- add in RobinHood class using pyhood to authenticate, get account, get trades
+- upgrade
+
+**Documentation**
+
+**Bug Fixes**
+
 ## [v1.5.1](https://github.com/jkoestner/folioflex/tree/v1.5.1)
 
 [Full Changelog](https://github.com/jkoestner/folioflex/compare/v1.5.0...v1.5.1)

@@ -504,14 +504,14 @@ class Yahoo:
             provides news articles on ticker
 
         """
-        news = yf.Ticker(ticker).news
+        news = yf.Search("GNW", news_count=5).news
         news = pd.DataFrame(
             [
                 {
-                    "date": story.get("content").get("pubDate").split("T")[0],
-                    "title": story.get("content").get("title"),
-                    "url": story.get("content").get("canonicalUrl").get("url"),
-                    "summary": story.get("content").get("summary"),
+                    "date": datetime.fromtimestamp(story.get("providerPublishTime")),
+                    "title": story.get("title"),
+                    "url": story.get("link"),
+                    "summary": story.get("publisher"),
                 }
                 for story in news
             ]
@@ -853,8 +853,7 @@ class KBB:
             match = re.search(r'"price":(\d+)', response.text)
         else:
             logger.warning(
-                "Only 'trade-in-sell', 'buy-new', and 'buy-used' intents "
-                "are supported"
+                "Only 'trade-in-sell', 'buy-new', and 'buy-used' intents are supported"
             )
             return None
         try:
