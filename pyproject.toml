@@ -48,6 +48,7 @@ dependencies = [
     "redis>=8.1.0",
 
     # gpt
+    "brotli>=1.2.1",
     "g4f>=8.8.6",         # this package has loose testing support
     "hugchat>=0.5.1",
     "openai>=3.39.0",
