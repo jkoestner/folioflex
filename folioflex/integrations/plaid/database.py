@@ -766,7 +766,7 @@ class Engine:
 
         # create the engine
         engine = sa.create_engine(
-            f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}",
+            f"postgresql+psycopg://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}",
             pool_pre_ping=True,  # Enables connection health checks
             pool_recycle=3600,  # Recycle connections after 1 hour
             pool_size=3,  # Maximum number of connections to keep

@@ -56,7 +56,7 @@ dependencies = [
     # budget
     "emoji>=2.16.0",
     "gensim>=4.4.0",  
-    "psycopg2-binary>=2.9.13",
+    "psycopg[binary]>=3.1",
     "scikit-learn>=1.9.1",
     "scipy>=1.18.1",            
 ]
