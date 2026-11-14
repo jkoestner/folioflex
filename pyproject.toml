@@ -61,6 +61,9 @@ dependencies = [
     "psycopg[binary]>=3.1",
     "scikit-learn>=1.9.1",
     "scipy>=1.18.1",            
+
+    # broker
+    "pyhood>=0.12.3",
 ]
 
 [project.optional-dependencies]
